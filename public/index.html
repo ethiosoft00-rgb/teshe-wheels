@@ -1326,22 +1326,91 @@ function buildWheel() {
     labels.innerHTML = html;
 }
 function applyWheelState() {
-    const wheel = document.getElementById('wheel'); if (!wheel) return;
+    const wheel = document.getElementById('wheel');
+    if (!wheel) return;
     const s = SETTINGS;
     const target = Number(s.target_rotation || 0);
-    const timerEl = document.getElementById('timer'); if (!timerEl) return;
+    const timerEl = document.getElementById('timer');
+    if (!timerEl) return;
+
+    // ── SPINNING: animate from 0 to target ──
     if (s.round_state === 'spinning') {
+        const startedAt = new Date(s.spin_started_at).getTime();
+        const duration  = Number(s.duration_seconds) || 30;
+        const spinKey   = s.round_number + ':' + s.spin_started_at;
+
+        if (wheel._spinKey !== spinKey) {
+            wheel._spinKey = spinKey;
+
+            // Step 1: kill any transition, snap to 0
+            wheel.style.transition = 'none';
+            wheel.style.transform = 'rotate(0deg)';
+
+            // Step 2: force the browser to recalc layout (real reflow, not just offsetWidth)
+            wheel.getBoundingClientRect();
+
+            // Step 3: on the very next frame, start the animation
+            setTimeout(() => {
+                wheel.style.transition = 'transform ' + duration + 's cubic-bezier(.17,.67,.35,1)';
+                wheel.style.transform  = 'rotate(' + (360 * 6 + target) + 'deg)';
+            }, 20);
+
+            const pointer = document.getElementById('topPointer');
+            if (pointer) pointer.classList.remove('winner');
+            const center = document.getElementById('wheelCenter');
+            if (center) center.textContent = 'SPINNING';
+        }
+
+        timerEl.classList.remove('sales');
         timerEl.classList.add('spinning');
-        wheel.style.transition = 'transform ' + s.duration_seconds + 's cubic-bezier(.15,.7,.2,1)';
-        wheel.style.transform = 'rotate(' + target + 'deg)';
-        startCountdown(new Date(s.spin_started_at).getTime(), s.duration_seconds);
-    } else if (s.round_state === 'idle' && s.sales_state === 'open') {
-        timerEl.classList.add('sales'); timerEl.classList.remove('spinning');
+        startCountdown(startedAt, duration);
+        return;
+    }
+
+    // ── SALES OPEN ──
+    if (s.round_state === 'idle' && s.sales_state === 'open') {
+        timerEl.classList.remove('spinning');
+        timerEl.classList.add('sales');
         startSalesCountdown(new Date(s.sales_started_at).getTime(), s.sales_duration || 120);
-    } else if (s.round_state === 'finished') {
-        timerEl.classList.remove('spinning','sales');
-        wheel.style.transition = 'none'; wheel.style.transform = 'rotate(' + target + 'deg)';
+        const center = document.getElementById('wheelCenter');
+        if (center) center.textContent = 'READY';
+        return;
+    }
+
+    // ── IDLE ──
+    if (s.round_state === 'idle' && s.sales_state !== 'open') {
+        stopCountdown();
+        wheel._spinKey = null;
+        wheel.style.transition = 'none';
+        wheel.style.transform = 'rotate(0deg)';
+        const pointer = document.getElementById('topPointer');
+        if (pointer) pointer.classList.remove('winner');
+        const center = document.getElementById('wheelCenter');
+        if (center) center.textContent = 'SPIN';
+        const area = document.getElementById('winnerArea');
+        if (area) area.innerHTML = '';
+        timerEl.classList.remove('spinning', 'sales');
+        timerEl.textContent = formatTime(s.duration_seconds);
+        return;
+    }
+
+    // ── FINISHED ──
+    if (s.round_state === 'finished') {
+        stopCountdown();
+        timerEl.classList.remove('spinning', 'sales');
+        wheel._spinKey = null;
+        wheel.style.transition = 'none';
+        wheel.style.transform = 'rotate(' + target + 'deg)';
+        const pointer = document.getElementById('topPointer');
+        if (pointer) pointer.classList.add('winner');
+        const winners = s.winner_numbers || [];
+        const center = document.getElementById('wheelCenter');
+        if (center) center.innerHTML = winners.length ? '🏆<br>#' + winners[0] : 'DONE';
+        timerEl.textContent = '00:00';
+        const statusEl = document.getElementById('status');
+        if (statusEl) statusEl.textContent = 'Round completed.';
         showWinners(s.winners || []);
+        return;
     }
 }
 function startSalesCountdown(at, min) {
@@ -1474,6 +1543,16 @@ async function usersPage() {
             '<td><button class="small-button gold-button" onclick="adjustBalance(\'' + u.id + '\')">Balance</button> ' + banBtn + '</td>' +
             '</tr>';
     }
+async function resetPassword(userId, userName) {
+    const newPw = prompt('New password for ' + userName + ':\n(min 4 characters)');
+    if (newPw === null) return;
+    if (newPw.trim().length < 4) { alert('Min 4 characters'); return; }
+    try {
+        await api('/admin/users/reset-password', { method: 'POST', body: { userId, newPassword: newPw.trim() } });
+        alert('✅ Updated.');
+        usersPage();
+    } catch (e) { alert('❌ ' + e.message); }
+}
     document.getElementById('main').innerHTML = `
         <img src="${IMG.users}" class="banner-img" onerror="this.style.display='none'">
         <h1 class="title">👥 Users</h1>
