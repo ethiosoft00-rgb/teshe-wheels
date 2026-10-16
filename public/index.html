@@ -224,10 +224,12 @@ body.wheel-public .main { max-width: 100% !important; padding: 8px !important; h
 body.wheel-public .card { border: none; background: transparent; padding: 0; margin: 0; }
 body.wheel-public .wheel-layout {
     grid-template-columns: 1fr;
-    gap: 10px;
+    gap: 20px;
     justify-items: center;
-    height: 100vh;
-    align-content: center;
+    height: auto;
+    min-height: 100vh;
+    align-content: start;
+    padding-top: 20px;
 }
 body.wheel-public .wheel-container {
     width: min(80vh, 90vw);
@@ -245,6 +247,55 @@ body.wheel-public #exitPublicBtn { display: inline-flex !important; }
 
 @media(max-width:1000px) { .stats { grid-template-columns: repeat(2,1fr); } .wheel-layout { grid-template-columns: 1fr; } .nb-stats { grid-template-columns: repeat(2, 1fr); } }
 @media(max-width:700px) { .layout { grid-template-columns: 1fr; } .sidebar { display: flex; overflow-x: auto; padding: 10px; } .nav { min-width: 130px; margin-right: 5px; } .main { padding: 12px; } .stats { grid-template-columns: 1fr; } .wheel-container { width: 320px; } .timer { font-size: 40px; } .hero-banner { height: 200px; } }
+/* Big winners display for the wheel public view */
+body.wheel-public #winnerArea {
+    width: 100%;
+    max-width: 1400px;
+    margin: 20px auto 0;
+    padding: 0 20px;
+}
+
+body.wheel-public .winners {
+    background: linear-gradient(135deg, #14532d, #0f172a);
+    border: 3px solid #4ade80;
+    border-radius: 20px;
+    padding: 24px;
+    box-shadow: 0 0 60px rgba(74,222,128,0.5);
+    animation: winnerFlash 1.5s ease-in-out infinite;
+}
+
+@keyframes winnerFlash {
+    0%, 100% { box-shadow: 0 0 40px rgba(74,222,128,0.45); }
+    50%      { box-shadow: 0 0 80px rgba(74,222,128,0.95); }
+}
+
+body.wheel-public .winners h2 {
+    font-size: 42px;
+    text-align: center;
+    margin-bottom: 20px;
+    text-shadow: 0 0 30px rgba(74,222,128,0.9);
+}
+
+body.wheel-public .winners .winner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+    padding: 18px 22px;
+    margin-bottom: 12px;
+    background: #0b1220;
+    border: 2px solid #4ade80;
+    border-radius: 14px;
+    font-size: 22px;
+    font-weight: bold;
+}
+
+body.wheel-public .winners .winner .gold {
+    font-size: 26px;
+    color: #fbbf24;
+    text-shadow: 0 0 15px rgba(251,191,36,0.9);
+}
 </style>
 </head>
 <body>
@@ -1341,11 +1392,45 @@ function startCountdown(at, dur) {
 async function startSpin() { try { await api('/admin/spin/start', { method: 'POST' }); await refreshState(); renderPage(); } catch (e) { alert('❌ ' + e.message); } }
 async function newRound() { if (!confirm('New round?')) return; try { await api('/admin/round/reset', { method: 'POST' }); await refreshState(); renderPage(); } catch (e) { alert('❌ ' + e.message); } }
 function showWinners(winners) {
-    const area = document.getElementById('winnerArea'); if (!area) return;
+    const area = document.getElementById('winnerArea');
+    if (!area) return;
     if (!winners || !winners.length) { area.innerHTML = ''; return; }
-    let h = '<div class="winners"><h2>🏆 WINNERS</h2>';
-    for (const w of winners) h += '<div class="winner"><b>#' + w.place + '</b> ' + escapeHTML(w.name) + ' — Ticket #' + w.ticket + ' — <span class="gold">' + money(w.prize) + '</span></div>';
-    area.innerHTML = h + '</div>';
+
+    let html = '<div class="winners">';
+    html += '<h2>🏆 WINNERS — Round #' + SETTINGS.round_number + '</h2>';
+
+    for (const w of winners) {
+        const medal = w.place === 1 ? '🥇' : w.place === 2 ? '🥈' : w.place === 3 ? '🥉' : '🏅';
+        const winnerRow = `
+            <div class="winner">
+                <div>
+                    <span style="font-size:32px;margin-right:10px">${medal}</span>
+                    <b>Winner #${w.place}</b>
+                </div>
+                <div>
+                    ${escapeHTML(w.name)}
+                    <br>
+                    <span class="muted" style="font-size:14px;font-family:monospace">
+                        ${escapeHTML(w.public_code || '—')} · ${escapeHTML(w.phone_masked || '—')}
+                    </span>
+                </div>
+                <div>
+                    Ticket <b class="gold">#${w.ticket}</b>
+                </div>
+                <div class="gold">${money(w.prize)}</div>
+            </div>`;
+        html += winnerRow;
+    }
+
+    html += '</div>';
+    area.innerHTML = html;
+
+    // If in public view, scroll to winners
+    if (document.body.classList.contains('wheel-public')) {
+        setTimeout(() => {
+            area.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 300);
+    }
 }
 async function startSales() { try { await api('/admin/start-sales', { method: 'POST' }); toast('🟢'); await refreshState(); renderPage(); } catch (e) { alert('❌ ' + e.message); } }
 async function closeSales() { try { await api('/admin/close-sales', { method: 'POST' }); toast('🔴'); await refreshState(); renderPage(); } catch (e) { alert('❌ ' + e.message); } }
