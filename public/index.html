@@ -96,6 +96,8 @@ input:focus, select:focus { border-color: #fbbf24; }
 .wheel-labels { position: absolute; inset: 0; pointer-events: none; }
 .wl { position: absolute; inset: 0; display: flex; justify-content: center; }
 .wl span { margin-top: 14px; font-weight: bold; text-shadow: 0 1px 3px rgba(0,0,0,.8); }
+.pointer { position: absolute; z-index: 20; top: -2px; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 17px solid transparent; border-right: 17px solid transparent; border-top: 38px solid red; }
+.pointer.winner { border-top-color: #4ade80; }
 .center { position: absolute; z-index: 30; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 78px; height: 78px; border-radius: 50%; background: #111827; border: 4px solid #fbbf24; display: flex; justify-content: center; align-items: center; font-size: 13px; font-weight: bold; text-align: center; }
 .timer { text-align: center; font-size: 60px; font-weight: bold; color: #fbbf24; margin-bottom: 15px; font-family: monospace; padding: 12px; background: rgba(0,0,0,0.3); border-radius: 12px; border: 2px solid #334155; }
 .timer.sales { color: #22c55e; border-color: #166534; }
@@ -156,14 +158,13 @@ th { color: #94a3b8; }
 .ref-badge.pending { background: #78350f; color: #fcd34d; }
 .nb-hero { width: 100%; height: 180px; border-radius: 15px; margin-bottom: 20px; overflow: hidden; border: 2px solid #334155; background: linear-gradient(135deg,#0b1220,#1e293b); display: flex; align-items: center; justify-content: center; }
 
-/* Hero banner for dashboard with image2.jpg */
-.hero-banner { position: relative; width: 100%; height: 280px; border-radius: 15px; overflow: hidden; margin-bottom: 20px; border: 2px solid #334155; box-shadow: 0 10px 40px rgba(0,0,0,0.6); }
-.hero-banner img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.hero-banner .hero-overlay { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(15,23,42,0.1) 0%, rgba(15,23,42,0.85) 100%); display: flex; flex-direction: column; justify-content: flex-end; padding: 25px; }
-.hero-banner h1 { font-size: 32px; margin-bottom: 6px; text-shadow: 0 2px 12px rgba(0,0,0,0.9); }
-.hero-banner p { color: #cbd5e1; font-size: 14px; text-shadow: 0 2px 8px rgba(0,0,0,0.9); }
+/* Wheel hero banner */
+.wheel-hero-img { width: 100%; height: 220px; border-radius: 15px; overflow: hidden; margin-bottom: 20px; border: 2px solid #334155; box-shadow: 0 10px 40px rgba(0,0,0,0.6); }
+.wheel-hero-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
 
-/* Numbers grid inline (normal view) */
+.wheel-page-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
+
+/* Numbers grid inline */
 .nb-grid-inline {
     display: grid;
     grid-template-columns: repeat(10, 1fr);
@@ -172,7 +173,7 @@ th { color: #94a3b8; }
     margin-top: 12px;
 }
 
-/* Horizontal winner cards (below the board) */
+/* Horizontal winner cards */
 .nb-overlay-winners { display: flex; flex-direction: column; gap: 10px; margin-top: 14px; }
 .nb-win-title { font-size: 20px; color: #4ade80; margin-bottom: 6px; }
 .nb-win-row { display: flex; flex-wrap: wrap; gap: 12px; justify-content: flex-start; }
@@ -193,7 +194,7 @@ th { color: #94a3b8; }
 /* Exit public view button */
 #exitPublicBtn { display: none; position: fixed; top: 12px; right: 12px; z-index: 9999; padding: 10px 16px; background: #991b1b; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; box-shadow: 0 6px 20px rgba(0,0,0,0.5); }
 
-/* Full-screen public view */
+/* Full-screen public view for NB */
 body.public-view .header,
 body.public-view .sidebar,
 body.public-view .nb-stats,
@@ -211,6 +212,36 @@ body.public-view #exitPublicBtn { display: inline-flex !important; }
 body.public-view .nb-win-card { min-width: 320px; flex: 1 1 320px; max-width: 480px; }
 body.public-view .nwc-name { font-size: 18px; }
 body.public-view .nwc-prize { font-size: 20px; }
+
+/* Full-screen public view for the wheel */
+body.wheel-public .header,
+body.wheel-public .sidebar,
+body.wheel-public .title,
+body.wheel-public .wheel-hero-img,
+body.wheel-public .status { display: none !important; }
+body.wheel-public .layout { grid-template-columns: 1fr !important; }
+body.wheel-public .main { max-width: 100% !important; padding: 8px !important; height: 100vh; overflow: hidden; }
+body.wheel-public .card { border: none; background: transparent; padding: 0; margin: 0; }
+body.wheel-public .wheel-layout {
+    grid-template-columns: 1fr;
+    gap: 10px;
+    justify-items: center;
+    height: 100vh;
+    align-content: center;
+}
+body.wheel-public .wheel-container {
+    width: min(80vh, 90vw);
+    max-width: 900px;
+}
+body.wheel-public .timer {
+    font-size: 80px;
+    padding: 20px 40px;
+    margin: 0 auto 20px;
+    width: fit-content;
+    min-width: 300px;
+}
+body.wheel-public .action-buttons { justify-content: center; }
+body.wheel-public #exitPublicBtn { display: inline-flex !important; }
 
 @media(max-width:1000px) { .stats { grid-template-columns: repeat(2,1fr); } .wheel-layout { grid-template-columns: 1fr; } .nb-stats { grid-template-columns: repeat(2, 1fr); } }
 @media(max-width:700px) { .layout { grid-template-columns: 1fr; } .sidebar { display: flex; overflow-x: auto; padding: 10px; } .nav { min-width: 130px; margin-right: 5px; } .main { padding: 12px; } .stats { grid-template-columns: 1fr; } .wheel-container { width: 320px; } .timer { font-size: 40px; } .hero-banner { height: 200px; } }
@@ -379,10 +410,9 @@ function renderSidebar() {
             <button class="nav" data-page="referrals" onclick="openPage('referrals')">🎁 Referrals</button>
             <button class="nav" data-page="history" onclick="openPage('history')">📜 History</button>`;
     }
-    html += `
-        <div style="margin-top:20px;padding-top:20px;border-top:1px solid #334155">
-            <button class="nav" style="background:#991b1b;color:white;font-weight:bold" onclick="logout()">🚪 Logout</button>
-        </div>`;
+    html += `<div style="margin-top:20px;padding-top:20px;border-top:1px solid #334155">
+        <button class="nav" style="background:#991b1b;color:white;font-weight:bold" onclick="logout()">🚪 Logout</button>
+    </div>`;
     s.innerHTML = html;
 }
 
@@ -542,6 +572,7 @@ function logout() {
     if (countdownId) { clearInterval(countdownId); countdownId = null; }
     try { stopLivePolls(); } catch (e) {}
     try { closeReceipt(); } catch (e) {}
+    document.body.classList.remove('public-view', 'wheel-public');
     const lp = document.getElementById('loginPage');
     const ap = document.getElementById('app');
     if (lp) lp.classList.remove('hidden');
@@ -554,6 +585,10 @@ function money(v) { return Number(v || 0).toLocaleString() + ' ETB'; }
 function formatTime(s) { s = Math.max(0, Number(s)); const h = Math.floor(s / 3600); const m = Math.floor((s % 3600) / 60); const sec = Math.floor(s % 60); if (h > 0) return String(h).padStart(2,'0')+':'+String(m).padStart(2,'0')+':'+String(sec).padStart(2,'0'); return String(m).padStart(2, '0') + ':' + String(sec).padStart(2, '0'); }
 function formatDate(d) { try { return new Date(d).toLocaleString(); } catch { return '—'; } }
 function escapeHTML(v) { return String(v ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;'); }
+
+function enterPublicView() { document.body.classList.add('public-view'); }
+function exitPublicView() { document.body.classList.remove('public-view', 'wheel-public'); }
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') exitPublicView(); });
 /* ================= RECEIPT ================= */
 function showReceipt(data) {
     const el = document.getElementById('receiptArea');
@@ -586,66 +621,12 @@ function showReceipt(data) {
                 <div class="receipt-footer">Keep safe. Scan QR to verify.</div>
                 <div class="receipt-buttons">
                     <button class="rcpt-print" onclick="window.print()">🖨️ Print / Save PDF</button>
-                    <button class="rcpt-print" style="background:#0ea5e9" onclick="printPaper('small','wheel')">🎫 Small Thermal</button>
-                    <button class="rcpt-print" style="background:#a855f7" onclick="printPaper('a4','wheel')">📄 A4 Grid</button>
                     <button class="rcpt-close" onclick="closeReceipt()">✕ Close</button>
                 </div>
             </div>
         </div>`;
-    window._lastReceipt = data;
 }
 function closeReceipt() { const el = document.getElementById('receiptArea'); if (el) el.innerHTML = ''; }
-function printPaper(layout, game) {
-    const rec = window._lastReceipt || {};
-    const owner = rec.owner || { name: '—', phone: '—' };
-    const tickets = rec.tickets || [];
-    const round = rec.round || '—';
-    const price = rec.price || 0;
-    const totalPrice = Number(price) * tickets.length;
-    const date = rec.date ? new Date(rec.date).toLocaleString() : new Date().toLocaleString();
-    const gameName = game === 'nb' ? 'NUMBER BETTING' : 'LUCKY WHEEL';
-    const icon = game === 'nb' ? '🎰' : '🎡';
-    const rows = tickets.map(t => {
-        const qr = t.printer_code ? 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=' + encodeURIComponent(t.printer_code) : '';
-        return '<div class="tp-ticket-row"><div class="tp-ticket-info"><div class="tp-ticket-number">#' + t.number + '</div><div class="tp-ticket-code">' + (t.printer_code || '—') + '</div></div>' + (qr ? '<img src="' + qr + '" class="tp-ticket-qr">' : '') + '</div>';
-    }).join('');
-    const bodyHtml = '<div class="tp-receipt">' +
-        '<div class="tp-head">' + icon + ' ' + gameName + '</div>' +
-        '<div class="tp-round">Round #' + round + '</div>' +
-        '<div class="tp-line"></div>' +
-        '<div class="tp-info"><b>Name:</b> ' + escapeHTML(owner.name) + '</div>' +
-        '<div class="tp-info"><b>Phone:</b> ' + escapeHTML(owner.phone) + '</div>' +
-        '<div class="tp-info"><b>Date:</b> ' + date + '</div>' +
-        '<div class="tp-info"><b>Tickets:</b> ' + tickets.length + '</div>' +
-        '<div class="tp-info"><b>Unit:</b> ' + money(price) + '</div>' +
-        '<div class="tp-info"><b>Total:</b> ' + money(totalPrice) + '</div>' +
-        '<div class="tp-line"></div>' +
-        '<div class="tp-tickets-head">TICKETS</div>' + rows +
-        '<div class="tp-line"></div>' +
-        '<div class="tp-foot">Keep safe. Scan QR to verify.<br>Support: @TE21HUSH</div>' +
-    '</div>';
-    const w = window.open('', '_blank', 'width=420,height=900');
-    w.document.write('<html><head><title>Print Ticket</title><style>' +
-        '@page { size: ' + (layout === 'a4' ? 'A4' : '58mm auto') + '; margin: 4mm; }' +
-        'body{font-family:"Courier New",monospace;color:#000;background:#fff;margin:0;padding:8px}' +
-        '.tp-receipt{border:1px dashed #000;padding:10px;margin:0 auto;' + (layout === 'a4' ? 'width:100mm;' : 'width:100%;max-width:52mm;') + '}' +
-        '.tp-head{font-weight:bold;font-size:16px;text-align:center}' +
-        '.tp-round{font-size:12px;text-align:center;margin-bottom:6px}' +
-        '.tp-line{border-top:1px dashed #000;margin:6px 0}' +
-        '.tp-info{font-size:11px;text-align:left;line-height:1.5}' +
-        '.tp-info b{display:inline-block;min-width:52px}' +
-        '.tp-tickets-head{font-weight:bold;font-size:12px;text-align:center;margin:6px 0}' +
-        '.tp-ticket-row{display:flex;align-items:center;justify-content:space-between;gap:8px;border-top:1px dashed #999;padding:6px 0}' +
-        '.tp-ticket-info{flex:1;text-align:left}' +
-        '.tp-ticket-number{font-weight:bold;font-size:16px}' +
-        '.tp-ticket-code{font-size:10px;color:#333}' +
-        '.tp-ticket-qr{width:60px;height:60px;display:block}' +
-        '.tp-foot{font-size:10px;text-align:center;color:#333;margin-top:8px}' +
-        '@media print{body{margin:0;padding:0}.tp-receipt{border:none}}' +
-        '</style></head><body onload="window.focus();window.print();window.onafterprint=function(){setTimeout(function(){window.close()},100)}">' +
-        bodyHtml + '</body></html>');
-    w.document.close();
-}
 
 /* ================= MY TICKETS ================= */
 async function myTicketsPage() {
@@ -658,17 +639,10 @@ async function myTicketsPage() {
         <h1 class="title">🎟️ My Tickets</h1>
         <div class="card"><h2>🎡 Lucky Wheel — Round #${SETTINGS.round_number}</h2><br>
             <div>${wheelMine.length ? wheelMine.map(t => '<span class="nb-pick-chip" style="margin:3px">#' + t.ticket_number + '</span>').join('') : '<p class="muted">No tickets yet.</p>'}</div>
-            ${wheelMine.length ? '<button class="main-button" style="background:#0ea5e9;color:white;margin-top:14px" onclick="printWheelReceipt()">🖨️ Print / Download</button>' : ''}
         </div>
         <div class="card"><h2>🎰 Number Betting</h2><br>
             <div>${nbMine.length ? nbMine.map(t => '<span class="nb-pick-chip" style="margin:3px">#' + t.number + '</span>').join('') : '<p class="muted">No tickets yet.</p>'}</div>
         </div>`;
-}
-async function printWheelReceipt() {
-    const mine = TICKETS.filter(t => String(t.user_id) === String(ME.id)).map(t => t.ticket_number);
-    if (!mine.length) return;
-    try { const res = await api('/ticket-receipt', { method: 'POST', body: { game: 'wheel', round: SETTINGS.round_number, tickets: mine } }); showReceipt(res); }
-    catch (e) { alert('❌ ' + e.message); }
 }
 
 /* ================= VERIFY ================= */
@@ -755,13 +729,8 @@ function dashboard() {
     const channelUrl = 'https://t.me/' + CONFIG.channelUsername.replace('@', '');
     if (ME.role === 'admin') {
         document.getElementById('main').innerHTML = `
-            <div class="hero-banner">
-                <img src="image2.jpg" alt="" onerror="this.src='https://images.unsplash.com/photo-1542751371-adc38448a05e?w=1600&h=500&fit=crop'">
-                <div class="hero-overlay">
-                    <h1>Admin Dashboard</h1>
-                    <p>Manage the games, monitor rounds, and pay winners.</p>
-                </div>
-            </div>
+            <div class="wheel-hero-img"><img src="image2.jpg" onerror="this.src='https://images.unsplash.com/photo-1542751371-adc38448a05e?w=1600&h=500&fit=crop'"></div>
+            <h1 class="title">Admin Dashboard</h1>
             <div class="stats">
                 <div class="stat"><small>Users</small><h2 id="statUsers">—</h2></div>
                 <div class="stat"><small>Sold</small><h2>${sold}/${SETTINGS.ticket_count}</h2></div>
@@ -784,13 +753,8 @@ function dashboard() {
     }
     const mine = TICKETS.filter(t => String(t.user_id) === String(ME.id));
     document.getElementById('main').innerHTML = `
-        <div class="hero-banner">
-            <img src="image2.jpg" alt="" onerror="this.src='https://images.unsplash.com/photo-1542751371-adc38448a05e?w=1600&h=500&fit=crop'">
-            <div class="hero-overlay">
-                <h1>Welcome, ${escapeHTML(ME.name)}</h1>
-                <p>Play. Spin. Win. Every round is a chance.</p>
-            </div>
-        </div>
+        <div class="wheel-hero-img"><img src="image2.jpg" onerror="this.src='https://images.unsplash.com/photo-1542751371-adc38448a05e?w=1600&h=500&fit=crop'"></div>
+        <h1 class="title">Welcome, ${escapeHTML(ME.name)}</h1>
         <div class="telegram-banner" style="background:linear-gradient(135deg,#22c55e,#16a34a);border-color:#4ade80">
             <div class="icon">🤖</div><div class="text"><h3>Telegram Bot</h3><p>Instant help & play.</p></div>
             <a href="${botUrl}" target="_blank" class="join-btn" style="color:#16a34a">Open</a>
@@ -850,11 +814,7 @@ function buyRenderWheel() {
     const open = SETTINGS.sales_state === 'open';
     const seen = new Set();
     const list = [];
-    for (const t of TICKETS) {
-        if (seen.has(t.ticket_number)) continue;
-        seen.add(t.ticket_number);
-        list.push(t);
-    }
+    for (const t of TICKETS) { if (seen.has(t.ticket_number)) continue; seen.add(t.ticket_number); list.push(t); }
     list.sort((a, b) => a.ticket_number - b.ticket_number);
     let grid = '';
     for (const t of list) {
@@ -876,9 +836,7 @@ function buyRenderWheel() {
             <div class="stat"><small>Total</small><h2>${list.length}</h2></div>
             <div class="stat"><small>Free</small><h2>${ME.free_tickets || 0}</h2></div>
         </div>
-        <div class="card"><h2>Select Tickets</h2><br>
-            <div class="ticket-grid">${grid}</div>
-        </div>
+        <div class="card"><h2>Select Tickets</h2><br><div class="ticket-grid">${grid}</div></div>
         <div class="card">
             <div class="checkbox-row"><input type="checkbox" id="buyUseFree" ${(ME.free_tickets||0)===0?'disabled':''} onchange="updateBuyTotals()"><label>🎁 Use FREE ticket (${ME.free_tickets||0})</label></div>
             <p><b>Selected:</b> <span id="buyCount">0</span></p>
@@ -909,9 +867,7 @@ async function buySelectedTickets() {
     try {
         await api('/user/tickets/buy', { method: 'POST', body: { numbers: buySelected, useFreeTicket: free } });
         await refreshState();
-        const mine = TICKETS.filter(t => String(t.user_id) === String(ME.id)).map(t => t.ticket_number);
-        const rec = await api('/ticket-receipt', { method: 'POST', body: { game: 'wheel', round: SETTINGS.round_number, tickets: mine } });
-        buyPage(); showReceipt(rec);
+        buyPage();
     } catch (e) { alert('❌ ' + e.message); }
 }
 async function buyRenderNB(cfg) {
@@ -941,14 +897,8 @@ async function buyRenderNB(cfg) {
         </div>`;
 }
 function nbBuyClick(num, cell, tpp) {
-    if (nbBuyPicked.includes(num)) {
-        nbBuyPicked = nbBuyPicked.filter(x => x !== num);
-        cell.classList.remove('mine-picked');
-    } else {
-        if (nbBuyPicked.length >= tpp) { toast('Max ' + tpp + ' numbers', true); return; }
-        nbBuyPicked.push(num);
-        cell.classList.add('mine-picked');
-    }
+    if (nbBuyPicked.includes(num)) { nbBuyPicked = nbBuyPicked.filter(x => x !== num); cell.classList.remove('mine-picked'); }
+    else { if (nbBuyPicked.length >= tpp) { toast('Max ' + tpp, true); return; } nbBuyPicked.push(num); cell.classList.add('mine-picked'); }
     const cnt = document.getElementById('nbBuyCount'); if (cnt) cnt.textContent = nbBuyPicked.length;
     const list = document.getElementById('nbBuyList'); if (list) list.innerHTML = nbBuyPicked.map(x => '<span class="nb-pick-chip">#' + x + '</span>').join('');
 }
@@ -960,9 +910,8 @@ async function nbBuyConfirm() {
     try {
         await api('/nb/buy', { method: 'POST', body: { numbers: nbBuyPicked } });
         await refreshState();
-        const st = await api('/nb/state');
-        const rec = await api('/ticket-receipt', { method: 'POST', body: { game: 'nb', round: cfg.round_number, tickets: (st.my_tickets||[]).map(t=>t.number) } });
-        nbBuyPicked = []; await buyPage(); showReceipt(rec);
+        nbBuyPicked = [];
+        await buyPage();
     } catch (e) { alert('❌ ' + e.message); }
 }
 
@@ -986,11 +935,7 @@ function assignSwitchGame(g) { if (assignGame === g) return; assignGame = g; ass
 function assignRenderWheel() {
     const seen = new Set();
     const list = [];
-    for (const t of TICKETS) {
-        if (seen.has(t.ticket_number)) continue;
-        seen.add(t.ticket_number);
-        list.push(t);
-    }
+    for (const t of TICKETS) { if (seen.has(t.ticket_number)) continue; seen.add(t.ticket_number); list.push(t); }
     list.sort((a, b) => a.ticket_number - b.ticket_number);
     let grid = '';
     for (const t of list) {
@@ -1053,14 +998,8 @@ async function assignRenderNB(cfg) {
         </div>`;
 }
 function nbAssignClick(num, cell, tpp) {
-    if (assignSelectedNB.includes(num)) {
-        assignSelectedNB = assignSelectedNB.filter(x => x !== num);
-        cell.classList.remove('mine-picked');
-    } else {
-        if (assignSelectedNB.length >= tpp) { toast('Max ' + tpp + ' numbers', true); return; }
-        assignSelectedNB.push(num);
-        cell.classList.add('mine-picked');
-    }
+    if (assignSelectedNB.includes(num)) { assignSelectedNB = assignSelectedNB.filter(x => x !== num); cell.classList.remove('mine-picked'); }
+    else { if (assignSelectedNB.length >= tpp) { toast('Max ' + tpp, true); return; } assignSelectedNB.push(num); cell.classList.add('mine-picked'); }
     const cnt = document.getElementById('nbAssignCount'); if (cnt) cnt.textContent = assignSelectedNB.length;
     const list = document.getElementById('nbAssignList'); if (list) list.innerHTML = assignSelectedNB.map(x => '<span class="nb-pick-chip">#' + x + '</span>').join('');
 }
@@ -1081,11 +1020,6 @@ async function assignTicketsNB() {
         ticketsPage(); showReceipt(rec);
     } catch (e) { alert('❌ ' + e.message); }
 }
-async function resetOneTicket(n) {
-    if (!confirm('Reset #' + n + '?')) return;
-    try { await api('/admin/tickets/reset-one', { method: 'POST', body: { number: n } }); toast('✅'); await refreshState(); ticketsPage(); }
-    catch (e) { alert('❌ ' + e.message); }
-}
 
 /* ================= NB PAGE ================= */
 async function nbPage() {
@@ -1094,13 +1028,11 @@ async function nbPage() {
     const isAdmin = ME.role === 'admin';
     const drawing = s.round_state === 'drawing';
     const open = s.sales_state === 'open';
-
     const mineSet = new Set((nbState.my_tickets||[]).map(t => t.number));
     const userNums = new Set((nbState.tickets||[]).filter(t => t.user_id).map(t => t.number));
     const drawnSoFar = nbDrawnSoFar(s);
     const drawnSet = new Set((s.winning_numbers || []).slice(0, drawnSoFar));
     const drawingOrDone = s.round_state === 'drawing' || s.round_state === 'finished';
-
     let grid = '';
     for (let i = 1; i <= s.total_numbers; i++) {
         let cls = 'nb-cell';
@@ -1109,14 +1041,11 @@ async function nbPage() {
         else if (userNums.has(i)) cls += ' taken';
         grid += '<div class="' + cls + '" data-num="' + i + '">' + i + '</div>';
     }
-
     document.getElementById('main').innerHTML = `
-        <div class="nb-hero">
-            <svg viewBox="0 0 800 180" style="width:100%;height:100%">
-                <text x="400" y="95" text-anchor="middle" font-size="44" font-weight="bold" fill="#fbbf24">🎰 NUMBER BETTING</text>
-                <text x="400" y="135" text-anchor="middle" font-size="18" fill="#94a3b8">Pick your numbers. Watch the draw.</text>
-            </svg>
-        </div>
+        <div class="nb-hero"><svg viewBox="0 0 800 180" style="width:100%;height:100%">
+            <text x="400" y="95" text-anchor="middle" font-size="44" font-weight="bold" fill="#fbbf24">🎰 NUMBER BETTING</text>
+            <text x="400" y="135" text-anchor="middle" font-size="18" fill="#94a3b8">Pick your numbers. Watch the draw.</text>
+        </svg></div>
         <h1 class="title">🎰 NB — Round #${s.round_number}</h1>
         <div class="nb-stats">
             <div class="stat"><small>Status</small><h2 id="nbStatusH">${nbStatusText(s)}</h2></div>
@@ -1134,15 +1063,13 @@ async function nbPage() {
             <div id="nbGrid" class="nb-grid-inline">${grid}</div>
             <div id="nbWinnersOverlay" class="nb-overlay-winners"></div>
         </div>
-        ${isAdmin ? `
-            <div class="card"><h2>Admin Controls</h2>
-                <div class="action-buttons">
-                    <button class="action-btn green" onclick="nbStartSales()" ${open||drawing?'disabled':''}>🟢 OPEN SALES</button>
-                    <button class="action-btn red" onclick="nbCloseSales()" ${!open?'disabled':''}>🔴 CLOSE</button>
-                    <button class="action-btn" onclick="nbDraw()" ${drawing||!open?'disabled':''}>🎬 DRAW</button>
-                    <button class="action-btn red" onclick="nbNewRound()" ${drawing?'disabled':''}>🔄 NEW ROUND</button>
-                </div>
-            </div>` : ''}`;
+        ${isAdmin ? `<div class="card"><h2>Admin Controls</h2>
+            <div class="action-buttons">
+                <button class="action-btn green" onclick="nbStartSales()" ${open||drawing?'disabled':''}>🟢 OPEN SALES</button>
+                <button class="action-btn red" onclick="nbCloseSales()" ${!open?'disabled':''}>🔴 CLOSE</button>
+                <button class="action-btn" onclick="nbDraw()" ${drawing||!open?'disabled':''}>🎬 DRAW</button>
+                <button class="action-btn red" onclick="nbNewRound()" ${drawing?'disabled':''}>🔄 NEW ROUND</button>
+            </div></div>` : ''}`;
     renderNbWinnersOverlay(s);
     nbStartPolls(s);
 }
@@ -1150,23 +1077,18 @@ function renderNbWinnersOverlay(s) {
     const el = document.getElementById('nbWinnersOverlay');
     if (!el) return;
     if (s.round_state !== 'finished' || !s.winners || !s.winners.length) { el.innerHTML = ''; return; }
-    let html = '<h3 class="nb-win-title">🏆 Winners of Round #' + s.round_number + '</h3>';
-    html += '<div class="nb-win-row">';
+    let html = '<h3 class="nb-win-title">🏆 Winners of Round #' + s.round_number + '</h3><div class="nb-win-row">';
     for (const w of s.winners) {
         const medal = w.place === 1 ? '🥇' : w.place === 2 ? '🥈' : w.place === 3 ? '🥉' : '🏅';
         const nums = (w.shown_numbers || []).map(n => '#' + n).join(' ') || '—';
         html += '<div class="nb-win-card place-' + w.place + '">' +
             '<div class="nwc-left"><div class="nwc-medal">' + medal + '</div><div class="nwc-place">#' + w.place + '</div></div>' +
-            '<div class="nwc-body">' +
-                '<div class="nwc-name">' + escapeHTML(w.name) + '</div>' +
-                '<div class="nwc-meta">' + escapeHTML(w.public_code || '—') + ' · ' + escapeHTML(w.phone_masked || '—') + '</div>' +
-                '<div class="nwc-nums">' + escapeHTML(nums) + ' · ' + w.matches + ' matches</div>' +
-            '</div>' +
-            '<div class="nwc-prize">' + money(w.prize) + '</div>' +
-        '</div>';
+            '<div class="nwc-body"><div class="nwc-name">' + escapeHTML(w.name) + '</div>' +
+            '<div class="nwc-meta">' + escapeHTML(w.public_code || '—') + ' · ' + escapeHTML(w.phone_masked || '—') + '</div>' +
+            '<div class="nwc-nums">' + escapeHTML(nums) + ' · ' + w.matches + ' matches</div></div>' +
+            '<div class="nwc-prize">' + money(w.prize) + '</div></div>';
     }
-    html += '</div>';
-    el.innerHTML = html;
+    el.innerHTML = html + '</div>';
 }
 function nbStatusText(s) {
     if (s.round_state === 'drawing') return '🎬 DRAWING';
@@ -1211,18 +1133,13 @@ function nbRevealTick() {
         if (grid) {
             const drawnSet = new Set((s.winning_numbers || []).slice(0, shown));
             const mineSet = new Set((nbState.my_tickets||[]).map(t => t.number));
-            const userNums = new Set((nbState.tickets||[]).filter(t => t.user_id).map(t => t.number));
             const justDrawn = s.winning_numbers[shown - 1];
             let html = '';
             for (let i = 1; i <= s.total_numbers; i++) {
                 let cls = 'nb-cell';
                 const isDrawn = drawnSet.has(i);
-                if (s.round_state === 'drawing' || s.round_state === 'finished') {
-                    cls += isDrawn ? ' drawn-win' : ' drawn-lose';
-                } else {
-                    if (mineSet.has(i)) cls += ' mine';
-                    else if (userNums.has(i)) cls += ' taken';
-                }
+                if (s.round_state === 'drawing' || s.round_state === 'finished') cls += isDrawn ? ' drawn-win' : ' drawn-lose';
+                else if (mineSet.has(i)) cls += ' mine';
                 if (isDrawn && i === justDrawn && s.round_state === 'drawing') cls += ' nb-pop';
                 html += '<div class="' + cls + '" data-num="' + i + '">' + i + '</div>';
             }
@@ -1246,15 +1163,6 @@ function nbTickTimer() {
         el.textContent = 'SALES ' + formatTime(Math.ceil(Math.max(0, s.round_duration_minutes * 60 - elapsed)));
     } else el.textContent = '--:--';
 }
-function enterPublicView() {
-    document.body.classList.add('public-view');
-    setTimeout(() => {
-        const board = document.getElementById('nbGrid');
-        if (board) board.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }, 100);
-}
-function exitPublicView() { document.body.classList.remove('public-view'); }
-document.addEventListener('keydown', (e) => { if (e.key === 'Escape') exitPublicView(); });
 async function nbStartSales() { try { await api('/admin/nb/start-sales', { method: 'POST' }); toast('🟢'); await nbPage(); } catch (e) { alert('❌ ' + e.message); } }
 async function nbCloseSales() { try { await api('/admin/nb/close-sales', { method: 'POST' }); toast('🔴'); await nbPage(); } catch (e) { alert('❌ ' + e.message); } }
 async function nbDraw() { if (!confirm('Draw?')) return; try { await api('/admin/nb/draw', { method: 'POST' }); _drawStartClient = Date.now(); _drawRoundKey = null; toast('🎬'); await nbPage(); } catch (e) { alert('❌ ' + e.message); } }
@@ -1266,11 +1174,15 @@ function wheelPage() {
     const spinning = SETTINGS.round_state === 'spinning';
     const open = SETTINGS.sales_state === 'open';
     document.getElementById('main').innerHTML = `
-        <img src="${IMG.wheel}" class="banner-img" onerror="this.style.display='none'">
-        <h1 class="title">🎡 Lucky Wheel</h1>
+        <div class="wheel-hero-img"><img src="image2.jpg" onerror="this.src='https://images.unsplash.com/photo-1511512578047-dfb367046420?w=1600&h=400&fit=crop'"></div>
+        <div class="wheel-page-head">
+            <h1 class="title" style="margin:0">🎡 Lucky Wheel</h1>
+            <button class="small-button gold-button" onclick="enterPublicViewWheel()">🖥️ Public View</button>
+        </div>
         <div class="card"><div class="wheel-layout">
             <div class="wheel-container">
                 <div id="wheel" class="wheel"><div class="wheel-labels" id="wheelLabels"></div></div>
+                <div id="topPointer" class="pointer"></div>
                 <div class="center" id="wheelCenter">SPIN</div>
             </div>
             <div>
@@ -1279,7 +1191,7 @@ function wheelPage() {
                 ${isAdmin ? '<div class="action-buttons">' +
                     '<button class="action-btn green" onclick="startSales()" ' + (open?'disabled':'') + '>🟢 START SALES</button>' +
                     '<button class="action-btn red" onclick="closeSales()" ' + (!open?'disabled':'') + '>🔴 CLOSE</button>' +
-                    '<button class="action-btn" onclick="startSpin()" ' + (spinning?'disabled':'') + '>🎡 SPIN</button>' +
+                    '<button id="spinBtn" class="action-btn" onclick="startSpin()" ' + (spinning?'disabled':'') + '>🎡 SPIN</button>' +
                     '<button class="action-btn red" onclick="newRound()" ' + (spinning?'disabled':'') + '>🔄 NEW ROUND</button>' +
                     '</div>' : ''}
                 <div id="winnerArea"></div>
@@ -1287,6 +1199,13 @@ function wheelPage() {
         </div></div>`;
     buildWheel();
     applyWheelState();
+}
+function enterPublicViewWheel() {
+    document.body.classList.add('public-view', 'wheel-public');
+    setTimeout(() => {
+        const board = document.querySelector('.wheel-container');
+        if (board) board.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 100);
 }
 function buildWheel() {
     const wheel = document.getElementById('wheel');
@@ -1333,41 +1252,30 @@ function applyWheelState() {
     const timerEl = document.getElementById('timer');
     if (!timerEl) return;
 
-    // ── SPINNING: animate from 0 to target ──
     if (s.round_state === 'spinning') {
         const startedAt = new Date(s.spin_started_at).getTime();
-        const duration  = Number(s.duration_seconds) || 30;
-        const spinKey   = s.round_number + ':' + s.spin_started_at;
-
+        const duration = Number(s.duration_seconds) || 30;
+        const spinKey = s.round_number + ':' + s.spin_started_at;
         if (wheel._spinKey !== spinKey) {
             wheel._spinKey = spinKey;
-
-            // Step 1: kill any transition, snap to 0
             wheel.style.transition = 'none';
             wheel.style.transform = 'rotate(0deg)';
-
-            // Step 2: force the browser to recalc layout (real reflow, not just offsetWidth)
             wheel.getBoundingClientRect();
-
-            // Step 3: on the very next frame, start the animation
             setTimeout(() => {
                 wheel.style.transition = 'transform ' + duration + 's cubic-bezier(.17,.67,.35,1)';
-                wheel.style.transform  = 'rotate(' + (360 * 6 + target) + 'deg)';
+                wheel.style.transform = 'rotate(' + (360 * 6 + target) + 'deg)';
             }, 20);
-
             const pointer = document.getElementById('topPointer');
             if (pointer) pointer.classList.remove('winner');
             const center = document.getElementById('wheelCenter');
             if (center) center.textContent = 'SPINNING';
         }
-
         timerEl.classList.remove('sales');
         timerEl.classList.add('spinning');
         startCountdown(startedAt, duration);
         return;
     }
 
-    // ── SALES OPEN ──
     if (s.round_state === 'idle' && s.sales_state === 'open') {
         timerEl.classList.remove('spinning');
         timerEl.classList.add('sales');
@@ -1377,7 +1285,6 @@ function applyWheelState() {
         return;
     }
 
-    // ── IDLE ──
     if (s.round_state === 'idle' && s.sales_state !== 'open') {
         stopCountdown();
         wheel._spinKey = null;
@@ -1394,7 +1301,6 @@ function applyWheelState() {
         return;
     }
 
-    // ── FINISHED ──
     if (s.round_state === 'finished') {
         stopCountdown();
         timerEl.classList.remove('spinning', 'sales');
@@ -1523,14 +1429,16 @@ async function referralsPage() {
         </div>`;
 }
 
-/* ================= ADMIN PAGES ================= */
+/* ================= ADMIN USERS ================= */
 async function usersPage() {
     const data = await api('/admin/users/full');
     let rows = '';
     for (const u of data.users) {
         const pid = u.public_id ? 'U' + String(u.public_id).padStart(5, '0') : '—';
         const status = u.banned ? '<span class="status-badge rejected">BANNED</span>' : '<span class="status-badge approved">ACTIVE</span>';
-        const banBtn = u.banned ? '<button class="small-button green-button" onclick="banUser(\'' + u.id + '\',false)">Restore</button>' : '<button class="small-button red-button" onclick="banUser(\'' + u.id + '\',true)">Ban</button>';
+        const banBtn = u.banned
+            ? '<button class="small-button green-button" onclick="banUser(\'' + u.id + '\', false)">Restore</button>'
+            : '<button class="small-button red-button" onclick="banUser(\'' + u.id + '\', true)">Ban</button>';
         rows += '<tr>' +
             '<td style="font-family:monospace;color:#fbbf24">' + pid + '</td>' +
             '<td>' + escapeHTML(u.name) + '</td>' +
@@ -1540,19 +1448,13 @@ async function usersPage() {
             '<td>' + (u.active_referrals || 0) + '</td>' +
             '<td class="gold">' + (u.free_tickets || 0) + '</td>' +
             '<td>' + status + '</td>' +
-            '<td><button class="small-button gold-button" onclick="adjustBalance(\'' + u.id + '\')">Balance</button> ' + banBtn + '</td>' +
+            '<td style="white-space:nowrap">' +
+                '<button class="small-button gold-button" onclick="adjustBalance(\'' + u.id + '\')">💰</button> ' +
+                '<button class="small-button" onclick="resetPassword(\'' + u.id + '\', \'' + escapeHTML(u.name).replace(/'/g, "\\'") + '\')">🔑 Reset PW</button> ' +
+                banBtn +
+            '</td>' +
             '</tr>';
     }
-async function resetPassword(userId, userName) {
-    const newPw = prompt('New password for ' + userName + ':\n(min 4 characters)');
-    if (newPw === null) return;
-    if (newPw.trim().length < 4) { alert('Min 4 characters'); return; }
-    try {
-        await api('/admin/users/reset-password', { method: 'POST', body: { userId, newPassword: newPw.trim() } });
-        alert('✅ Updated.');
-        usersPage();
-    } catch (e) { alert('❌ ' + e.message); }
-}
     document.getElementById('main').innerHTML = `
         <img src="${IMG.users}" class="banner-img" onerror="this.style.display='none'">
         <h1 class="title">👥 Users</h1>
@@ -1560,6 +1462,16 @@ async function resetPassword(userId, userName) {
             <thead><tr><th>ID</th><th>Name</th><th>Phone</th><th>Password</th><th>Balance</th><th>Refs</th><th>Free</th><th>Status</th><th>Actions</th></tr></thead>
             <tbody>${rows || '<tr><td colspan="9" class="muted">No users</td></tr>'}</tbody>
         </table></div></div>`;
+}
+async function resetPassword(userId, userName) {
+    const newPw = prompt('New password for "' + userName + '":\n(min 4 characters)');
+    if (newPw === null) return;
+    if (newPw.trim().length < 4) { alert('Min 4 characters'); return; }
+    try {
+        await api('/admin/users/reset-password', { method: 'POST', body: { userId, newPassword: newPw.trim() } });
+        alert('✅ Password updated for ' + userName);
+        usersPage();
+    } catch (e) { alert('❌ ' + e.message); }
 }
 async function banUser(id, banned) {
     if (!confirm(banned ? 'BAN?' : 'RESTORE?')) return;
@@ -1572,6 +1484,8 @@ async function adjustBalance(id) {
     if (!Number.isFinite(v)) { alert('Invalid'); return; }
     try { await api('/admin/users/balance', { method: 'POST', body: { userId: id, amount: v } }); await refreshState(); usersPage(); } catch (e) { alert('❌ ' + e.message); }
 }
+
+/* ================= REQUESTS ================= */
 async function requestsPage() {
     const [dep, wd] = await Promise.all([api('/admin/deposits'), api('/admin/withdrawals')]);
     document.getElementById('main').innerHTML = `
@@ -1594,6 +1508,8 @@ async function decideWithdraw(id, action) {
     if (comment === null) return;
     try { await api('/admin/withdrawals/' + id + '/decide', { method: 'POST', body: { action, comment } }); await refreshState(); requestsPage(); } catch (e) { alert('❌ ' + e.message); }
 }
+
+/* ================= HISTORY ================= */
 async function historyPage() {
     const [w, nb] = await Promise.all([api('/rounds').catch(() => ({rounds:[]})), api('/nb/rounds').catch(() => ({rounds:[]}))]);
     document.getElementById('main').innerHTML = `
