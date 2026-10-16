@@ -27,6 +27,7 @@ const sb = createClient(
 
 const JWT_SECRET       = process.env.JWT_SECRET || 'change-me';
 const ADMIN_RESET_CODE = process.env.ADMIN_RESET_CODE || '100510';
+const OWNER_PHONE      = process.env.OWNER_PHONE || '0945757361';
 
 const groq = process.env.GROQ_API_KEY ? new Groq({ apiKey: process.env.GROQ_API_KEY }) : null;
 
@@ -111,6 +112,15 @@ function computePrize(placeIndex, settings, revenue) {
   return { amount: Number(fixes[placeIndex] !== undefined ? fixes[placeIndex] : (settings.prize || 0)), percent: null };
 }
 
+/* ---- PROTECTION: Owner/admin accounts can never be banned or demoted ---- */
+async function isProtectedAccount(userId) {
+  const { data: u } = await sb.from('users').select('role, phone').eq('id', userId).maybeSingle();
+  if (!u) return { exists: false };
+  const isOwner = u.phone === OWNER_PHONE;
+  const isAdmin = u.role === 'admin';
+  return { exists: true, isOwner, isAdmin, phone: u.phone, role: u.role };
+}
+
 app.get('/api/config', (req, res) => {
   res.json({
     supabaseUrl: process.env.SUPABASE_URL,
@@ -128,6 +138,8 @@ app.post('/api/auth/register', async (req, res) => {
     const cleanPhone = String(phone).trim();
     const cleanPassword = String(password).trim();
     if (cleanPassword.length < 4) return res.status(400).json({ error: 'Password too short' });
+    // Prevent using owner phone in registration
+    if (cleanPhone === OWNER_PHONE) return res.status(400).json({ error: 'This phone number is reserved' });
     const { data: exists } = await sb.from('users').select('id').eq('phone', cleanPhone).maybeSingle();
     if (exists) return res.status(400).json({ error: 'Phone already registered' });
     let referredBy = null;
@@ -165,6 +177,7 @@ app.post('/api/auth/login', async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+/* ---- Change password requires secret code (owner uses the same flow) ---- */
 app.post('/api/admin/change-password', auth, adminOnly, async (req, res) => {
   try {
     const { newPassword, code } = req.body;
@@ -325,21 +338,30 @@ app.post('/api/admin/users/reset-password', auth, adminOnly, async (req, res) =>
     if (!userId || !newPassword) return res.status(400).json({ error: 'Missing fields' });
     const clean = String(newPassword).trim();
     if (clean.length < 4) return res.status(400).json({ error: 'Password too short' });
+    const info = await isProtectedAccount(userId);
+    if (info.exists && info.isOwner) return res.status(403).json({ error: 'Owner password can only be changed with the secret code from the Settings page.' });
     const hash = await bcrypt.hash(clean, 10);
     const { error } = await sb.from('users').update({ password_hash: hash, password_plain: clean }).eq('id', userId);
     if (error) return res.status(500).json({ error: error.message });
     res.json({ ok: true });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
+
+/* ---- BAN: admin and owner accounts are protected ---- */
 app.post('/api/admin/users/ban', auth, adminOnly, async (req, res) => {
   try {
     const { userId, banned } = req.body;
     if (!userId) return res.status(400).json({ error: 'Missing userId' });
+    const info = await isProtectedAccount(userId);
+    if (!info.exists) return res.status(404).json({ error: 'User not found' });
+    if (info.isOwner) return res.status(403).json({ error: 'The owner account can never be banned.' });
+    if (info.isAdmin) return res.status(403).json({ error: 'Admin accounts cannot be banned.' });
     const { error } = await sb.from('users').update({ banned: !!banned }).eq('id', userId);
     if (error) return res.status(500).json({ error: error.message });
     res.json({ ok: true });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
+
 app.post('/api/admin/users/balance', auth, adminOnly, async (req, res) => {
   const { userId, amount } = req.body;
   const { data: user } = await sb.from('users').select('balance').eq('id', userId).single();
@@ -351,7 +373,6 @@ app.post('/api/admin/users/balance', auth, adminOnly, async (req, res) => {
   res.json({ ok: true, balance: nb });
 });
 
-/* ================= WHEEL ASSIGN — free re-assign, sold tickets re-usable ================= */
 app.post('/api/admin/tickets/assign', auth, adminOnly, async (req, res) => {
   try {
     const { name, phone, password, balance, numbers, useFreeTicket } = req.body;
@@ -387,7 +408,6 @@ app.post('/api/admin/tickets/assign', auth, adminOnly, async (req, res) => {
     }
     const now = new Date().toISOString();
     for (const n of numbers) {
-      // Always insert a new row — sold numbers can be re-sold
       await sb.from('tickets').insert({
         ticket_number: n, user_id: user.id, user_name: cleanName,
         phone: cleanPhone, sold_date: now, round_number: settings.round_number,
@@ -485,7 +505,6 @@ app.post('/api/admin/spin/start', auth, adminOnly, async (req, res) => {
     if (settings.round_state === 'spinning') return res.status(400).json({ error: 'Already spinning' });
     const { data: sold } = await sb.from('tickets').select('*').eq('round_number', settings.round_number).not('user_id', 'is', null);
     if (!sold?.length) return res.status(400).json({ error: 'No sold tickets yet' });
-    // Unique winner numbers
     const uniqueSold = [...new Set(sold.map(t => t.ticket_number))];
     const shuffled = uniqueSold.sort(() => Math.random() - 0.5);
     const winnerNumbers = shuffled.slice(0, Math.min(settings.winner_count, shuffled.length));
@@ -501,20 +520,16 @@ app.post('/api/admin/spin/start', auth, adminOnly, async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-/* ================= SPIN SETTLE — pay ALL owners of winning numbers ================= */
 app.post('/api/spin/settle', async (req, res) => {
   try {
     const settings = await getSettings();
     if (settings.round_state !== 'spinning') return res.json({ ok: true });
     const started = new Date(settings.spin_started_at).getTime();
     if (Date.now() - started < settings.duration_seconds * 1000) return res.json({ ok: true });
-
     const winnerNumbers = settings.winner_numbers || [];
     const { data: tickets } = await sb.from('tickets').select('*').eq('round_number', settings.round_number).in('ticket_number', winnerNumbers);
     const { data: allSold } = await sb.from('tickets').select('*').eq('round_number', settings.round_number).not('user_id', 'is', null);
     const revenue = (allSold || []).length * Number(settings.ticket_price || 0);
-
-    // Group owners by ticket number
     const byNumber = {};
     for (const t of tickets) {
       if (!byNumber[t.ticket_number]) byNumber[t.ticket_number] = [];
@@ -728,7 +743,7 @@ app.post('/api/admin/withdrawals/:id/decide', auth, adminOnly, async (req, res) 
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-/* ================= WHEEL BUY — freely re-buy sold tickets ================= */
+/* ================= WHEEL: users buy freely, sold tickets re-usable ================= */
 app.post('/api/user/tickets/buy', auth, async (req, res) => {
   try {
     if (req.user.role !== 'user') return res.status(403).json({ error: 'Users only' });
@@ -738,7 +753,6 @@ app.post('/api/user/tickets/buy', auth, async (req, res) => {
     if (settings.sales_state !== 'open') return res.status(400).json({ error: 'Sales are not open' });
     const { data: user } = await sb.from('users').select('*').eq('id', req.user.id).single();
     if (!user) return res.status(404).json({ error: 'User not found' });
-
     let usedFree = false, cost = 0;
     if (useFreeTicket) {
       if ((user.free_tickets || 0) < 1) return res.status(400).json({ error: 'No free tickets' });
@@ -753,10 +767,8 @@ app.post('/api/user/tickets/buy', auth, async (req, res) => {
     else upd.balance = Number(user.balance) - cost;
     if (!user.has_bought_ticket) upd.has_bought_ticket = true;
     await sb.from('users').update(upd).eq('id', user.id);
-
     const now = new Date().toISOString();
     for (const n of numbers) {
-      // Always insert a new row so sold tickets can be re-bought by anyone
       await sb.from('tickets').insert({
         ticket_number: n, user_id: user.id, user_name: user.name,
         phone: user.phone, sold_date: now, round_number: settings.round_number,
@@ -824,7 +836,6 @@ app.post('/api/nb/buy', auth, async (req, res) => {
     if (!user) return res.status(404).json({ error: 'User not found' });
     const price = Number(s.price_per_purchase);
     if (Number(user.balance) < price) return res.status(400).json({ error: 'Insufficient balance' });
-
     const batchId = crypto.randomUUID();
     const rows = numbers.map(n => ({
       round_number: s.round_number, number: n,
@@ -962,6 +973,7 @@ app.post('/api/admin/nb/assign', auth, adminOnly, async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+/* ================= NB SETTLE with duplicate-set disqualification ================= */
 app.post('/api/nb/settle', async (req, res) => {
   try {
     const s = await getNbSettings();
