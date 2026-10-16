@@ -74,6 +74,12 @@ input:focus, select:focus { border-color: #fbbf24; }
 .nb-cell.mine-picked { background: #fbbf24; color: #111827; border-color: #fbbf24; }
 .nb-cell.drawn-win { background: #16a34a; border-color: #22c55e; color: #fff; }
 .nb-cell.drawn-lose { background: #991b1b; border-color: #dc2626; color: #fecaca; }
+.nb-cell.nb-pop { animation: nbPopGreen 1.1s ease-out; z-index: 5; }
+@keyframes nbPopGreen {
+    0%   { transform: scale(1.35); background: #4ade80; box-shadow: 0 0 40px rgba(74,222,128,1); }
+    40%  { transform: scale(1.15); background: #22c55e; box-shadow: 0 0 25px rgba(34,197,94,0.8); }
+    100% { transform: scale(1);    background: #16a34a; box-shadow: 0 0 0 rgba(0,0,0,0); }
+}
 .nb-pick-chip { display: inline-block; padding: 6px 12px; background: #fbbf24; color: #111827; border-radius: 20px; font-weight: bold; font-size: 13px; }
 .nb-pick-info { padding: 12px; background: #0b1220; border: 1px dashed #fbbf24; border-radius: 10px; margin: 12px 0; font-size: 14px; }
 .nb-pick-list { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
@@ -125,18 +131,6 @@ th { color: #94a3b8; }
 .telegram-banner .text h3 { color: #fff; margin-bottom: 4px; font-size: 16px; }
 .telegram-banner .text p { color: #e0f7fa; font-size: 13px; }
 .telegram-banner .join-btn { padding: 10px 20px; background: #fff; color: #006699; border: none; border-radius: 8px; font-weight: bold; text-decoration: none; cursor: pointer; }
-.chat-panel { position: fixed; bottom: 24px; right: 24px; z-index: 9999; width: 370px; max-width: 92vw; height: 500px; max-height: 70vh; background: #111827; border: 1px solid #334155; border-radius: 16px; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,.6); }
-.chat-head { padding: 14px 18px; background: #1e293b; border-bottom: 1px solid #334155; display: flex; justify-content: space-between; align-items: center; }
-.chat-head h3 { color: #fbbf24; font-size: 16px; }
-.chat-close { background: none; border: none; color: #94a3b8; font-size: 22px; cursor: pointer; }
-.chat-body { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 10px; }
-.chat-msg { padding: 10px 14px; border-radius: 12px; font-size: 14px; max-width: 85%; word-wrap: break-word; }
-.chat-msg.user { background: #fbbf24; color: #111827; align-self: flex-end; }
-.chat-msg.bot { background: #1e293b; color: #e2e8f0; align-self: flex-start; }
-.chat-msg.typing { color: #94a3b8; font-style: italic; }
-.chat-input-row { padding: 12px; border-top: 1px solid #334155; display: flex; gap: 8px; background: #0b1220; }
-.chat-input-row input { flex: 1; padding: 10px; margin: 0; }
-.chat-send { padding: 10px 16px; border: none; border-radius: 8px; background: #fbbf24; color: #111827; font-weight: bold; cursor: pointer; }
 .receipt-modal { position: fixed; inset: 0; z-index: 99999; background: rgba(0,0,0,.85); display: flex; justify-content: center; align-items: center; padding: 20px; }
 .receipt-box { background: white; color: #111; max-width: 480px; width: 100%; padding: 30px; border-radius: 12px; font-family: 'Courier New', monospace; max-height: 90vh; overflow-y: auto; }
 .receipt-box h2 { text-align: center; margin-bottom: 16px; }
@@ -160,14 +154,71 @@ th { color: #94a3b8; }
 .ref-badge { padding: 3px 9px; border-radius: 20px; font-size: 11px; font-weight: bold; }
 .ref-badge.active { background: #166534; color: #86efac; }
 .ref-badge.pending { background: #78350f; color: #fcd34d; }
-.nb-hero { width: 100%; height: 180px; border-radius: 15px; margin-bottom: 20px; overflow: hidden; border: 2px solid #334155; background: #0b1220; display: block; }
+.nb-hero { width: 100%; height: 180px; border-radius: 15px; margin-bottom: 20px; overflow: hidden; border: 2px solid #334155; background: linear-gradient(135deg,#0b1220,#1e293b); display: flex; align-items: center; justify-content: center; }
+
+/* Hero banner for dashboard with image2.jpg */
+.hero-banner { position: relative; width: 100%; height: 280px; border-radius: 15px; overflow: hidden; margin-bottom: 20px; border: 2px solid #334155; box-shadow: 0 10px 40px rgba(0,0,0,0.6); }
+.hero-banner img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.hero-banner .hero-overlay { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(15,23,42,0.1) 0%, rgba(15,23,42,0.85) 100%); display: flex; flex-direction: column; justify-content: flex-end; padding: 25px; }
+.hero-banner h1 { font-size: 32px; margin-bottom: 6px; text-shadow: 0 2px 12px rgba(0,0,0,0.9); }
+.hero-banner p { color: #cbd5e1; font-size: 14px; text-shadow: 0 2px 8px rgba(0,0,0,0.9); }
+
+/* Numbers grid inline (normal view) */
+.nb-grid-inline {
+    display: grid;
+    grid-template-columns: repeat(10, 1fr);
+    gap: 6px;
+    width: 100%;
+    margin-top: 12px;
+}
+
+/* Horizontal winner cards (below the board) */
+.nb-overlay-winners { display: flex; flex-direction: column; gap: 10px; margin-top: 14px; }
+.nb-win-title { font-size: 20px; color: #4ade80; margin-bottom: 6px; }
+.nb-win-row { display: flex; flex-wrap: wrap; gap: 12px; justify-content: flex-start; }
+.nb-win-card { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-radius: 14px; background: linear-gradient(135deg, #0b1220, #111827); border: 3px solid #06B6D4; box-shadow: 0 8px 24px rgba(0,0,0,0.5); min-width: 260px; flex: 1 1 260px; max-width: 380px; }
+.nb-win-card.place-1 { border-color: #FFD700; box-shadow: 0 0 30px rgba(255,215,0,0.55); }
+.nb-win-card.place-2 { border-color: #C0C0C0; box-shadow: 0 0 24px rgba(192,192,192,0.5); }
+.nb-win-card.place-3 { border-color: #CD7F32; box-shadow: 0 0 24px rgba(205,127,50,0.5); }
+.nb-win-card.place-4, .nb-win-card.place-5 { border-color: #3B82F6; box-shadow: 0 0 22px rgba(59,130,246,0.45); }
+.nb-win-card .nwc-medal { font-size: 28px; }
+.nb-win-card .nwc-place { font-size: 12px; color: #94a3b8; text-align: center; }
+.nb-win-card .nwc-left { display: flex; flex-direction: column; align-items: center; }
+.nb-win-card .nwc-body { flex: 1; }
+.nb-win-card .nwc-name { font-weight: bold; color: #fff; font-size: 15px; }
+.nb-win-card .nwc-meta { font-size: 11px; color: #94a3b8; font-family: monospace; margin-top: 2px; }
+.nb-win-card .nwc-nums { font-size: 12px; color: #cbd5e1; font-family: monospace; margin-top: 4px; }
+.nb-win-card .nwc-prize { color: #fbbf24; font-weight: bold; font-size: 16px; white-space: nowrap; }
+
+/* Exit public view button */
+#exitPublicBtn { display: none; position: fixed; top: 12px; right: 12px; z-index: 9999; padding: 10px 16px; background: #991b1b; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; box-shadow: 0 6px 20px rgba(0,0,0,0.5); }
+
+/* Full-screen public view */
+body.public-view .header,
+body.public-view .sidebar,
+body.public-view .nb-stats,
+body.public-view .nb-timer,
+body.public-view .nb-hero,
+body.public-view .title,
+body.public-view .card > div > p.muted { display: none !important; }
+body.public-view .layout { grid-template-columns: 1fr !important; }
+body.public-view .main { max-width: 100% !important; padding: 8px !important; height: 100vh; overflow: auto; }
+body.public-view .card { border: none; background: transparent; padding: 0; margin: 0; }
+body.public-view .nb-grid-inline { height: 78vh; gap: 8px; grid-template-columns: repeat(10, 1fr); grid-template-rows: repeat(8, 1fr); }
+body.public-view .nb-cell { font-size: clamp(16px, 2.4vw, 40px); border-radius: 12px; }
+body.public-view #nbWinnersOverlay { margin-top: 12px; }
+body.public-view #exitPublicBtn { display: inline-flex !important; }
+body.public-view .nb-win-card { min-width: 320px; flex: 1 1 320px; max-width: 480px; }
+body.public-view .nwc-name { font-size: 18px; }
+body.public-view .nwc-prize { font-size: 20px; }
+
 @media(max-width:1000px) { .stats { grid-template-columns: repeat(2,1fr); } .wheel-layout { grid-template-columns: 1fr; } .nb-stats { grid-template-columns: repeat(2, 1fr); } }
-@media(max-width:700px) { .layout { grid-template-columns: 1fr; } .sidebar { display: flex; overflow-x: auto; padding: 10px; } .nav { min-width: 130px; margin-right: 5px; } .main { padding: 12px; } .stats { grid-template-columns: 1fr; } .wheel-container { width: 320px; } .timer { font-size: 40px; } }
-@media print { body * { visibility: hidden; } .receipt-box, .receipt-box * { visibility: visible; } .receipt-box { position: absolute; left: 0; top: 0; width: 100%; } .receipt-buttons { display: none; } }
+@media(max-width:700px) { .layout { grid-template-columns: 1fr; } .sidebar { display: flex; overflow-x: auto; padding: 10px; } .nav { min-width: 130px; margin-right: 5px; } .main { padding: 12px; } .stats { grid-template-columns: 1fr; } .wheel-container { width: 320px; } .timer { font-size: 40px; } .hero-banner { height: 200px; } }
 </style>
 </head>
 <body>
 <div id="toast" class="toast hidden"></div>
+<button id="exitPublicBtn" onclick="exitPublicView()">✕ Exit Public View</button>
 <div id="receiptArea"></div>
 <section id="loginPage" class="login-page">
 <div class="login-card">
@@ -286,7 +337,7 @@ let buySelected = [], nbBuyPicked = [], assignSelectedWheel = [], assignSelected
 let verifyGame = 'wheel', _drawStartClient = null, _drawRoundKey = null, _lastShown = -1;
 
 const IMG = {
-  dash:    'https://images.unsplash.com/photo-1542751371-adc38448a05e?w=1200&h=300&fit=crop',
+  dash:    'image2.jpg',
   wheel:   'https://images.unsplash.com/photo-1511512578047-dfb367046420?w=1200&h=300&fit=crop',
   buy:     'https://images.unsplash.com/photo-1606167668584-78701c57f13d?w=1200&h=300&fit=crop',
   verify:  'https://images.unsplash.com/photo-1587614382346-4ec70e388b28?w=1200&h=300&fit=crop',
@@ -503,7 +554,7 @@ function money(v) { return Number(v || 0).toLocaleString() + ' ETB'; }
 function formatTime(s) { s = Math.max(0, Number(s)); const h = Math.floor(s / 3600); const m = Math.floor((s % 3600) / 60); const sec = Math.floor(s % 60); if (h > 0) return String(h).padStart(2,'0')+':'+String(m).padStart(2,'0')+':'+String(sec).padStart(2,'0'); return String(m).padStart(2, '0') + ':' + String(sec).padStart(2, '0'); }
 function formatDate(d) { try { return new Date(d).toLocaleString(); } catch { return '—'; } }
 function escapeHTML(v) { return String(v ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;'); }
-/* ================= RECEIPT + PAPER PRINT ================= */
+/* ================= RECEIPT ================= */
 function showReceipt(data) {
     const el = document.getElementById('receiptArea');
     if (!el) return;
@@ -544,7 +595,6 @@ function showReceipt(data) {
     window._lastReceipt = data;
 }
 function closeReceipt() { const el = document.getElementById('receiptArea'); if (el) el.innerHTML = ''; }
-
 function printPaper(layout, game) {
     const rec = window._lastReceipt || {};
     const owner = rec.owner || { name: '—', phone: '—' };
@@ -555,7 +605,7 @@ function printPaper(layout, game) {
     const date = rec.date ? new Date(rec.date).toLocaleString() : new Date().toLocaleString();
     const gameName = game === 'nb' ? 'NUMBER BETTING' : 'LUCKY WHEEL';
     const icon = game === 'nb' ? '🎰' : '🎡';
-    const ticketRows = tickets.map(t => {
+    const rows = tickets.map(t => {
         const qr = t.printer_code ? 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=' + encodeURIComponent(t.printer_code) : '';
         return '<div class="tp-ticket-row"><div class="tp-ticket-info"><div class="tp-ticket-number">#' + t.number + '</div><div class="tp-ticket-code">' + (t.printer_code || '—') + '</div></div>' + (qr ? '<img src="' + qr + '" class="tp-ticket-qr">' : '') + '</div>';
     }).join('');
@@ -570,7 +620,7 @@ function printPaper(layout, game) {
         '<div class="tp-info"><b>Unit:</b> ' + money(price) + '</div>' +
         '<div class="tp-info"><b>Total:</b> ' + money(totalPrice) + '</div>' +
         '<div class="tp-line"></div>' +
-        '<div class="tp-tickets-head">TICKETS</div>' + ticketRows +
+        '<div class="tp-tickets-head">TICKETS</div>' + rows +
         '<div class="tp-line"></div>' +
         '<div class="tp-foot">Keep safe. Scan QR to verify.<br>Support: @TE21HUSH</div>' +
     '</div>';
@@ -604,7 +654,7 @@ async function myTicketsPage() {
     try { nbMine = (await api('/nb/my-tickets')).tickets || []; } catch (e) {}
     const wheelMine = TICKETS.filter(t => String(t.user_id) === String(ME.id));
     document.getElementById('main').innerHTML = `
-        <img src="${IMG.buy}" class="banner-img">
+        <img src="${IMG.buy}" class="banner-img" onerror="this.style.display='none'">
         <h1 class="title">🎟️ My Tickets</h1>
         <div class="card"><h2>🎡 Lucky Wheel — Round #${SETTINGS.round_number}</h2><br>
             <div>${wheelMine.length ? wheelMine.map(t => '<span class="nb-pick-chip" style="margin:3px">#' + t.ticket_number + '</span>').join('') : '<p class="muted">No tickets yet.</p>'}</div>
@@ -624,7 +674,7 @@ async function printWheelReceipt() {
 /* ================= VERIFY ================= */
 function verifyPage() {
     document.getElementById('main').innerHTML = `
-        <img src="${IMG.verify}" class="banner-img">
+        <img src="${IMG.verify}" class="banner-img" onerror="this.style.display='none'">
         <h1 class="title">🔍 Verify Ticket</h1>
         <div class="game-tabs">
             <button class="game-tab ${verifyGame === 'wheel' ? 'active' : ''}" onclick="verifySwitchGame('wheel')">🎡 Lucky Wheel</button>
@@ -705,8 +755,13 @@ function dashboard() {
     const channelUrl = 'https://t.me/' + CONFIG.channelUsername.replace('@', '');
     if (ME.role === 'admin') {
         document.getElementById('main').innerHTML = `
-            <img src="${IMG.dash}" class="banner-img">
-            <h1 class="title">Admin Dashboard</h1>
+            <div class="hero-banner">
+                <img src="image2.jpg" alt="" onerror="this.src='https://images.unsplash.com/photo-1542751371-adc38448a05e?w=1600&h=500&fit=crop'">
+                <div class="hero-overlay">
+                    <h1>Admin Dashboard</h1>
+                    <p>Manage the games, monitor rounds, and pay winners.</p>
+                </div>
+            </div>
             <div class="stats">
                 <div class="stat"><small>Users</small><h2 id="statUsers">—</h2></div>
                 <div class="stat"><small>Sold</small><h2>${sold}/${SETTINGS.ticket_count}</h2></div>
@@ -729,8 +784,13 @@ function dashboard() {
     }
     const mine = TICKETS.filter(t => String(t.user_id) === String(ME.id));
     document.getElementById('main').innerHTML = `
-        <img src="${IMG.dash}" class="banner-img">
-        <h1 class="title">Welcome, ${escapeHTML(ME.name)}</h1>
+        <div class="hero-banner">
+            <img src="image2.jpg" alt="" onerror="this.src='https://images.unsplash.com/photo-1542751371-adc38448a05e?w=1600&h=500&fit=crop'">
+            <div class="hero-overlay">
+                <h1>Welcome, ${escapeHTML(ME.name)}</h1>
+                <p>Play. Spin. Win. Every round is a chance.</p>
+            </div>
+        </div>
         <div class="telegram-banner" style="background:linear-gradient(135deg,#22c55e,#16a34a);border-color:#4ade80">
             <div class="icon">🤖</div><div class="text"><h3>Telegram Bot</h3><p>Instant help & play.</p></div>
             <a href="${botUrl}" target="_blank" class="join-btn" style="color:#16a34a">Open</a>
@@ -775,7 +835,7 @@ async function buyPage() {
     let nbSettings = null;
     try { nbSettings = await api('/nb/config'); } catch (e) {}
     document.getElementById('main').innerHTML = `
-        <img src="${IMG.buy}" class="banner-img">
+        <img src="${IMG.buy}" class="banner-img" onerror="this.style.display='none'">
         <h1 class="title">🛒 Buy Tickets</h1>
         <div class="game-tabs">
             <button class="game-tab ${buyGame === 'wheel' ? 'active' : ''}" onclick="buySwitchGame('wheel')">🎡 Wheel</button>
@@ -875,7 +935,7 @@ async function buyRenderNB(cfg) {
             <div class="stat"><small>Round</small><h2>#${s.round_number}</h2></div>
         </div>
         <div class="card"><h2>Pick ${s.tickets_per_purchase} Numbers</h2>
-            <div style="margin-top:12px;display:grid;grid-template-columns:repeat(10,1fr);gap:4px" id="nbBuyGrid">${grid}</div>
+            <div class="nb-grid-inline" id="nbBuyGrid">${grid}</div>
             <div class="nb-pick-info"><b>Selected:</b> <span id="nbBuyCount">0</span> / ${s.tickets_per_purchase}<div class="nb-pick-list" id="nbBuyList"></div></div>
             <button class="main-button" onclick="nbBuyConfirm()" ${!open?'disabled':''}>🛒 CONFIRM</button>
         </div>`;
@@ -906,13 +966,13 @@ async function nbBuyConfirm() {
     } catch (e) { alert('❌ ' + e.message); }
 }
 
-/* ================= ASSIGN (ADMIN) ================= */
+/* ================= ASSIGN ================= */
 async function ticketsPage() {
     assignSelectedWheel = []; assignSelectedNB = [];
     let nbs = null;
     try { nbs = await api('/nb/config'); } catch (e) {}
     document.getElementById('main').innerHTML = `
-        <img src="${IMG.assign}" class="banner-img">
+        <img src="${IMG.assign}" class="banner-img" onerror="this.style.display='none'">
         <h1 class="title">🎟️ Assign Tickets</h1>
         <div class="game-tabs">
             <button class="game-tab ${assignGame==='wheel'?'active':''}" onclick="assignSwitchGame('wheel')">🎡 Wheel</button>
@@ -987,7 +1047,7 @@ async function assignRenderNB(cfg) {
             <label>Password (new users only)</label><input id="assignNbPassword" type="password" placeholder="Password">
             <label>Balance Adjustment (ETB)</label><input id="assignNbBalance" type="number" value="0">
             <label>Pick ${s.tickets_per_purchase} numbers</label>
-            <div style="margin-top:12px;display:grid;grid-template-columns:repeat(10,1fr);gap:4px" id="nbAssignGrid">${grid}</div>
+            <div class="nb-grid-inline" id="nbAssignGrid">${grid}</div>
             <div class="nb-pick-info"><b>Selected:</b> <span id="nbAssignCount">0</span> / ${s.tickets_per_purchase}<div class="nb-pick-list" id="nbAssignList"></div></div>
             <button class="main-button" onclick="assignTicketsNB()">🎟️ ASSIGN NB + PRINT</button>
         </div>`;
@@ -1034,19 +1094,24 @@ async function nbPage() {
     const isAdmin = ME.role === 'admin';
     const drawing = s.round_state === 'drawing';
     const open = s.sales_state === 'open';
+
     const mineSet = new Set((nbState.my_tickets||[]).map(t => t.number));
     const userNums = new Set((nbState.tickets||[]).filter(t => t.user_id).map(t => t.number));
+    const drawnSoFar = nbDrawnSoFar(s);
+    const drawnSet = new Set((s.winning_numbers || []).slice(0, drawnSoFar));
+    const drawingOrDone = s.round_state === 'drawing' || s.round_state === 'finished';
+
     let grid = '';
     for (let i = 1; i <= s.total_numbers; i++) {
         let cls = 'nb-cell';
-        const drawnNow = s.winning_numbers && s.winning_numbers.slice(0, nbDrawnSoFar(s)).includes(i);
-        if (drawing && drawnNow) cls += ' drawn-win';
-        else if (drawing || s.round_state === 'finished') cls += ' drawn-lose';
+        if (drawingOrDone) cls += drawnSet.has(i) ? ' drawn-win' : ' drawn-lose';
         else if (mineSet.has(i)) cls += ' mine';
+        else if (userNums.has(i)) cls += ' taken';
         grid += '<div class="' + cls + '" data-num="' + i + '">' + i + '</div>';
     }
+
     document.getElementById('main').innerHTML = `
-        <div class="nb-hero" style="display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#0b1220,#1e293b)">
+        <div class="nb-hero">
             <svg viewBox="0 0 800 180" style="width:100%;height:100%">
                 <text x="400" y="95" text-anchor="middle" font-size="44" font-weight="bold" fill="#fbbf24">🎰 NUMBER BETTING</text>
                 <text x="400" y="135" text-anchor="middle" font-size="18" fill="#94a3b8">Pick your numbers. Watch the draw.</text>
@@ -1054,15 +1119,20 @@ async function nbPage() {
         </div>
         <h1 class="title">🎰 NB — Round #${s.round_number}</h1>
         <div class="nb-stats">
-            <div class="stat"><small>Status</small><h2>${nbStatusText(s)}</h2></div>
-            <div class="stat"><small>Sold</small><h2>${nbState.sold_count}/${s.total_numbers}</h2></div>
+            <div class="stat"><small>Status</small><h2 id="nbStatusH">${nbStatusText(s)}</h2></div>
+            <div class="stat"><small>Sold</small><h2 id="nbSoldH">${nbState.sold_count}/${s.total_numbers}</h2></div>
             <div class="stat"><small>Bundle</small><h2>${s.tickets_per_purchase} for ${s.price_per_purchase}</h2></div>
-            <div class="stat"><small>Drawn</small><h2>${nbDrawnSoFar(s)}/${s.drawn_count}</h2></div>
+            <div class="stat"><small>Drawn</small><h2 id="nbDrawnH">${drawnSoFar}/${s.drawn_count}</h2></div>
         </div>
         <div class="nb-timer ${drawing ? 'drawing' : open ? 'sales' : 'idle'}" id="nbTimer">--:--</div>
         <div class="card">
-            <h2>Numbers Board</h2>
-            <div style="margin-top:12px;display:grid;grid-template-columns:repeat(10,1fr);gap:4px">${grid}</div>
+            <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:10px">
+                <h2 style="margin:0">Numbers Board</h2>
+                <button class="small-button gold-button" onclick="enterPublicView()">🖥️ Public View</button>
+            </div>
+            <p class="muted" style="font-size:12px;margin-bottom:6px">⏳ Waiting · 🟡 Your pick · 🟢 Drawn · 🔴 Not drawn</p>
+            <div id="nbGrid" class="nb-grid-inline">${grid}</div>
+            <div id="nbWinnersOverlay" class="nb-overlay-winners"></div>
         </div>
         ${isAdmin ? `
             <div class="card"><h2>Admin Controls</h2>
@@ -1073,7 +1143,30 @@ async function nbPage() {
                     <button class="action-btn red" onclick="nbNewRound()" ${drawing?'disabled':''}>🔄 NEW ROUND</button>
                 </div>
             </div>` : ''}`;
+    renderNbWinnersOverlay(s);
     nbStartPolls(s);
+}
+function renderNbWinnersOverlay(s) {
+    const el = document.getElementById('nbWinnersOverlay');
+    if (!el) return;
+    if (s.round_state !== 'finished' || !s.winners || !s.winners.length) { el.innerHTML = ''; return; }
+    let html = '<h3 class="nb-win-title">🏆 Winners of Round #' + s.round_number + '</h3>';
+    html += '<div class="nb-win-row">';
+    for (const w of s.winners) {
+        const medal = w.place === 1 ? '🥇' : w.place === 2 ? '🥈' : w.place === 3 ? '🥉' : '🏅';
+        const nums = (w.shown_numbers || []).map(n => '#' + n).join(' ') || '—';
+        html += '<div class="nb-win-card place-' + w.place + '">' +
+            '<div class="nwc-left"><div class="nwc-medal">' + medal + '</div><div class="nwc-place">#' + w.place + '</div></div>' +
+            '<div class="nwc-body">' +
+                '<div class="nwc-name">' + escapeHTML(w.name) + '</div>' +
+                '<div class="nwc-meta">' + escapeHTML(w.public_code || '—') + ' · ' + escapeHTML(w.phone_masked || '—') + '</div>' +
+                '<div class="nwc-nums">' + escapeHTML(nums) + ' · ' + w.matches + ' matches</div>' +
+            '</div>' +
+            '<div class="nwc-prize">' + money(w.prize) + '</div>' +
+        '</div>';
+    }
+    html += '</div>';
+    el.innerHTML = html;
 }
 function nbStatusText(s) {
     if (s.round_state === 'drawing') return '🎬 DRAWING';
@@ -1093,13 +1186,52 @@ function nbDrawnSoFar(s) {
 function nbStartPolls(s) {
     if (nbPollId) clearInterval(nbPollId);
     if (nbSettleId) clearInterval(nbSettleId);
+    if (s.round_state === 'drawing' && s.drawing_started_at) {
+        const key = s.round_number + ':' + s.drawing_started_at;
+        if (_drawRoundKey !== key) { _drawRoundKey = key; _drawStartClient = Date.now(); _lastShown = -1; }
+    } else { _drawStartClient = null; _drawRoundKey = null; _lastShown = -1; }
     nbTickTimer();
-    nbPollId = setInterval(nbTickTimer, 200);
+    nbPollId = setInterval(() => { nbTickTimer(); nbRevealTick(); }, 200);
     nbSettleId = setInterval(async () => {
         if (nbState && nbState.settings.round_state === 'drawing') {
             try { await api('/nb/settle', { method: 'POST' }); const s2 = await api('/nb/state'); nbState = s2; } catch (e) {}
         }
     }, 3000);
+}
+function nbRevealTick() {
+    if (!nbState) return;
+    const s = nbState.settings;
+    if (s.round_state !== 'drawing' && s.round_state !== 'finished') { _lastShown = -1; return; }
+    const key = s.round_number + ':' + s.drawing_started_at;
+    if (_drawRoundKey !== key) { _drawRoundKey = key; _drawStartClient = Date.now(); _lastShown = -1; }
+    const shown = s.round_state === 'finished' ? (s.winning_numbers || []).length : nbDrawnSoFar(s);
+    if (shown !== _lastShown) {
+        _lastShown = shown;
+        const grid = document.getElementById('nbGrid');
+        if (grid) {
+            const drawnSet = new Set((s.winning_numbers || []).slice(0, shown));
+            const mineSet = new Set((nbState.my_tickets||[]).map(t => t.number));
+            const userNums = new Set((nbState.tickets||[]).filter(t => t.user_id).map(t => t.number));
+            const justDrawn = s.winning_numbers[shown - 1];
+            let html = '';
+            for (let i = 1; i <= s.total_numbers; i++) {
+                let cls = 'nb-cell';
+                const isDrawn = drawnSet.has(i);
+                if (s.round_state === 'drawing' || s.round_state === 'finished') {
+                    cls += isDrawn ? ' drawn-win' : ' drawn-lose';
+                } else {
+                    if (mineSet.has(i)) cls += ' mine';
+                    else if (userNums.has(i)) cls += ' taken';
+                }
+                if (isDrawn && i === justDrawn && s.round_state === 'drawing') cls += ' nb-pop';
+                html += '<div class="' + cls + '" data-num="' + i + '">' + i + '</div>';
+            }
+            grid.innerHTML = html;
+        }
+        const drawnEl = document.getElementById('nbDrawnH');
+        if (drawnEl) drawnEl.textContent = shown + '/' + s.drawn_count;
+        if (s.round_state === 'finished') renderNbWinnersOverlay(s);
+    }
 }
 function nbTickTimer() {
     if (!nbState) return;
@@ -1114,6 +1246,15 @@ function nbTickTimer() {
         el.textContent = 'SALES ' + formatTime(Math.ceil(Math.max(0, s.round_duration_minutes * 60 - elapsed)));
     } else el.textContent = '--:--';
 }
+function enterPublicView() {
+    document.body.classList.add('public-view');
+    setTimeout(() => {
+        const board = document.getElementById('nbGrid');
+        if (board) board.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 100);
+}
+function exitPublicView() { document.body.classList.remove('public-view'); }
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') exitPublicView(); });
 async function nbStartSales() { try { await api('/admin/nb/start-sales', { method: 'POST' }); toast('🟢'); await nbPage(); } catch (e) { alert('❌ ' + e.message); } }
 async function nbCloseSales() { try { await api('/admin/nb/close-sales', { method: 'POST' }); toast('🔴'); await nbPage(); } catch (e) { alert('❌ ' + e.message); } }
 async function nbDraw() { if (!confirm('Draw?')) return; try { await api('/admin/nb/draw', { method: 'POST' }); _drawStartClient = Date.now(); _drawRoundKey = null; toast('🎬'); await nbPage(); } catch (e) { alert('❌ ' + e.message); } }
@@ -1125,7 +1266,7 @@ function wheelPage() {
     const spinning = SETTINGS.round_state === 'spinning';
     const open = SETTINGS.sales_state === 'open';
     document.getElementById('main').innerHTML = `
-        <img src="${IMG.wheel}" class="banner-img">
+        <img src="${IMG.wheel}" class="banner-img" onerror="this.style.display='none'">
         <h1 class="title">🎡 Lucky Wheel</h1>
         <div class="card"><div class="wheel-layout">
             <div class="wheel-container">
@@ -1240,7 +1381,7 @@ async function depositPage() {
     let dep = { deposits: [] };
     try { dep = await api('/user/deposits'); } catch (e) {}
     document.getElementById('main').innerHTML = `
-        <img src="${IMG.deposit}" class="banner-img">
+        <img src="${IMG.deposit}" class="banner-img" onerror="this.style.display='none'">
         <h1 class="title">💰 Deposit</h1>
         <div class="card"><h2>Send to</h2>
             <div class="method-box"><h3>🏦 CBE</h3><div class="acct">1000676405058</div><div class="name">Teshome Ayenew</div></div>
@@ -1269,7 +1410,7 @@ async function withdrawPage() {
     let w = { withdrawals: [] };
     try { w = await api('/user/withdrawals'); } catch (e) {}
     document.getElementById('main').innerHTML = `
-        <img src="${IMG.withdraw}" class="banner-img">
+        <img src="${IMG.withdraw}" class="banner-img" onerror="this.style.display='none'">
         <h1 class="title">💸 Withdraw</h1>
         <div class="stats"><div class="stat"><small>Balance</small><h2>${money(ME.balance)}</h2></div></div>
         <div class="card"><h2>Request</h2><br>
@@ -1297,7 +1438,7 @@ async function referralsPage() {
     const data = await api('/referrals');
     const goal = SETTINGS.referral_goal || 8;
     document.getElementById('main').innerHTML = `
-        <img src="${IMG.referrals}" class="banner-img">
+        <img src="${IMG.referrals}" class="banner-img" onerror="this.style.display='none'">
         <h1 class="title">🎁 Referrals</h1>
         <div class="referral-card">
             <h2 style="color:#fbbf24">Your Code</h2>
@@ -1334,7 +1475,7 @@ async function usersPage() {
             '</tr>';
     }
     document.getElementById('main').innerHTML = `
-        <img src="${IMG.users}" class="banner-img">
+        <img src="${IMG.users}" class="banner-img" onerror="this.style.display='none'">
         <h1 class="title">👥 Users</h1>
         <div class="card"><div class="table-box"><table>
             <thead><tr><th>ID</th><th>Name</th><th>Phone</th><th>Password</th><th>Balance</th><th>Refs</th><th>Free</th><th>Status</th><th>Actions</th></tr></thead>
@@ -1355,7 +1496,7 @@ async function adjustBalance(id) {
 async function requestsPage() {
     const [dep, wd] = await Promise.all([api('/admin/deposits'), api('/admin/withdrawals')]);
     document.getElementById('main').innerHTML = `
-        <img src="${IMG.requests}" class="banner-img">
+        <img src="${IMG.requests}" class="banner-img" onerror="this.style.display='none'">
         <h1 class="title">📥 Requests</h1>
         <div class="card"><h2>💰 Deposits</h2><br>
             ${!dep.deposits.length ? '<p class="muted">None</p>' : dep.deposits.map(d => '<div class="req-card"><div class="row"><b>User:</b> <span>' + escapeHTML(d.user_name) + ' (' + escapeHTML(d.phone) + ')</span></div><div class="row"><b>Amount:</b> <span class="gold">' + money(d.amount) + '</span></div><div class="row"><b>Status:</b> <span class="status-badge ' + d.status + '">' + d.status.toUpperCase() + '</span></div>' + (d.status === 'pending' ? '<div class="req-actions"><button class="small-button green-button" onclick="decideDeposit(' + d.id + ',\'approve\')">✓</button><button class="small-button red-button" onclick="decideDeposit(' + d.id + ',\'reject\')">✗</button></div>' : '') + '</div>').join('')}
@@ -1377,7 +1518,7 @@ async function decideWithdraw(id, action) {
 async function historyPage() {
     const [w, nb] = await Promise.all([api('/rounds').catch(() => ({rounds:[]})), api('/nb/rounds').catch(() => ({rounds:[]}))]);
     document.getElementById('main').innerHTML = `
-        <img src="${IMG.history}" class="banner-img">
+        <img src="${IMG.history}" class="banner-img" onerror="this.style.display='none'">
         <h1 class="title">📜 History</h1>
         <div class="game-tabs">
             <button class="game-tab ${historyGame==='wheel'?'active':''}" onclick="historySwitchGame('wheel')">🎡 Wheel</button>
@@ -1400,7 +1541,7 @@ async function settingsPage() {
     let nbs = null;
     try { nbs = await api('/nb/config'); } catch (e) {}
     document.getElementById('main').innerHTML = `
-        <img src="${IMG.settings}" class="banner-img">
+        <img src="${IMG.settings}" class="banner-img" onerror="this.style.display='none'">
         <h1 class="title">⚙️ Settings</h1>
         <div class="game-tabs">
             <button class="game-tab ${settingsGame==='wheel'?'active':''}" onclick="settingsSwitchGame('wheel')">🎡 Wheel</button>
