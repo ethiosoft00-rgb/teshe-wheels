@@ -490,6 +490,8 @@ const IMG = {
   settings:'https://images.unsplash.com/photo-1518770660439-4636190af475?w=1200&h=300&fit=crop'
 };
 
+const BOT_LINK = 'https://t.me/TE21HUSH';
+
 /* ===== MOBILE MENU HELPERS ===== */
 function toggleMobileMenu() {
     const sb = document.getElementById('sidebar');
@@ -755,13 +757,12 @@ function showReceipt(data) {
 }
 function closeReceipt() { const el = document.getElementById('receiptArea'); if (el) el.innerHTML = ''; }
 
-/* ================= MY TICKETS (Change #1) ================= */
+/* ================= MY TICKETS ================= */
 async function myTicketsPage() {
     if (ME.role === 'admin') { document.getElementById('main').innerHTML = '<div class="card"><p class="muted">Admins — use Assign Tickets.</p></div>'; return; }
     let nbMine = [];
     try { nbMine = (await api('/nb/my-tickets')).tickets || []; } catch (e) {}
 
-    // Wheel — each ticket has its own unique ID
     const wheelMine = TICKETS.filter(t => String(t.user_id) === String(ME.id));
     let wheelHtml = '<p class="muted">No tickets yet.</p>';
     if (wheelMine.length) {
@@ -779,7 +780,6 @@ async function myTicketsPage() {
             </div>`).join('');
     }
 
-    // NB — one unique ID per batch (grouped by printer_code)
     let nbHtml = '<p class="muted">No tickets yet.</p>';
     if (nbMine.length) {
         const groups = {};
@@ -803,7 +803,7 @@ async function myTicketsPage() {
         <div class="card"><h2>🎰 Number Betting</h2><br>${nbHtml}</div>`;
 }
 
-/* ================= VERIFY (Change #1 + #2) ================= */
+/* ================= VERIFY ================= */
 function verifyPage() {
     document.getElementById('main').innerHTML = `
         <img src="${IMG.verify}" class="banner-img" onerror="this.style.display='none'">
@@ -907,8 +907,7 @@ function renderVerifyResult(res) {
 /* ================= DASHBOARD ================= */
 function dashboard() {
     const sold = TICKETS.filter(t => t.user_id !== null).length;
-    const botUrl = 'https://t.me/' + CONFIG.botUsername;
-    const channelUrl = 'https://t.me/' + CONFIG.channelUsername.replace('@', '');
+    
     if (ME.role === 'admin') {
         document.getElementById('main').innerHTML = `
             <div class="wheel-hero-img"><img src="image2.jpg" onerror="this.src='https://images.unsplash.com/photo-1542751371-adc38448a05e?w=1600&h=500&fit=crop'"></div>
@@ -933,18 +932,22 @@ function dashboard() {
         api('/admin/users').then(l => { const e = document.getElementById('statUsers'); if (e) e.textContent = l.users.length; }).catch(() => {});
         return;
     }
+    
     const mine = TICKETS.filter(t => String(t.user_id) === String(ME.id));
     document.getElementById('main').innerHTML = `
         <div class="wheel-hero-img"><img src="image2.jpg" onerror="this.src='https://images.unsplash.com/photo-1542751371-adc38448a05e?w=1600&h=500&fit=crop'"></div>
         <h1 class="title">Welcome, ${escapeHTML(ME.name)}</h1>
+        
+        <!-- Customer Service Link -->
         <div class="telegram-banner" style="background:linear-gradient(135deg,#22c55e,#16a34a);border-color:#4ade80">
-            <div class="icon">🤖</div><div class="text"><h3>Telegram Bot</h3><p>Instant help & play.</p></div>
-            <a href="${botUrl}" target="_blank" class="join-btn" style="color:#16a34a">Open</a>
+            <div class="icon">💬</div>
+            <div class="text">
+                <h3>Customer Service</h3>
+                <p>Need help? Click to contact our support team.</p>
+            </div>
+            <a href="${BOT_LINK}" target="_blank" class="join-btn" style="color:#16a34a">Contact</a>
         </div>
-        <div class="telegram-banner">
-            <div class="icon">📢</div><div class="text"><h3>Telegram Channel</h3><p>Winners & new rounds.</p></div>
-            <a href="${channelUrl}" target="_blank" class="join-btn">Join</a>
-        </div>
+
         <div class="stats">
             <div class="stat"><small>Balance</small><h2>${money(ME.balance)}</h2></div>
             <div class="stat"><small>My Tickets</small><h2>${mine.length}</h2></div>

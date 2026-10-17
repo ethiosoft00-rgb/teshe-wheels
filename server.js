@@ -224,13 +224,11 @@ app.post('/api/verify-ticket', auth, async (req, res) => {
 
     const code = String(printerCode).trim().toUpperCase();
 
-    // Wheel: one row per ticket, grouped by printer_code
     const { data: wheelRows } = await sb.from('tickets').select('*').eq('printer_code', code);
     if (wheelRows && wheelRows.length) {
       return res.json(await buildWheelVerify(wheelRows));
     }
 
-    // NB: all rows share the same printer_code
     const { data: nbRows } = await sb.from('nb_tickets').select('*').eq('printer_code', code);
     if (nbRows && nbRows.length) {
       return res.json(await buildNbVerify(nbRows));
@@ -328,7 +326,7 @@ app.post('/api/ticket-receipt', auth, async (req, res) => {
       return { number: num, printer_code: map[num] || null };
     });
     let unique_id = null;
-    if (game === 'nb' && enriched.length) unique_id = enriched[0].printer_code;
+    if (enriched.length) unique_id = enriched[0].printer_code;
     res.json({
       ok: true,
       game: game === 'nb' ? 'Number Betting' : 'Lucky Wheel',
@@ -392,7 +390,7 @@ app.post('/api/admin/users/balance', auth, adminOnly, async (req, res) => {
   res.json({ ok: true, balance: nb });
 });
 
-/* ============ ADMIN ASSIGN WHEEL: ONE ID FOR ALL SELECTED ============ */
+/* ============ ADMIN ASSIGN WHEEL ============ */
 app.post('/api/admin/tickets/assign', auth, adminOnly, async (req, res) => {
   try {
     const { name, phone, password, balance, numbers, useFreeTicket } = req.body;
@@ -427,8 +425,6 @@ app.post('/api/admin/tickets/assign', auth, adminOnly, async (req, res) => {
       usedFree = true;
     }
     const now = new Date().toISOString();
-    
-    // Wheel: ONE unique ID for the whole batch
     const uniqueId = newUniqueId('LW'); 
     const batchId = crypto.randomUUID();
 
@@ -547,12 +543,14 @@ app.post('/api/admin/spin/start', auth, adminOnly, async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+/* ============ WHEEL SETTLE: Auto resets after 5 seconds ============ */
 app.post('/api/spin/settle', async (req, res) => {
   try {
     const settings = await getSettings();
     if (settings.round_state !== 'spinning') return res.json({ ok: true });
     const started = new Date(settings.spin_started_at).getTime();
     if (Date.now() - started < settings.duration_seconds * 1000) return res.json({ ok: true });
+    
     const winnerNumbers = settings.winner_numbers || [];
     const { data: tickets } = await sb.from('tickets').select('*').eq('round_number', settings.round_number).in('ticket_number', winnerNumbers);
     const { data: allSold } = await sb.from('tickets').select('*').eq('round_number', settings.round_number).not('user_id', 'is', null);
@@ -579,16 +577,36 @@ app.post('/api/spin/settle', async (req, res) => {
         });
       }
     }
+    
     await sb.from('rounds').insert({
       round_number: settings.round_number, winners,
       sold_tickets: (allSold || []).map(t => ({ number: t.ticket_number, name: t.user_name, phone: t.phone }))
     });
     await sb.from('app_settings').update({ round_state: 'finished', winners }).eq('id', 1);
+    
     if (winners.length) {
       const text = winners.map(w => `🏆 #${w.place} ${escapeTele(w.name)} — #${w.ticket} — ${w.prize} ETB`).join('\n');
       notifyAdmin(`🎡 <b>Round #${settings.round_number} Finished</b>\n\n${text}`);
       notifyChannel(`🎡 <b>Round #${settings.round_number} Winners!</b>\n\n${text}`);
     }
+
+    // AUTO-START NEXT ROUND AFTER 5 SECONDS
+    setTimeout(async () => {
+      try {
+        const s = await getSettings();
+        if (s.round_state === 'finished' && s.round_number === settings.round_number) {
+          const nextRound = s.round_number + 1;
+          const rows = Array.from({ length: s.ticket_count }, (_, i) => ({ ticket_number: i + 1, round_number: nextRound }));
+          await sb.from('tickets').insert(rows);
+          await sb.from('app_settings').update({
+            round_number: nextRound, round_state: 'idle', spin_started_at: null,
+            target_rotation: 0, winner_numbers: [], winners: [],
+            sales_state: 'idle', sales_started_at: null
+          }).eq('id', 1);
+        }
+      } catch (e) { console.error('Auto-reset error:', e); }
+    }, 5000);
+
     res.json({ ok: true, winners });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
@@ -1014,6 +1032,7 @@ app.post('/api/admin/nb/assign', auth, adminOnly, async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+/* ============ NB SETTLE: Auto resets after 8 seconds ============ */
 app.post('/api/nb/settle', async (req, res) => {
   try {
     const s = await getNbSettings();
@@ -1047,7 +1066,7 @@ app.post('/api/nb/settle', async (req, res) => {
     const ranked = [];
     for (const uid in byUser) {
       const u = byUser[uid];
-      if (disqualified.has(u.user_id)) { console.log('⚠ Duplicate set DQ:', u.name); continue; }
+      if (disqualified.has(u.user_id)) { continue; }
       const matched = u.sortedNumbers.filter(n => winning.includes(n));
       ranked.push({ user_id: u.user_id, name: u.name, phone: u.phone, matches: matched.length, matched_numbers: matched });
     }
@@ -1082,16 +1101,33 @@ app.post('/api/nb/settle', async (req, res) => {
       });
       if (prize > 0 && dbU) await sb.from('users').update({ balance: Number(dbU.balance) + prize }).eq('id', ch.user_id);
     }
+    
     await sb.from('nb_rounds').insert({
       round_number: s.round_number, winning_numbers: winning, winners,
       sold_tickets: tickets.filter(t => t.user_id).map(t => ({ number: t.number, name: t.user_name, phone: t.phone }))
     });
     await sb.from('nb_settings').update({ round_state: 'finished', winners }).eq('id', 1);
+    
     if (winners.length) {
       const txt = winners.map(w => `🏆 #${w.place} ${escapeTele(w.name)} — ${w.matches} matches — ${w.prize} ETB`).join('\n');
       notifyAdmin(`🎰 <b>NB Round #${s.round_number}</b>\n\n${txt}`);
       notifyChannel(`🎰 <b>NB Winners!</b>\n\n${txt}`);
     }
+
+    // AUTO-START NEXT ROUND AFTER 8 SECONDS
+    setTimeout(async () => {
+      try {
+        const s2 = await getNbSettings();
+        if (s2.round_state === 'finished' && s2.round_number === s.round_number) {
+          await sb.from('nb_settings').update({
+            round_number: s2.round_number + 1, round_state: 'idle', sales_state: 'idle',
+            sales_started_at: null, drawing_started_at: null,
+            winning_numbers: [], winners: []
+          }).eq('id', 1);
+        }
+      } catch (e) { console.error('NB Auto-reset error:', e); }
+    }, 8000);
+
     res.json({ ok: true, winners, disqualified: disqualified.size });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
