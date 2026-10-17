@@ -66,17 +66,6 @@ function newUniqueId(prefix) {
   return prefix + '-' + String(Date.now()).slice(-6) + '-' + randomCode(4);
 }
 
-/* ============ NUMBER PARSER: "2 34 56" / "#2 #34 #56" / "2,34,56" ============ */
-function parseTicketNumbers(input) {
-  if (input === null || input === undefined) return [];
-  return String(input)
-    .split(/[\s,]+/)
-    .map(s => s.replace(/^#/, '').trim())
-    .filter(Boolean)
-    .map(Number)
-    .filter(n => Number.isFinite(n) && n > 0);
-}
-
 async function auth(req, res, next) {
   const h = req.headers.authorization || '';
   const token = h.startsWith('Bearer ') ? h.slice(7) : null;
@@ -182,7 +171,6 @@ app.post('/api/auth/login', async (req, res) => {
     const ok = await bcrypt.compare(cleanPassword, user.password_hash);
     if (!ok) { console.log('❌ bcrypt mismatch:', cleanPhone); return res.status(401).json({ error: 'Invalid phone number or password' }); }
     const token = sign({ id: user.id, role: user.role, phone: user.phone });
-    console.log('✅ Login OK:', cleanPhone, '| role:', user.role);
     res.json({ token, role: user.role });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
@@ -226,55 +214,29 @@ app.get('/api/referrals', auth, async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-/* ============ VERIFY: accepts printerCode, single number, or many numbers ============ */
+/* ============ VERIFY: ONLY accepts printerCode / Unique ID ============ */
 app.post('/api/verify-ticket', auth, async (req, res) => {
   try {
-    const { game, ticketNumber, numbers, phone, printerCode } = req.body;
-
-    // 1) By unique ID / printer code
-    if (printerCode && String(printerCode).trim()) {
-      const code = String(printerCode).trim().toUpperCase();
-
-      // Wheel: one row per ticket
-      const { data: wheelRows } = await sb.from('tickets').select('*').eq('printer_code', code);
-      if (wheelRows && wheelRows.length) {
-        return res.json(await buildWheelVerify(wheelRows));
-      }
-
-      // NB: all rows share the same printer_code → return the whole batch
-      const { data: nbRows } = await sb.from('nb_tickets').select('*').eq('printer_code', code);
-      if (nbRows && nbRows.length) {
-        return res.json(await buildNbVerify(nbRows));
-      }
-      return res.status(404).json({ error: 'No ticket found for that ID' });
+    const { printerCode } = req.body;
+    if (!printerCode || !String(printerCode).trim()) {
+      return res.status(400).json({ error: 'Unique ID is required' });
     }
 
-    // 2) By numbers list OR single ticketNumber
-    let nums = [];
-    if (Array.isArray(numbers) && numbers.length) {
-      nums = numbers.map(Number).filter(n => Number.isFinite(n) && n > 0);
-    } else if (ticketNumber !== undefined && ticketNumber !== null && String(ticketNumber).trim() !== '') {
-      nums = parseTicketNumbers(ticketNumber);
-      if (!nums.length) {
-        const n = Number(ticketNumber);
-        if (Number.isFinite(n) && n > 0) nums = [n];
-      }
-    }
-    if (!nums.length) return res.status(400).json({ error: 'Ticket number(s) or unique ID required' });
+    const code = String(printerCode).trim().toUpperCase();
 
-    if (game === 'nb') {
-      const s = await getNbSettings();
-      const { data: rows } = await sb.from('nb_tickets').select('*').eq('round_number', s.round_number).in('number', nums);
-      if (!rows || !rows.length) return res.status(404).json({ error: 'No NB ticket with those numbers' });
-      const filtered = phone ? rows.filter(r => r.phone === String(phone).trim()) : rows;
-      return res.json(await buildNbVerify(filtered.length ? filtered : rows));
+    // Wheel: one row per ticket, grouped by printer_code
+    const { data: wheelRows } = await sb.from('tickets').select('*').eq('printer_code', code);
+    if (wheelRows && wheelRows.length) {
+      return res.json(await buildWheelVerify(wheelRows));
     }
 
-    const settings = await getSettings();
-    const { data: rows } = await sb.from('tickets').select('*').eq('round_number', settings.round_number).in('ticket_number', nums);
-    if (!rows || !rows.length) return res.status(404).json({ error: 'No ticket with those numbers' });
-    const filtered = phone ? rows.filter(r => r.phone === String(phone).trim()) : rows;
-    return res.json(await buildWheelVerify(filtered.length ? filtered : rows));
+    // NB: all rows share the same printer_code
+    const { data: nbRows } = await sb.from('nb_tickets').select('*').eq('printer_code', code);
+    if (nbRows && nbRows.length) {
+      return res.json(await buildNbVerify(nbRows));
+    }
+    
+    return res.status(404).json({ error: 'No ticket found for that Unique ID' });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
@@ -430,7 +392,7 @@ app.post('/api/admin/users/balance', auth, adminOnly, async (req, res) => {
   res.json({ ok: true, balance: nb });
 });
 
-/* ============ ADMIN ASSIGN — WHEEL: each ticket gets its OWN unique id ============ */
+/* ============ ADMIN ASSIGN WHEEL: ONE ID FOR ALL SELECTED ============ */
 app.post('/api/admin/tickets/assign', auth, adminOnly, async (req, res) => {
   try {
     const { name, phone, password, balance, numbers, useFreeTicket } = req.body;
@@ -465,12 +427,18 @@ app.post('/api/admin/tickets/assign', auth, adminOnly, async (req, res) => {
       usedFree = true;
     }
     const now = new Date().toISOString();
+    
+    // Wheel: ONE unique ID for the whole batch
+    const uniqueId = newUniqueId('LW'); 
+    const batchId = crypto.randomUUID();
+
     for (const n of numbers) {
       await sb.from('tickets').insert({
         ticket_number: n, user_id: user.id, user_name: cleanName,
         phone: cleanPhone, sold_date: now, round_number: settings.round_number,
         used_free_ticket: usedFree,
-        printer_code: newUniqueId('LW')   // one id per ticket
+        printer_code: uniqueId,
+        batch_id: batchId
       });
     }
     if (isFirst) {
@@ -487,7 +455,7 @@ app.post('/api/admin/tickets/assign', auth, adminOnly, async (req, res) => {
         }
       }
     }
-    res.json({ user: { ...user, public_code: publicUserId(user.public_id) }, numbers, usedFreeTicket: usedFree, receipt_ref: generateTicketRef() });
+    res.json({ user: { ...user, public_code: publicUserId(user.public_id) }, numbers, usedFreeTicket: usedFree, unique_id: uniqueId, receipt_ref: generateTicketRef() });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
@@ -802,7 +770,7 @@ app.post('/api/admin/withdrawals/:id/decide', auth, adminOnly, async (req, res) 
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-/* ============ USER BUY WHEEL — one unique id per ticket ============ */
+/* ============ USER BUY WHEEL: ONE ID FOR THE WHOLE CART ============ */
 app.post('/api/user/tickets/buy', auth, async (req, res) => {
   try {
     if (req.user.role !== 'user') return res.status(403).json({ error: 'Users only' });
@@ -827,17 +795,22 @@ app.post('/api/user/tickets/buy', auth, async (req, res) => {
     if (!user.has_bought_ticket) upd.has_bought_ticket = true;
     await sb.from('users').update(upd).eq('id', user.id);
     const now = new Date().toISOString();
+    
+    const uniqueId = newUniqueId('LW');
+    const batchId = crypto.randomUUID();
     const purchased = [];
+
     for (const n of numbers) {
-      const code = newUniqueId('LW');
       await sb.from('tickets').insert({
         ticket_number: n, user_id: user.id, user_name: user.name,
         phone: user.phone, sold_date: now, round_number: settings.round_number,
-        used_free_ticket: usedFree, printer_code: code
+        used_free_ticket: usedFree, 
+        printer_code: uniqueId,
+        batch_id: batchId
       });
-      purchased.push({ number: n, printer_code: code });
+      purchased.push({ number: n });
     }
-    res.json({ ok: true, cost, usedFree, receipt_ref: generateTicketRef(), tickets: purchased });
+    res.json({ ok: true, cost, usedFree, receipt_ref: generateTicketRef(), tickets: purchased, unique_id: uniqueId });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
@@ -883,7 +856,7 @@ app.get('/api/nb/state', auth, async (req, res) => {
     });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
-/* ============ USER BUY NB — ONE unique id for the whole purchase ============ */
+/* ============ USER BUY NB: ONE ID PER BATCH ============ */
 app.post('/api/nb/buy', auth, async (req, res) => {
   try {
     if (req.user.role !== 'user') return res.status(403).json({ error: 'Users only' });
@@ -996,7 +969,7 @@ app.post('/api/admin/nb/new-round', auth, adminOnly, async (req, res) => {
     res.json({ ok: true });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
-/* ============ ADMIN ASSIGN NB — one unique id for the whole batch ============ */
+/* ============ ADMIN ASSIGN NB: ONE ID PER BATCH ============ */
 app.post('/api/admin/nb/assign', auth, adminOnly, async (req, res) => {
   try {
     const { name, phone, password, balance, numbers } = req.body;

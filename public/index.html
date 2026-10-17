@@ -765,11 +765,17 @@ async function myTicketsPage() {
     const wheelMine = TICKETS.filter(t => String(t.user_id) === String(ME.id));
     let wheelHtml = '<p class="muted">No tickets yet.</p>';
     if (wheelMine.length) {
-        wheelHtml = wheelMine.map(t => `
+        const groups = {};
+        wheelMine.forEach(t => {
+            const key = t.printer_code || ('noid-' + t.ticket_number);
+            if (!groups[key]) groups[key] = { unique_id: t.printer_code || '—', round: t.round_number, numbers: [] };
+            groups[key].numbers.push(t.ticket_number);
+        });
+        wheelHtml = Object.values(groups).map(g => `
             <div class="req-card" style="margin-bottom:8px">
-                <div class="row"><b>Ticket #</b><span class="gold">#${t.ticket_number}</span></div>
-                <div class="row"><b>Round</b><span>#${t.round_number}</span></div>
-                <div class="row"><b>Unique ID</b><span style="font-family:monospace;color:#0ea5e9">${escapeHTML(t.printer_code || '—')}</span></div>
+                <div class="row"><b>Numbers</b><span class="gold">${g.numbers.sort((a,b)=>a-b).map(n=>'#'+n).join(' ')}</span></div>
+                <div class="row"><b>Round</b><span>#${g.round}</span></div>
+                <div class="row"><b>Unique ID</b><span style="font-family:monospace;color:#0ea5e9">${escapeHTML(g.unique_id)}</span></div>
             </div>`).join('');
     }
 
@@ -807,11 +813,12 @@ function verifyPage() {
             <button class="game-tab ${verifyGame === 'nb' ? 'active' : ''}" onclick="verifySwitchGame('nb')">🎰 Number Betting</button>
         </div>
         <div class="card" style="border-color:#fbbf24">
-            <h2>⚡ Enter Ticket Number(s) or Unique ID</h2>
+            <h2>⚡ Enter Unique ID</h2>
             <p class="muted" style="margin-bottom:10px">
-                Numbers: <code>2 34 56</code> or <code>#2 #34 #56</code> — or paste a Unique ID like <code>LW-123456-A3F2</code> / <code>NB-654321-B7C1</code>.
+                Enter the Unique ID printed on the ticket (e.g. <code>LW-123456-A3F2</code> or <code>NB-654321-B7C1</code>).
+                <br><span style="color:#f87171">Note: Typing ticket numbers is disabled to prevent collisions between users.</span>
             </p>
-            <input id="verifyQuick" placeholder="e.g. 2 34 56  or  #2 #34 #56  or  LW-123456-A3F2" style="text-transform:uppercase;font-family:monospace">
+            <input id="verifyQuick" placeholder="e.g. LW-123456-A3F2" style="text-transform:uppercase;font-family:monospace">
             <button class="main-button" onclick="doVerifyQuick()">🔍 VERIFY</button>
         </div>
         <div class="card" style="border-color:#22c55e">
@@ -825,31 +832,13 @@ function verifyPage() {
 }
 function verifySwitchGame(g) { verifyGame = g; verifyPage(); }
 
-function parseNumbers(input) {
-    return String(input || '')
-        .split(/[\s,]+/)
-        .map(s => s.replace(/^#/, '').trim())
-        .filter(Boolean)
-        .map(Number)
-        .filter(n => Number.isFinite(n) && n > 0);
-}
-
 async function doVerifyQuick() {
     const raw = document.getElementById('verifyQuick').value.trim();
     const out = document.getElementById('verifyResult');
-    if (!raw) { alert('Enter a value'); return; }
+    if (!raw) { alert('Enter a Unique ID'); return; }
     out.innerHTML = '<div class="card"><p>⏳ Checking...</p></div>';
     try {
-        const looksLikeId = /^[A-Z]{2,}-\d+/i.test(raw);
-        let body;
-        if (looksLikeId) {
-            body = { printerCode: raw.toUpperCase() };
-        } else {
-            const nums = parseNumbers(raw);
-            if (!nums.length) { out.innerHTML = '<div class="card" style="border-color:#991b1b"><h2 style="color:#f87171">❌ No valid numbers found</h2></div>'; return; }
-            body = { game: verifyGame, numbers: nums };
-        }
-        const res = await api('/verify-ticket', { method: 'POST', body });
+        const res = await api('/verify-ticket', { method: 'POST', body: { printerCode: raw.toUpperCase() } });
         out.innerHTML = renderVerifyResult(res);
     } catch (e) {
         out.innerHTML = '<div class="card" style="border-color:#991b1b"><h2 style="color:#f87171">❌ ' + escapeHTML(e.message) + '</h2></div>';
