@@ -197,6 +197,7 @@ th { color: #94a3b8; }
 /* Full-screen public view for NB */
 body.public-view .header,
 body.public-view .sidebar,
+body.public-view .mobile-topbar,
 body.public-view .nb-stats,
 body.public-view .nb-timer,
 body.public-view .nb-hero,
@@ -216,6 +217,7 @@ body.public-view .nwc-prize { font-size: 20px; }
 /* Full-screen public view for the wheel */
 body.wheel-public .header,
 body.wheel-public .sidebar,
+body.wheel-public .mobile-topbar,
 body.wheel-public .title,
 body.wheel-public .wheel-hero-img,
 body.wheel-public .status { display: none !important; }
@@ -246,7 +248,58 @@ body.wheel-public .action-buttons { justify-content: center; }
 body.wheel-public #exitPublicBtn { display: inline-flex !important; }
 
 @media(max-width:1000px) { .stats { grid-template-columns: repeat(2,1fr); } .wheel-layout { grid-template-columns: 1fr; } .nb-stats { grid-template-columns: repeat(2, 1fr); } }
-@media(max-width:700px) { .layout { grid-template-columns: 1fr; } .sidebar { display: flex; overflow-x: auto; padding: 10px; } .nav { min-width: 130px; margin-right: 5px; } .main { padding: 12px; } .stats { grid-template-columns: 1fr; } .wheel-container { width: 320px; } .timer { font-size: 40px; } .hero-banner { height: 200px; } }
+
+/* ===== MOBILE DRAWER (Change #3) ===== */
+.mobile-topbar {
+    display: none;
+    height: 56px;
+    padding: 0 14px;
+    background: #111827;
+    border-bottom: 1px solid #334155;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 500;
+}
+.mobile-topbar .mt-logo { font-size: 18px; font-weight: bold; }
+.mobile-topbar .mt-logo span { color: #fbbf24; }
+.mobile-topbar .mt-burger {
+    background: none; border: none; color: #fbbf24;
+    font-size: 26px; padding: 6px 10px; border-radius: 6px;
+}
+.sidebar-backdrop {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,.6);
+    z-index: 800;
+}
+.sidebar-backdrop.show { display: block; }
+
+@media(max-width:700px) {
+    .header { display: none; }
+    .mobile-topbar { display: flex; }
+    .layout { display: block; min-height: calc(100vh - 56px); }
+    .sidebar {
+        position: fixed;
+        top: 0; left: -260px;
+        width: 250px;
+        height: 100vh;
+        z-index: 900;
+        overflow-y: auto;
+        padding: 16px;
+        transition: left .25s ease;
+        display: flex;
+        flex-direction: column;
+    }
+    .sidebar.open { left: 0; }
+    .nav { min-width: 0; width: 100%; margin-right: 0; }
+    .main { padding: 14px; }
+    .stats, .nb-stats { grid-template-columns: 1fr 1fr; }
+    .wheel-container { width: 320px; }
+    .timer { font-size: 40px; }
+}
+
 /* Big winners display for the wheel public view */
 body.wheel-public #winnerArea {
     width: 100%;
@@ -254,7 +307,6 @@ body.wheel-public #winnerArea {
     margin: 20px auto 0;
     padding: 0 20px;
 }
-
 body.wheel-public .winners {
     background: linear-gradient(135deg, #14532d, #0f172a);
     border: 3px solid #4ade80;
@@ -263,19 +315,16 @@ body.wheel-public .winners {
     box-shadow: 0 0 60px rgba(74,222,128,0.5);
     animation: winnerFlash 1.5s ease-in-out infinite;
 }
-
 @keyframes winnerFlash {
     0%, 100% { box-shadow: 0 0 40px rgba(74,222,128,0.45); }
     50%      { box-shadow: 0 0 80px rgba(74,222,128,0.95); }
 }
-
 body.wheel-public .winners h2 {
     font-size: 42px;
     text-align: center;
     margin-bottom: 20px;
     text-shadow: 0 0 30px rgba(74,222,128,0.9);
 }
-
 body.wheel-public .winners .winner {
     display: flex;
     align-items: center;
@@ -290,7 +339,6 @@ body.wheel-public .winners .winner {
     font-size: 22px;
     font-weight: bold;
 }
-
 body.wheel-public .winners .winner .gold {
     font-size: 26px;
     color: #fbbf24;
@@ -302,6 +350,7 @@ body.wheel-public .winners .winner .gold {
 <div id="toast" class="toast hidden"></div>
 <button id="exitPublicBtn" onclick="exitPublicView()">✕ Exit Public View</button>
 <div id="receiptArea"></div>
+
 <section id="loginPage" class="login-page">
 <div class="login-card">
     <div class="login-banner-wrap">
@@ -400,6 +449,14 @@ body.wheel-public .winners .winner .gold {
         <button class="logout" onclick="logout()">Logout</button>
     </div>
 </header>
+
+<!-- ===== MOBILE TOP BAR (Change #3) ===== -->
+<div class="mobile-topbar">
+    <div class="mt-logo">LUCKY<span>WHEEL</span></div>
+    <button class="mt-burger" onclick="toggleMobileMenu()">☰</button>
+</div>
+<div id="sidebarBackdrop" class="sidebar-backdrop" onclick="closeMobileMenu()"></div>
+
 <div class="layout">
 <aside class="sidebar" id="sidebar"></aside>
 <main id="main" class="main"></main>
@@ -432,6 +489,21 @@ const IMG = {
   history: 'https://images.unsplash.com/photo-1501139083538-0139583c060f?w=1200&h=300&fit=crop',
   settings:'https://images.unsplash.com/photo-1518770660439-4636190af475?w=1200&h=300&fit=crop'
 };
+
+/* ===== MOBILE MENU HELPERS ===== */
+function toggleMobileMenu() {
+    const sb = document.getElementById('sidebar');
+    const bd = document.getElementById('sidebarBackdrop');
+    if (!sb || !bd) return;
+    sb.classList.toggle('open');
+    bd.classList.toggle('show', sb.classList.contains('open'));
+}
+function closeMobileMenu() {
+    const sb = document.getElementById('sidebar');
+    const bd = document.getElementById('sidebarBackdrop');
+    if (sb) sb.classList.remove('open');
+    if (bd) bd.classList.remove('show');
+}
 
 function renderSidebar() {
     const isAdmin = ME.role === 'admin';
@@ -591,6 +663,7 @@ function startAutoPoll() {
 function openPage(page) {
     PAGE = page;
     document.querySelectorAll('.nav').forEach(btn => btn.classList.toggle('active', btn.dataset.page === page));
+    closeMobileMenu();   // <-- closes the mobile drawer
     renderPage();
 }
 async function renderPage() {
@@ -624,6 +697,7 @@ function logout() {
     try { stopLivePolls(); } catch (e) {}
     try { closeReceipt(); } catch (e) {}
     document.body.classList.remove('public-view', 'wheel-public');
+    closeMobileMenu();
     const lp = document.getElementById('loginPage');
     const ap = document.getElementById('app');
     if (lp) lp.classList.remove('hidden');
@@ -638,8 +712,9 @@ function formatDate(d) { try { return new Date(d).toLocaleString(); } catch { re
 function escapeHTML(v) { return String(v ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;'); }
 
 function enterPublicView() { document.body.classList.add('public-view'); }
-function exitPublicView() { document.body.classList.remove('public-view', 'wheel-public'); }
+function exitPublicView() { document.body.classList.remove('public-view', 'wheel-public'); closeMobileMenu(); }
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape') exitPublicView(); });
+
 /* ================= RECEIPT ================= */
 function showReceipt(data) {
     const el = document.getElementById('receiptArea');
@@ -650,7 +725,7 @@ function showReceipt(data) {
             const num = typeof t === 'object' ? t.number : t;
             const code = typeof t === 'object' && t.printer_code ? t.printer_code : '—';
             const qr = code && code !== '—' ? 'https://api.qrserver.com/v1/create-qr-code/?size=90x90&data=' + encodeURIComponent(code) : '';
-            return '<div class="receipt-row"><span><b>#' + num + '</b> · <code>' + code + '</code></span>' +
+            return '<div class="receipt-row"><span><b>#' + num + '</b>' + (code && code !== '—' ? ' · <code>' + code + '</code>' : '') + '</span>' +
                    (qr ? '<img src="' + qr + '" style="width:70px;height:70px;border:1px solid #ccc;padding:2px">' : '') + '</div>';
         }).join('');
     }
@@ -666,6 +741,7 @@ function showReceipt(data) {
                 <div class="receipt-row"><b>Owner:</b> <span>${escapeHTML(data.owner.name)}</span></div>
                 <div class="receipt-row"><b>Phone:</b> <span>${escapeHTML(data.owner.phone)}</span></div>
                 ${data.owner.public_code ? '<div class="receipt-row"><b>User ID:</b> <span>' + escapeHTML(data.owner.public_code) + '</span></div>' : ''}
+                ${data.unique_id ? '<div class="receipt-row"><b>Unique ID:</b> <span style="font-family:monospace">' + escapeHTML(data.unique_id) + '</span></div>' : ''}
                 <div class="receipt-row"><b>Price:</b> <span>${money(data.price)}</span></div>
                 <div style="margin-top:14px"><b>TICKETS:</b></div>
                 ${rows || '<p style="text-align:center">No tickets</p>'}
@@ -679,24 +755,49 @@ function showReceipt(data) {
 }
 function closeReceipt() { const el = document.getElementById('receiptArea'); if (el) el.innerHTML = ''; }
 
-/* ================= MY TICKETS ================= */
+/* ================= MY TICKETS (Change #1) ================= */
 async function myTicketsPage() {
     if (ME.role === 'admin') { document.getElementById('main').innerHTML = '<div class="card"><p class="muted">Admins — use Assign Tickets.</p></div>'; return; }
     let nbMine = [];
     try { nbMine = (await api('/nb/my-tickets')).tickets || []; } catch (e) {}
+
+    // Wheel — each ticket has its own unique ID
     const wheelMine = TICKETS.filter(t => String(t.user_id) === String(ME.id));
+    let wheelHtml = '<p class="muted">No tickets yet.</p>';
+    if (wheelMine.length) {
+        wheelHtml = wheelMine.map(t => `
+            <div class="req-card" style="margin-bottom:8px">
+                <div class="row"><b>Ticket #</b><span class="gold">#${t.ticket_number}</span></div>
+                <div class="row"><b>Round</b><span>#${t.round_number}</span></div>
+                <div class="row"><b>Unique ID</b><span style="font-family:monospace;color:#0ea5e9">${escapeHTML(t.printer_code || '—')}</span></div>
+            </div>`).join('');
+    }
+
+    // NB — one unique ID per batch (grouped by printer_code)
+    let nbHtml = '<p class="muted">No tickets yet.</p>';
+    if (nbMine.length) {
+        const groups = {};
+        nbMine.forEach(t => {
+            const key = t.printer_code || ('noid-' + t.number);
+            if (!groups[key]) groups[key] = { unique_id: t.printer_code || '—', round: t.round_number, numbers: [] };
+            groups[key].numbers.push(t.number);
+        });
+        nbHtml = Object.values(groups).map(g => `
+            <div class="req-card" style="margin-bottom:8px">
+                <div class="row"><b>Numbers</b><span class="gold">${g.numbers.sort((a,b)=>a-b).map(n=>'#'+n).join(' ')}</span></div>
+                <div class="row"><b>Round</b><span>#${g.round}</span></div>
+                <div class="row"><b>Unique ID</b><span style="font-family:monospace;color:#0ea5e9">${escapeHTML(g.unique_id)}</span></div>
+            </div>`).join('');
+    }
+
     document.getElementById('main').innerHTML = `
         <img src="${IMG.buy}" class="banner-img" onerror="this.style.display='none'">
         <h1 class="title">🎟️ My Tickets</h1>
-        <div class="card"><h2>🎡 Lucky Wheel — Round #${SETTINGS.round_number}</h2><br>
-            <div>${wheelMine.length ? wheelMine.map(t => '<span class="nb-pick-chip" style="margin:3px">#' + t.ticket_number + '</span>').join('') : '<p class="muted">No tickets yet.</p>'}</div>
-        </div>
-        <div class="card"><h2>🎰 Number Betting</h2><br>
-            <div>${nbMine.length ? nbMine.map(t => '<span class="nb-pick-chip" style="margin:3px">#' + t.number + '</span>').join('') : '<p class="muted">No tickets yet.</p>'}</div>
-        </div>`;
+        <div class="card"><h2>🎡 Lucky Wheel — Round #${SETTINGS.round_number}</h2><br>${wheelHtml}</div>
+        <div class="card"><h2>🎰 Number Betting</h2><br>${nbHtml}</div>`;
 }
 
-/* ================= VERIFY ================= */
+/* ================= VERIFY (Change #1 + #2) ================= */
 function verifyPage() {
     document.getElementById('main').innerHTML = `
         <img src="${IMG.verify}" class="banner-img" onerror="this.style.display='none'">
@@ -706,31 +807,55 @@ function verifyPage() {
             <button class="game-tab ${verifyGame === 'nb' ? 'active' : ''}" onclick="verifySwitchGame('nb')">🎰 Number Betting</button>
         </div>
         <div class="card" style="border-color:#fbbf24">
-            <h2>⚡ Ticket ID or Printer Code</h2>
-            <p class="muted" style="margin-bottom:10px">Enter <code>24</code> or <code>LW00001A3F2</code></p>
-            <input id="verifyQuick" placeholder="Ticket ID or Printer Code" style="text-transform:uppercase;font-family:monospace">
+            <h2>⚡ Enter Ticket Number(s) or Unique ID</h2>
+            <p class="muted" style="margin-bottom:10px">
+                Numbers: <code>2 34 56</code> or <code>#2 #34 #56</code> — or paste a Unique ID like <code>LW-123456-A3F2</code> / <code>NB-654321-B7C1</code>.
+            </p>
+            <input id="verifyQuick" placeholder="e.g. 2 34 56  or  #2 #34 #56  or  LW-123456-A3F2" style="text-transform:uppercase;font-family:monospace">
             <button class="main-button" onclick="doVerifyQuick()">🔍 VERIFY</button>
         </div>
         <div class="card" style="border-color:#22c55e">
             <h2>📷 Scan QR</h2>
             <button class="main-button" style="background:#22c55e;color:white" onclick="startScanner()">📷 OPEN CAMERA</button>
             <div id="qr-reader" style="margin-top:12px"></div>
+            <input id="scanResult" placeholder="Scanned code appears here — press Submit" style="margin-top:10px;font-family:monospace;text-transform:uppercase">
+            <button class="main-button" style="background:#fbbf24;color:#111827" onclick="submitScannedCode()">✅ SUBMIT SCANNED CODE</button>
         </div>
         <div id="verifyResult"></div>`;
 }
 function verifySwitchGame(g) { verifyGame = g; verifyPage(); }
+
+function parseNumbers(input) {
+    return String(input || '')
+        .split(/[\s,]+/)
+        .map(s => s.replace(/^#/, '').trim())
+        .filter(Boolean)
+        .map(Number)
+        .filter(n => Number.isFinite(n) && n > 0);
+}
+
 async function doVerifyQuick() {
     const raw = document.getElementById('verifyQuick').value.trim();
     const out = document.getElementById('verifyResult');
-    if (!raw) { alert('Enter value'); return; }
+    if (!raw) { alert('Enter a value'); return; }
     out.innerHTML = '<div class="card"><p>⏳ Checking...</p></div>';
     try {
-        const isPrinter = /^[A-Z]{2}\d{5}/i.test(raw);
-        const body = isPrinter ? { printerCode: raw.toUpperCase() } : { game: verifyGame, ticketNumber: raw };
+        const looksLikeId = /^[A-Z]{2,}-\d+/i.test(raw);
+        let body;
+        if (looksLikeId) {
+            body = { printerCode: raw.toUpperCase() };
+        } else {
+            const nums = parseNumbers(raw);
+            if (!nums.length) { out.innerHTML = '<div class="card" style="border-color:#991b1b"><h2 style="color:#f87171">❌ No valid numbers found</h2></div>'; return; }
+            body = { game: verifyGame, numbers: nums };
+        }
         const res = await api('/verify-ticket', { method: 'POST', body });
         out.innerHTML = renderVerifyResult(res);
-    } catch (e) { out.innerHTML = '<div class="card" style="border-color:#991b1b"><h2 style="color:#f87171">❌ ' + escapeHTML(e.message) + '</h2></div>'; }
+    } catch (e) {
+        out.innerHTML = '<div class="card" style="border-color:#991b1b"><h2 style="color:#f87171">❌ ' + escapeHTML(e.message) + '</h2></div>';
+    }
 }
+
 let _qrScanner = null;
 async function startScanner() {
     const container = document.getElementById('qr-reader');
@@ -741,27 +866,44 @@ async function startScanner() {
     container.innerHTML = '<div id="qr-reader-inner" style="width:100%;max-width:400px"></div>';
     try {
         _qrScanner = new window.Html5Qrcode('qr-reader-inner');
-        await _qrScanner.start({ facingMode: 'environment' }, { fps: 10, qrbox: 250 }, async (decoded) => {
-            try { await _qrScanner.stop(); } catch (e) {}
-            const out = document.getElementById('verifyResult');
-            out.innerHTML = '<div class="card"><p>⏳ Checking...</p></div>';
-            try { const res = await api('/verify-ticket', { method: 'POST', body: { printerCode: decoded.trim().toUpperCase() } }); out.innerHTML = renderVerifyResult(res); }
-            catch (e) { out.innerHTML = '<div class="card" style="border-color:#991b1b"><h2 style="color:#f87171">❌ ' + escapeHTML(e.message) + '</h2></div>'; }
+        await _qrScanner.start({ facingMode: 'environment' }, { fps: 10, qrbox: 250 }, (decoded) => {
+            try { _qrScanner.stop(); } catch (e) {}
+            const inp = document.getElementById('scanResult');
+            if (inp) inp.value = String(decoded).trim().toUpperCase();
+            toast('✅ Scanned — press Submit');
         }, (e) => {});
     } catch (e) { container.innerHTML = '<p style="color:#f87171">❌ Camera unavailable: ' + escapeHTML(e.message) + '</p>'; }
 }
+async function submitScannedCode() {
+    const code = document.getElementById('scanResult').value.trim();
+    const out = document.getElementById('verifyResult');
+    if (!code) { alert('Scan or paste a code first'); return; }
+    out.innerHTML = '<div class="card"><p>⏳ Checking...</p></div>';
+    try {
+        const res = await api('/verify-ticket', { method: 'POST', body: { printerCode: code.toUpperCase() } });
+        out.innerHTML = renderVerifyResult(res);
+    } catch (e) {
+        out.innerHTML = '<div class="card" style="border-color:#991b1b"><h2 style="color:#f87171">❌ ' + escapeHTML(e.message) + '</h2></div>';
+    }
+}
+
 function renderVerifyResult(res) {
     const isWinner = res.is_winner === true;
     const isPending = !res.round_finished;
     const badge = isPending ? '<span style="color:#fbbf24;font-weight:bold">⏳ Round in progress</span>'
         : isWinner ? '<span style="color:#4ade80;font-weight:bold">🏆 WINNER</span>'
         : '<span style="color:#f87171;font-weight:bold">❌ Not a winner</span>';
+    const nums = Array.isArray(res.numbers) && res.numbers.length ? res.numbers : [res.number];
+    const isNB = res.game === 'Number Betting';
+    const numDisplay = isNB
+        ? [...nums].sort((a,b)=>a-b).map(n => '#' + n).join(' ')
+        : nums.map(n => '#' + n).join(', ');
     return `<div class="card" style="border-color:${isWinner ? '#4ade80' : '#0ea5e9'}">
         <h2 style="color:${isWinner ? '#4ade80' : '#0ea5e9'}">✅ Ticket Verified</h2>
         <div class="req-card">
             <div class="row"><b>Game:</b> <span>${escapeHTML(res.game)}</span></div>
-            <div class="row"><b>Ticket ID:</b> <span class="gold">#${res.number}</span></div>
-            ${res.printer_code ? '<div class="row"><b>Printer Code:</b> <span style="font-family:monospace;color:#0ea5e9">' + escapeHTML(res.printer_code) + '</span></div>' : ''}
+            <div class="row"><b>${isNB ? 'Numbers:' : 'Ticket ID:'}</b> <span class="gold">${escapeHTML(numDisplay)}</span></div>
+            ${res.unique_id ? '<div class="row"><b>Unique ID:</b> <span style="font-family:monospace;color:#0ea5e9">' + escapeHTML(res.unique_id) + '</span></div>' : ''}
             <div class="row"><b>Round:</b> <span>#${res.round}</span></div>
             <div class="row"><b>Owner:</b> <span>${escapeHTML(res.owner_name || '—')}</span></div>
             <div class="row"><b>User ID:</b> <span>${escapeHTML(res.public_code || '—')}</span></div>
@@ -1425,7 +1567,6 @@ function showWinners(winners) {
     html += '</div>';
     area.innerHTML = html;
 
-    // If in public view, scroll to winners
     if (document.body.classList.contains('wheel-public')) {
         setTimeout(() => {
             area.scrollIntoView({ behavior: 'smooth', block: 'center' });

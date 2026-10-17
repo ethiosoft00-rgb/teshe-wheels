@@ -42,9 +42,7 @@ async function sendTelegram(chatId, message, keyboard) {
     const body = { chat_id: chatId, text: message, parse_mode: 'HTML', disable_web_page_preview: true };
     if (keyboard) body.reply_markup = keyboard;
     await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body)
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
     });
   } catch (e) { console.error('Telegram:', e.message); }
 }
@@ -56,6 +54,28 @@ function maskPhone(p) { if (!p) return '—'; const s = String(p); return s.leng
 function publicUserId(pid) { return pid === null || pid === undefined ? '—' : 'U' + String(pid).padStart(5, '0'); }
 function generateTicketRef() { return 'TK' + Date.now().toString(36).toUpperCase() + crypto.randomBytes(2).toString('hex').toUpperCase(); }
 function sign(p) { return jwt.sign(p, JWT_SECRET, { expiresIn: '30d' }); }
+
+/* ============ UNIQUE ID GENERATOR ============ */
+const B36 = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+function randomCode(len = 4) {
+  let s = '';
+  for (let i = 0; i < len; i++) s += B36[Math.floor(Math.random() * B36.length)];
+  return s;
+}
+function newUniqueId(prefix) {
+  return prefix + '-' + String(Date.now()).slice(-6) + '-' + randomCode(4);
+}
+
+/* ============ NUMBER PARSER: "2 34 56" / "#2 #34 #56" / "2,34,56" ============ */
+function parseTicketNumbers(input) {
+  if (input === null || input === undefined) return [];
+  return String(input)
+    .split(/[\s,]+/)
+    .map(s => s.replace(/^#/, '').trim())
+    .filter(Boolean)
+    .map(Number)
+    .filter(n => Number.isFinite(n) && n > 0);
+}
 
 async function auth(req, res, next) {
   const h = req.headers.authorization || '';
@@ -206,77 +226,121 @@ app.get('/api/referrals', auth, async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+/* ============ VERIFY: accepts printerCode, single number, or many numbers ============ */
 app.post('/api/verify-ticket', auth, async (req, res) => {
   try {
-    const { game, ticketNumber, phone, printerCode } = req.body;
+    const { game, ticketNumber, numbers, phone, printerCode } = req.body;
+
+    // 1) By unique ID / printer code
     if (printerCode && String(printerCode).trim()) {
       const code = String(printerCode).trim().toUpperCase();
-      let { data: row } = await sb.from('tickets').select('*').eq('printer_code', code).maybeSingle();
-      if (row) return res.json(await buildWheelVerify(row));
-      const { data: nbRow } = await sb.from('nb_tickets').select('*').eq('printer_code', code).maybeSingle();
-      if (nbRow) return res.json(await buildNbVerify(nbRow));
-      return res.status(404).json({ error: 'No ticket found for that printer code' });
+
+      // Wheel: one row per ticket
+      const { data: wheelRows } = await sb.from('tickets').select('*').eq('printer_code', code);
+      if (wheelRows && wheelRows.length) {
+        return res.json(await buildWheelVerify(wheelRows));
+      }
+
+      // NB: all rows share the same printer_code → return the whole batch
+      const { data: nbRows } = await sb.from('nb_tickets').select('*').eq('printer_code', code);
+      if (nbRows && nbRows.length) {
+        return res.json(await buildNbVerify(nbRows));
+      }
+      return res.status(404).json({ error: 'No ticket found for that ID' });
     }
-    if (!ticketNumber) return res.status(400).json({ error: 'Ticket number or printer code required' });
-    const num = Number(ticketNumber);
-    if (!Number.isFinite(num)) return res.status(400).json({ error: 'Invalid ticket number' });
+
+    // 2) By numbers list OR single ticketNumber
+    let nums = [];
+    if (Array.isArray(numbers) && numbers.length) {
+      nums = numbers.map(Number).filter(n => Number.isFinite(n) && n > 0);
+    } else if (ticketNumber !== undefined && ticketNumber !== null && String(ticketNumber).trim() !== '') {
+      nums = parseTicketNumbers(ticketNumber);
+      if (!nums.length) {
+        const n = Number(ticketNumber);
+        if (Number.isFinite(n) && n > 0) nums = [n];
+      }
+    }
+    if (!nums.length) return res.status(400).json({ error: 'Ticket number(s) or unique ID required' });
+
     if (game === 'nb') {
       const s = await getNbSettings();
-      const { data: rows } = await sb.from('nb_tickets').select('*').eq('round_number', s.round_number).eq('number', num);
-      if (!rows || !rows.length) return res.status(404).json({ error: 'No NB ticket with that ID' });
-      const row = phone ? (rows.find(r => r.phone === String(phone).trim()) || rows[0]) : rows[0];
-      return res.json(await buildNbVerify(row));
+      const { data: rows } = await sb.from('nb_tickets').select('*').eq('round_number', s.round_number).in('number', nums);
+      if (!rows || !rows.length) return res.status(404).json({ error: 'No NB ticket with those numbers' });
+      const filtered = phone ? rows.filter(r => r.phone === String(phone).trim()) : rows;
+      return res.json(await buildNbVerify(filtered.length ? filtered : rows));
     }
+
     const settings = await getSettings();
-    const { data: rows } = await sb.from('tickets').select('*').eq('round_number', settings.round_number).eq('ticket_number', num);
-    if (!rows || !rows.length) return res.status(404).json({ error: 'No ticket with that ID' });
-    const row = phone ? (rows.find(r => r.phone === String(phone).trim()) || rows[0]) : rows[0];
-    return res.json(await buildWheelVerify(row));
+    const { data: rows } = await sb.from('tickets').select('*').eq('round_number', settings.round_number).in('ticket_number', nums);
+    if (!rows || !rows.length) return res.status(404).json({ error: 'No ticket with those numbers' });
+    const filtered = phone ? rows.filter(r => r.phone === String(phone).trim()) : rows;
+    return res.json(await buildWheelVerify(filtered.length ? filtered : rows));
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-async function buildWheelVerify(t) {
-  const { data: u } = await sb.from('users').select('name,phone,public_id').eq('id', t.user_id).maybeSingle();
+async function buildWheelVerify(rows) {
   const settings = await getSettings();
-  const isWinner = Array.isArray(settings.winner_numbers) && settings.winner_numbers.includes(t.ticket_number);
   const roundFinished = settings.round_state === 'finished';
-  let prize = null, percent = null;
-  if (isWinner && roundFinished && Array.isArray(settings.winners)) {
-    const idx = settings.winner_numbers.indexOf(t.ticket_number);
-    const w = settings.winners[idx];
-    if (w) { prize = w.prize; percent = w.percent; }
+  const list = [];
+  for (const t of rows) {
+    const { data: u } = await sb.from('users').select('name,phone,public_id').eq('id', t.user_id).maybeSingle();
+    const isWinner = Array.isArray(settings.winner_numbers) && settings.winner_numbers.includes(t.ticket_number);
+    let prize = null, percent = null;
+    if (isWinner && roundFinished && Array.isArray(settings.winners)) {
+      const idx = settings.winner_numbers.indexOf(t.ticket_number);
+      const w = settings.winners[idx];
+      if (w) { prize = w.prize; percent = w.percent; }
+    }
+    list.push({
+      number: t.ticket_number, round: t.round_number,
+      owner_name: u?.name || t.user_name || '—',
+      owner_phone: u?.phone || t.phone || '—',
+      public_code: publicUserId(u?.public_id),
+      sold_date: t.sold_date, is_free: t.used_free_ticket,
+      unique_id: t.printer_code || null,
+      is_winner: isWinner, prize, percent
+    });
   }
+  const anyWinner = list.some(x => x.is_winner);
+  const first = list[0];
   return {
     ok: true, game: 'Lucky Wheel',
-    number: t.ticket_number, round: t.round_number,
-    owner_name: u?.name || t.user_name || '—',
-    owner_phone: u?.phone || t.phone || '—',
-    public_code: publicUserId(u?.public_id),
-    sold_date: t.sold_date, is_free: t.used_free_ticket,
-    printer_code: t.printer_code,
-    is_winner: isWinner, round_finished: roundFinished, prize, percent
+    number: first.number,
+    numbers: list.map(x => x.number),
+    round: first.round,
+    owner_name: first.owner_name, owner_phone: first.owner_phone,
+    public_code: first.public_code, sold_date: first.sold_date,
+    unique_id: first.unique_id,
+    is_winner: anyWinner, round_finished: roundFinished,
+    prize: list.reduce((a, x) => a + (x.is_winner ? (x.prize || 0) : 0), 0) || null,
+    tickets: list
   };
 }
 
-async function buildNbVerify(t) {
-  const { data: u } = await sb.from('users').select('name,phone,public_id').eq('id', t.user_id).maybeSingle();
+async function buildNbVerify(rows) {
   const s = await getNbSettings();
   const roundFinished = s.round_state === 'finished';
+  const first = rows[0];
+  const { data: u } = await sb.from('users').select('name,phone,public_id').eq('id', first.user_id).maybeSingle();
   let isWinner = false, prize = null, percent = null;
   if (roundFinished && Array.isArray(s.winners) && u) {
     for (const w of s.winners) {
       if (w.public_id && u.public_id && w.public_id === u.public_id) { isWinner = true; prize = w.prize; percent = w.percent; break; }
     }
   }
+  const numbers = rows.map(r => r.number).sort((a, b) => a - b);
+  const uniqueId = first.printer_code || null;
   return {
     ok: true, game: 'Number Betting',
-    number: t.number, round: t.round_number,
-    owner_name: u?.name || t.user_name || '—',
-    owner_phone: u?.phone || t.phone || '—',
+    number: numbers[0], numbers,
+    round: first.round_number,
+    owner_name: u?.name || first.user_name || '—',
+    owner_phone: u?.phone || first.phone || '—',
     public_code: publicUserId(u?.public_id),
-    sold_date: t.sold_date, is_free: t.is_free,
-    printer_code: t.printer_code,
-    is_winner: isWinner, round_finished: roundFinished, prize, percent
+    sold_date: first.sold_date, is_free: first.is_free,
+    unique_id: uniqueId,
+    is_winner: isWinner, round_finished: roundFinished, prize, percent,
+    tickets: numbers.map(n => ({ number: n }))
   };
 }
 
@@ -299,12 +363,14 @@ app.post('/api/ticket-receipt', auth, async (req, res) => {
     }
     const enriched = tickets.map(t => {
       const num = typeof t === 'object' ? t.number : t;
-      return { number: num, printer_code: map[num] || null, matches: typeof t === 'object' ? t.matches : undefined };
+      return { number: num, printer_code: map[num] || null };
     });
+    let unique_id = null;
+    if (game === 'nb' && enriched.length) unique_id = enriched[0].printer_code;
     res.json({
       ok: true,
       game: game === 'nb' ? 'Number Betting' : 'Lucky Wheel',
-      round, tickets: enriched, owner,
+      round, tickets: enriched, owner, unique_id,
       ref: generateTicketRef(), date: new Date().toISOString(),
       price: game === 'nb' ? Number(settings.price_per_purchase) : Number(settings.ticket_price)
     });
@@ -323,34 +389,22 @@ app.get('/api/admin/users/full', auth, adminOnly, async (req, res) => {
   res.json({ users: data });
 });
 
-/* ===== ANY admin can reset any non-owner user's password ===== */
 app.post('/api/admin/users/reset-password', auth, adminOnly, async (req, res) => {
   try {
     const { userId, newPassword } = req.body;
     if (!userId || !newPassword) return res.status(400).json({ error: 'Missing fields' });
     const clean = String(newPassword).trim();
     if (clean.length < 4) return res.status(400).json({ error: 'Password too short' });
-
     const { data: target } = await sb.from('users').select('phone, role').eq('id', userId).maybeSingle();
     if (!target) return res.status(404).json({ error: 'User not found' });
-
-    // Only the owner is protected
-    if (target.phone === OWNER_PHONE) {
-      return res.status(403).json({ error: 'Owner password can only be changed with the secret code from Settings.' });
-    }
-
+    if (target.phone === OWNER_PHONE) return res.status(403).json({ error: 'Owner password can only be changed with the secret code from Settings.' });
     const hash = await bcrypt.hash(clean, 10);
-    const { error } = await sb.from('users').update({
-      password_hash: hash,
-      password_plain: clean
-    }).eq('id', userId);
-
+    const { error } = await sb.from('users').update({ password_hash: hash, password_plain: clean }).eq('id', userId);
     if (error) return res.status(500).json({ error: error.message });
     res.json({ ok: true });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-/* ===== Ban: admin + owner protected ===== */
 app.post('/api/admin/users/ban', auth, adminOnly, async (req, res) => {
   try {
     const { userId, banned } = req.body;
@@ -376,6 +430,7 @@ app.post('/api/admin/users/balance', auth, adminOnly, async (req, res) => {
   res.json({ ok: true, balance: nb });
 });
 
+/* ============ ADMIN ASSIGN — WHEEL: each ticket gets its OWN unique id ============ */
 app.post('/api/admin/tickets/assign', auth, adminOnly, async (req, res) => {
   try {
     const { name, phone, password, balance, numbers, useFreeTicket } = req.body;
@@ -414,7 +469,8 @@ app.post('/api/admin/tickets/assign', auth, adminOnly, async (req, res) => {
       await sb.from('tickets').insert({
         ticket_number: n, user_id: user.id, user_name: cleanName,
         phone: cleanPhone, sold_date: now, round_number: settings.round_number,
-        used_free_ticket: usedFree
+        used_free_ticket: usedFree,
+        printer_code: newUniqueId('LW')   // one id per ticket
       });
     }
     if (isFirst) {
@@ -746,6 +802,7 @@ app.post('/api/admin/withdrawals/:id/decide', auth, adminOnly, async (req, res) 
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+/* ============ USER BUY WHEEL — one unique id per ticket ============ */
 app.post('/api/user/tickets/buy', auth, async (req, res) => {
   try {
     if (req.user.role !== 'user') return res.status(403).json({ error: 'Users only' });
@@ -770,14 +827,17 @@ app.post('/api/user/tickets/buy', auth, async (req, res) => {
     if (!user.has_bought_ticket) upd.has_bought_ticket = true;
     await sb.from('users').update(upd).eq('id', user.id);
     const now = new Date().toISOString();
+    const purchased = [];
     for (const n of numbers) {
+      const code = newUniqueId('LW');
       await sb.from('tickets').insert({
         ticket_number: n, user_id: user.id, user_name: user.name,
         phone: user.phone, sold_date: now, round_number: settings.round_number,
-        used_free_ticket: usedFree
+        used_free_ticket: usedFree, printer_code: code
       });
+      purchased.push({ number: n, printer_code: code });
     }
-    res.json({ ok: true, cost, usedFree, receipt_ref: generateTicketRef() });
+    res.json({ ok: true, cost, usedFree, receipt_ref: generateTicketRef(), tickets: purchased });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
@@ -808,7 +868,8 @@ app.get('/api/nb/state', auth, async (req, res) => {
     const soldCount = tickets.filter(t => t.user_id).length;
     let myTickets = [];
     if (req.user.role !== 'admin') {
-      myTickets = tickets.filter(t => String(t.user_id) === String(req.user.id)).map(t => ({ number: t.number, is_free: t.is_free }));
+      myTickets = tickets.filter(t => String(t.user_id) === String(req.user.id))
+        .map(t => ({ number: t.number, is_free: t.is_free, unique_id: t.printer_code || null }));
     }
     const enriched = (s.winners || []).map(w => ({
       ...w, public_code: w.public_code || publicUserId(w.public_id),
@@ -822,6 +883,7 @@ app.get('/api/nb/state', auth, async (req, res) => {
     });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
+/* ============ USER BUY NB — ONE unique id for the whole purchase ============ */
 app.post('/api/nb/buy', auth, async (req, res) => {
   try {
     if (req.user.role !== 'user') return res.status(403).json({ error: 'Users only' });
@@ -838,15 +900,17 @@ app.post('/api/nb/buy', auth, async (req, res) => {
     const price = Number(s.price_per_purchase);
     if (Number(user.balance) < price) return res.status(400).json({ error: 'Insufficient balance' });
     const batchId = crypto.randomUUID();
+    const uniqueId = newUniqueId('NB');   // ONE id for the whole purchase
     const rows = numbers.map(n => ({
       round_number: s.round_number, number: n,
       user_id: user.id, user_name: user.name, phone: user.phone,
-      batch_id: batchId, is_free: false
+      batch_id: batchId, is_free: false,
+      printer_code: uniqueId
     }));
     const { error } = await sb.from('nb_tickets').insert(rows);
     if (error) return res.status(500).json({ error: error.message });
     await sb.from('users').update({ balance: Number(user.balance) - price }).eq('id', user.id);
-    res.json({ ok: true, cost: price, numbers, receipt_ref: generateTicketRef() });
+    res.json({ ok: true, cost: price, numbers, unique_id: uniqueId, receipt_ref: generateTicketRef() });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 app.get('/api/nb/my-tickets', auth, async (req, res) => {
@@ -932,6 +996,7 @@ app.post('/api/admin/nb/new-round', auth, adminOnly, async (req, res) => {
     res.json({ ok: true });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
+/* ============ ADMIN ASSIGN NB — one unique id for the whole batch ============ */
 app.post('/api/admin/nb/assign', auth, adminOnly, async (req, res) => {
   try {
     const { name, phone, password, balance, numbers } = req.body;
@@ -963,14 +1028,16 @@ app.post('/api/admin/nb/assign', auth, adminOnly, async (req, res) => {
       user.name = cleanName; user.balance = nb;
     }
     const batchId = crypto.randomUUID();
+    const uniqueId = newUniqueId('NB');
     const rows = numbers.map(n => ({
       round_number: s.round_number, number: n,
       user_id: user.id, user_name: user.name, phone: user.phone,
-      batch_id: batchId, is_free: true
+      batch_id: batchId, is_free: true,
+      printer_code: uniqueId
     }));
     const { error } = await sb.from('nb_tickets').insert(rows);
     if (error) return res.status(500).json({ error: error.message });
-    res.json({ ok: true, user: { ...user, public_code: publicUserId(user.public_id) }, numbers, receipt_ref: generateTicketRef() });
+    res.json({ ok: true, user: { ...user, public_code: publicUserId(user.public_id) }, numbers, unique_id: uniqueId, receipt_ref: generateTicketRef() });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
