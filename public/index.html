@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Lucky Wheel</title>
-<!-- html2canvas for downloading tickets -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -245,18 +244,7 @@ body.wheel-public .winners h2 { font-size: 42px; text-align: center; margin-bott
 body.wheel-public .winners .winner { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; padding: 18px 22px; margin-bottom: 12px; background: #0b1220; border: 2px solid #4ade80; border-radius: 14px; font-size: 22px; font-weight: bold; }
 body.wheel-public .winners .winner .gold { font-size: 26px; color: #fbbf24; text-shadow: 0 0 15px rgba(251,191,36,0.9); }
 
-.login-error-box {
-    display: none;
-    background: #7f1d1d;
-    color: #fca5a5;
-    padding: 12px;
-    border-radius: 8px;
-    border: 1px solid #dc2626;
-    margin-bottom: 15px;
-    font-size: 14px;
-    font-weight: bold;
-    text-align: center;
-}
+.login-error-box { display: none; background: #7f1d1d; color: #fca5a5; padding: 12px; border-radius: 8px; border: 1px solid #dc2626; margin-bottom: 15px; font-size: 14px; font-weight: bold; text-align: center; }
 .dep-shot-thumb { max-width: 260px; max-height: 260px; border-radius: 8px; border: 1px solid #334155; margin-top: 6px; cursor: pointer; }
 
 .custom-modal { position: fixed; inset: 0; z-index: 100000; background: rgba(0,0,0,.8); display: flex; justify-content: center; align-items: center; padding: 20px; }
@@ -265,32 +253,13 @@ body.wheel-public .winners .winner .gold { font-size: 26px; color: #fbbf24; text
 .custom-modal-box input { background: #0b1220; }
 .custom-modal-box .btn-row { display: flex; gap: 10px; margin-top: 15px; }
 .custom-modal-box input { font-size: 16px; }
-@media (max-width: 480px) {
-    .custom-modal-box { padding: 20px; }
-    .custom-modal-box .btn-row { flex-direction: column; }
-    .custom-modal-box .btn-row button { width: 100%; }
-}
+@media (max-width: 480px) { .custom-modal-box { padding: 20px; } .custom-modal-box .btn-row { flex-direction: column; } .custom-modal-box .btn-row button { width: 100%; } }
 
-/* Print styles */
 @media print {
     body * { visibility: hidden; }
     #print-ticket-container, #print-ticket-container * { visibility: visible; }
-    #print-ticket-container { 
-        position: absolute; 
-        left: 0; 
-        top: 0; 
-        width: 100%; 
-        margin: 0; 
-        padding: 0; 
-        background: white; 
-        color: black;
-    }
-    .receipt-box {
-        box-shadow: none !important;
-        border: none !important;
-        max-height: none !important;
-        overflow: visible !important;
-    }
+    #print-ticket-container { position: absolute; left: 0; top: 0; width: 100%; margin: 0; padding: 0; background: white; color: black; }
+    .receipt-box { box-shadow: none !important; border: none !important; max-height: none !important; overflow: visible !important; }
 }
 </style>
 </head>
@@ -502,7 +471,6 @@ function toast(msg, isError = false) {
     t._timer = setTimeout(() => t.classList.remove('show'), 4500);
 }
 
-/* ====== Non-blocking confirm + prompt helpers ====== */
 function confirmToast(msg, { title = 'Confirm', okText = 'Confirm', cancelText = 'Cancel' } = {}) {
     return new Promise((resolve) => {
         const area = document.getElementById('modalArea');
@@ -802,11 +770,34 @@ function showReceipt(data) {
             <div class="receipt-buttons">
                 <button class="rcpt-print" onclick="downloadTicketImage()">📥 DOWNLOAD</button>
                 <button class="rcpt-print" style="background: #0ea5e9;" onclick="printTicket()">🖨️ PRINT</button>
-                <button class="rcpt-close" onclick="closeReceipt()">✕ Close</button>
+                <button class="rcpt-close" style="background: #22c55e; color: white;" onclick="finishAssign()">✅ DONE</button>
             </div>
         </div>`;
 }
 function closeReceipt() { const el = document.getElementById('receiptArea'); if (el) el.innerHTML = ''; }
+
+async function finishAssign() {
+    closeReceipt();
+    if (PAGE === 'tickets') {
+        if (assignGame === 'wheel') {
+            const n = document.getElementById('assignName'); if(n) n.value = '';
+            const p = document.getElementById('assignPhone'); if(p) p.value = '';
+            const pw = document.getElementById('assignPassword'); if(pw) pw.value = '';
+            const b = document.getElementById('assignBalance'); if(b) b.value = '0';
+            const f = document.getElementById('useFreeTicket'); if(f) f.checked = false;
+        } else {
+            const n = document.getElementById('assignNbName'); if(n) n.value = '';
+            const p = document.getElementById('assignNbPhone'); if(p) p.value = '';
+            const pw = document.getElementById('assignNbPassword'); if(pw) pw.value = '';
+            const b = document.getElementById('assignNbBalance'); if(b) b.value = '0';
+        }
+        assignSelectedWheel = [];
+        assignSelectedNB = [];
+        try { await refreshState(); } catch (e) { console.warn(e); }
+        await ticketsPage();
+    }
+}
+
 function viewImg(src) {
     const el = document.getElementById('receiptArea');
     el.innerHTML = '<div class="receipt-modal" onclick="if(event.target===this)closeReceipt()"><div style="max-width:90vw;max-height:90vh"><img src="' + src + '" style="max-width:90vw;max-height:88vh;border-radius:10px"></div></div>';
@@ -827,7 +818,6 @@ function printTicket() {
     const box = document.getElementById('ticketBox');
     if (!box) return;
 
-    // Create an invisible iframe to print only the ticket
     const iframe = document.createElement('iframe');
     iframe.style.position = 'fixed';
     iframe.style.right = '0';
@@ -838,8 +828,6 @@ function printTicket() {
     document.body.appendChild(iframe);
 
     const doc = iframe.contentWindow.document;
-    
-    // Copy styles from the main document so the ticket keeps its design
     const styles = Array.from(document.querySelectorAll('style, link[rel="stylesheet"]')).map(style => style.outerHTML).join('');
     
     doc.open();
@@ -863,11 +851,9 @@ function printTicket() {
     `);
     doc.close();
 
-    // Trigger print after a slight delay to allow images/QR codes to load
     setTimeout(() => {
         iframe.contentWindow.focus();
         iframe.contentWindow.print();
-        // Remove the iframe after printing
         setTimeout(() => document.body.removeChild(iframe), 1000);
     }, 500);
 }
@@ -1036,15 +1022,16 @@ function renderVerifyResult(res) {
 
 /* ================= DASHBOARD ================= */
 function dashboard() {
-    const sold = TICKETS.filter(t => t.user_id !== null).length;
-
     if (ME.role === 'admin') {
+        // read exact sold count from settings which we computed on the backend!
+        const wheelSold = SETTINGS.wheel_sold || 0;
+        
         document.getElementById('main').innerHTML = `
             <div class="wheel-hero-img"><img src="image2.jpg" onerror="this.src='https://images.unsplash.com/photo-1542751371-adc38448a05e?w=1600&h=500&fit=crop'"></div>
             <h1 class="title">Admin Dashboard</h1>
             <div class="stats">
                 <div class="stat"><small>Users</small><h2 id="statUsers">—</h2></div>
-                <div class="stat"><small>Sold</small><h2>${sold}/${SETTINGS.ticket_count}</h2></div>
+                <div class="stat"><small>Wheel Sold</small><h2>${wheelSold}/${SETTINGS.ticket_count}</h2></div>
                 <div class="stat"><small>Sales</small><h2>${SETTINGS.sales_state === 'open' ? '🟢 OPEN' : '⚪ ' + (SETTINGS.sales_state || 'idle').toUpperCase()}</h2></div>
                 <div class="stat"><small>Round</small><h2>${SETTINGS.round_state}</h2></div>
             </div>
@@ -1141,14 +1128,14 @@ function buyRenderWheel() {
     list.sort((a, b) => a.ticket_number - b.ticket_number);
     let grid = '';
     for (const t of list) {
-        const owners = TICKETS.filter(x => x.ticket_number === t.ticket_number && x.user_id);
-        const mine = owners.some(x => String(x.user_id) === String(ME.id));
+        const owners = TICKETS.filter(x => x.ticket_number === t.ticket_number && String(x.user_id) === String(ME.id));
+        const mine = owners.length > 0;
         let cls = 'ticket-select';
         if (mine) cls += ' mine';
-        else if (owners.length) cls += ' sold';
+        else if (t.user_id || t.owner_name || t.phone) cls += ' sold';
         let label = 'AVAILABLE';
         if (mine) label = 'YOURS (' + owners.length + ')';
-        else if (owners.length) label = 'SOLD (' + owners.length + ')';
+        else if (t.user_id || t.owner_name || t.phone) label = 'SOLD';
         grid += '<button type="button" class="' + cls + '" onclick="selectBuy(' + t.ticket_number + ', this)">#' + t.ticket_number + '<br><small>' + label + '</small></button>';
     }
     document.getElementById('buyContent').innerHTML = `
@@ -1272,7 +1259,7 @@ function assignRenderWheel() {
     list.sort((a, b) => a.ticket_number - b.ticket_number);
     let grid = '';
     for (const t of list) {
-        const owners = TICKETS.filter(x => x.ticket_number === t.ticket_number && x.user_id);
+        const owners = TICKETS.filter(x => x.ticket_number === t.ticket_number && (x.user_id || x.owner_name || x.phone));
         const label = owners.length ? ('SOLD (' + owners.length + ')') : 'AVAILABLE';
         grid += '<button type="button" class="ticket-select ' + (owners.length ? 'sold' : '') + '" onclick="selectAssignWheel(' + t.ticket_number + ', this)">#' + t.ticket_number + '<br><small>' + label + '</small></button>';
     }
@@ -1286,7 +1273,7 @@ function assignRenderWheel() {
             <div class="checkbox-row"><input type="checkbox" id="useFreeTicket"><label>🎁 Use FREE ticket</label></div>
             <label>Select Tickets</label>
             <div class="ticket-selector">${grid}</div>
-            <button class="main-button" onclick="assignTicketsWheel()">🎟️ ASSIGN + PRINT</button>
+            <button type="button" class="main-button" onclick="assignTicketsWheel()">🎟️ ASSIGN + PRINT</button>
         </div>`;
 }
 function selectAssignWheel(n, el) {
@@ -1304,9 +1291,15 @@ async function assignTicketsWheel() {
     try {
         await api('/admin/tickets/assign', { method: 'POST', body: { name, phone, password, balance, numbers: assignSelectedWheel, useFreeTicket: free } });
         await refreshState();
-        const rec = await api('/ticket-receipt', { method: 'POST', body: { game: 'wheel', round: SETTINGS.round_number, tickets: assignSelectedWheel } });
-        rec.owner = { name, phone };
-        ticketsPage(); showReceipt(rec);
+        let rec;
+        try {
+            rec = await api('/ticket-receipt', { method: 'POST', body: { game: 'wheel', round: SETTINGS.round_number, tickets: assignSelectedWheel } });
+        } catch (e) {
+            rec = { game: 'Lucky Wheel', round: SETTINGS.round_number, date: new Date().toISOString(),
+                    owner: { name, phone }, tickets: assignSelectedWheel.map(n => ({ number: n })), price: SETTINGS.ticket_price, ref: '—' };
+        }
+        rec.owner = rec.owner || { name, phone };
+        showReceipt(rec);
     } catch (e) { toast('❌ ' + e.message, true); }
 }
 async function assignRenderNB(cfg) {
@@ -1327,7 +1320,7 @@ async function assignRenderNB(cfg) {
             <label>Pick ${s.tickets_per_purchase} numbers</label>
             <div class="nb-grid-inline" id="nbAssignGrid">${grid}</div>
             <div class="nb-pick-info"><b>Selected:</b> <span id="nbAssignCount">0</span> / ${s.tickets_per_purchase}<div class="nb-pick-list" id="nbAssignList"></div></div>
-            <button class="main-button" onclick="assignTicketsNB()">🎟️ ASSIGN NB + PRINT</button>
+            <button type="button" class="main-button" onclick="assignTicketsNB()">🎟️ ASSIGN NB + PRINT</button>
         </div>`;
 }
 function nbAssignClick(num, cell, tpp) {
@@ -1347,10 +1340,15 @@ async function assignTicketsNB() {
     try {
         await api('/admin/nb/assign', { method: 'POST', body: { name, phone, password, balance, numbers: assignSelectedNB } });
         await refreshState();
-        const rec = await api('/ticket-receipt', { method: 'POST', body: { game: 'nb', round: cfg.round_number, tickets: assignSelectedNB } });
-        rec.owner = { name, phone };
-        assignSelectedNB = [];
-        ticketsPage(); showReceipt(rec);
+        let rec;
+        try {
+            rec = await api('/ticket-receipt', { method: 'POST', body: { game: 'nb', round: cfg.round_number, tickets: assignSelectedNB } });
+        } catch (e) {
+            rec = { game: 'Number Betting', round: cfg.round_number, date: new Date().toISOString(),
+                    owner: { name, phone }, tickets: assignSelectedNB.map(n => ({ number: n })), price: cfg.price_per_purchase, ref: '—' };
+        }
+        rec.owner = rec.owner || { name, phone };
+        showReceipt(rec);
     } catch (e) { toast('❌ ' + e.message, true); }
 }
 
@@ -1362,7 +1360,11 @@ async function nbPage() {
     const drawing = s.round_state === 'drawing';
     const open = s.sales_state === 'open';
     const mineSet = new Set((nbState.my_tickets||[]).map(t => t.number));
-    const userNums = new Set((nbState.tickets||[]).filter(t => t.user_id).map(t => t.number));
+    const userNums = new Set((nbState.tickets||[]).filter(t => t.user_id || t.owner_name || t.phone).map(t => t.number));
+    
+    // Safely count sold numbers
+    const uniqueSoldNumbers = nbState.sold_count || 0;
+
     const drawnSoFar = nbDrawnSoFar(s);
     const drawnSet = new Set((s.winning_numbers || []).slice(0, drawnSoFar));
     const drawingOrDone = s.round_state === 'drawing' || s.round_state === 'finished';
@@ -1382,7 +1384,7 @@ async function nbPage() {
         <h1 class="title">🎰 NB — Round #${s.round_number}</h1>
         <div class="nb-stats">
             <div class="stat"><small>Status</small><h2 id="nbStatusH">${nbStatusText(s)}</h2></div>
-            <div class="stat"><small>Sold</small><h2 id="nbSoldH">${nbState.sold_count}/${s.total_numbers}</h2></div>
+            <div class="stat"><small>Sold</small><h2 id="nbSoldH">${uniqueSoldNumbers}/${s.total_numbers}</h2></div>
             <div class="stat"><small>Bundle</small><h2>${s.tickets_per_purchase} for ${s.price_per_purchase}</h2></div>
             <div class="stat"><small>Drawn</small><h2 id="nbDrawnH">${drawnSoFar}/${s.drawn_count}</h2></div>
         </div>
@@ -1570,7 +1572,7 @@ function buildWheel() {
     const seen = new Set();
     const sold = [];
     for (const t of TICKETS) {
-        if (t.user_id === null) continue;
+        if (!t.user_id && !t.owner_name && !t.phone) continue;
         if (seen.has(t.ticket_number)) continue;
         seen.add(t.ticket_number);
         sold.push(t);
@@ -1694,6 +1696,7 @@ function startCountdown(at, dur) {
     };
     tick(); countdownId = setInterval(tick, 250);
 }
+function stopCountdown() { if (countdownId) { clearInterval(countdownId); countdownId = null; } }
 async function startSpin() { try { await api('/admin/spin/start', { method: 'POST' }); await refreshState(); renderPage(); } catch (e) { toast('❌ ' + e.message, true); } }
 async function newRound() { if (!(await confirmToast('Start a new round?', { title: 'New Round', okText: 'Start' }))) return; try { await api('/admin/round/reset', { method: 'POST' }); await refreshState(); renderPage(); } catch (e) { toast('❌ ' + e.message, true); } }
 function showWinners(winners) {
