@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Lucky Wheel</title>
+<!-- html2canvas for downloading tickets -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: Arial, sans-serif; background: #0f172a; color: white; }
@@ -20,8 +22,7 @@ button { cursor: pointer; }
 .login-description { text-align: center; color: #94a3b8; margin-bottom: 25px; }
 input, select { width: 100%; padding: 13px; margin: 7px 0 12px; border: 1px solid #475569; border-radius: 8px; background: #0b1220; color: white; outline: none; font-size: 14px; }
 input:focus, select:focus { border-color: #fbbf24; }
-.hint { font-size: 12px; color: #64748b; margin: -6px 0 10px; }
-.main-button { width: 100%; padding: 13px; border: none; border-radius: 8px; background: #fbbf24; color: #111827; font-weight: bold; margin-top: 8px; }
+.main-button { width: 100%; padding: 13px; border: none; border-radius: 8px; background: #fbbf24; color: #111827; font-weight: bold; margin-top: 8px; transition: 0.2s; }
 .main-button:disabled { opacity: .5; cursor: not-allowed; }
 .login-footer { text-align: center; color: #94a3b8; margin-top: 18px; }
 .link-button { border: none; background: none; color: #fbbf24; font-weight: bold; }
@@ -57,14 +58,6 @@ input:focus, select:focus { border-color: #fbbf24; }
 .ticket-select.selected { background: #fbbf24; color: #111827; }
 .ticket-select.sold { background: #7f1d1d; color: #fecaca; }
 .ticket-select.mine { background: #166534; color: #86efac; border-color: #4ade80; }
-.ticket { padding: 18px; border-radius: 10px; background: #172033; border: 1px solid #475569; }
-.ticket.sold { background: #3f1515; border-color: #991b1b; }
-.ticket.free { background: #14532d; border-color: #4ade80; }
-.ticket-number { font-size: 25px; font-weight: bold; color: #fbbf24; margin-bottom: 10px; }
-.ticket-code { font-family: monospace; font-size: 11px; color: #0ea5e9; margin-bottom: 6px; }
-.available { color: #4ade80; }
-.sold-text { color: #f87171; }
-.free-badge { color: #4ade80; font-weight: bold; font-size: 12px; }
 .checkbox-row { display: flex; align-items: center; gap: 10px; padding: 12px; background: #0b1220; border-radius: 8px; border: 1px solid #4ade80; margin-bottom: 12px; }
 .checkbox-row input { width: auto; margin: 0; }
 .checkbox-row label { color: #86efac; font-weight: bold; margin: 0; display: inline; }
@@ -120,9 +113,27 @@ th { color: #94a3b8; }
 .status-badge.pending { background: #78350f; color: #fcd34d; }
 .status-badge.approved { background: #166534; color: #86efac; }
 .status-badge.rejected { background: #7f1d1d; color: #fecaca; }
-.req-card { padding: 16px; border-radius: 12px; background: #172033; border: 1px solid #334155; margin-bottom: 12px; }
-.req-card .row { display: flex; justify-content: space-between; padding: 6px 0; font-size: 14px; flex-wrap: wrap; gap: 6px; }
+.req-card { padding: 16px; border-radius: 12px; background: #172033; border: 1px solid #334155; margin-bottom: 12px; overflow-wrap: anywhere; word-break: break-word; }
+.req-card .row { display: flex; justify-content: space-between; padding: 6px 0; font-size: 14px; flex-wrap: wrap; gap: 6px; align-items: flex-start; }
+.req-card .row > * { min-width: 0; }
+.req-card .row > span, .req-card .row > b { max-width: 100%; overflow-wrap: anywhere; word-break: break-word; }
+.req-card .row b { flex: 0 0 auto; }
+.req-card .row span { flex: 1 1 auto; text-align: right; }
+.req-card img { max-width: 100%; height: auto; }
 .req-actions { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+.req-actions > button { flex: 1 1 auto; }
+
+@media (max-width: 700px) {
+    .req-card .row { flex-direction: column; align-items: stretch; gap: 2px; }
+    .req-card .row span { text-align: left; }
+    .req-card .row b { font-size: 12px; color: #94a3b8; }
+    .req-card { padding: 14px; }
+    .dep-shot-thumb { max-width: 100%; max-height: 220px; }
+    .req-actions > button { width: 100%; flex: 1 1 100%; }
+    .status-badge { display: inline-block; }
+    .table-box table th, .table-box table td { padding: 10px 8px; font-size: 13px; }
+}
+
 .method-box { padding: 20px; border-radius: 12px; border: 2px dashed #fbbf24; background: #0b1220; margin: 12px 0; }
 .method-box h3 { color: #fbbf24; margin-bottom: 8px; }
 .method-box .acct { font-size: 22px; font-weight: bold; font-family: monospace; letter-spacing: 2px; color: #ffffff; margin: 6px 0; }
@@ -133,7 +144,7 @@ th { color: #94a3b8; }
 .telegram-banner .text h3 { color: #fff; margin-bottom: 4px; font-size: 16px; }
 .telegram-banner .text p { color: #e0f7fa; font-size: 13px; }
 .telegram-banner .join-btn { padding: 10px 20px; background: #fff; color: #006699; border: none; border-radius: 8px; font-weight: bold; text-decoration: none; cursor: pointer; }
-.receipt-modal { position: fixed; inset: 0; z-index: 99999; background: rgba(0,0,0,.85); display: flex; justify-content: center; align-items: center; padding: 20px; }
+.receipt-modal { position: fixed; inset: 0; z-index: 99999; background: rgba(0,0,0,.85); display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 20px; }
 .receipt-box { background: white; color: #111; max-width: 480px; width: 100%; padding: 30px; border-radius: 12px; font-family: 'Courier New', monospace; max-height: 90vh; overflow-y: auto; }
 .receipt-box h2 { text-align: center; margin-bottom: 16px; }
 .receipt-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px dashed #ccc; font-size: 14px; gap: 8px; }
@@ -146,8 +157,6 @@ th { color: #94a3b8; }
 @keyframes livePulse { 0%,100%{opacity:1} 50%{opacity:.25} }
 @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.55; } }
-.progress-bar { width: 100%; height: 14px; background: #0b1220; border-radius: 7px; overflow: hidden; margin: 10px 0; border: 1px solid #334155; }
-.progress-fill { height: 100%; background: linear-gradient(90deg, #fbbf24, #f59e0b); }
 .referral-card { padding: 22px; margin-bottom: 20px; border-radius: 15px; background: linear-gradient(135deg, #1e293b, #0f172a); border: 1px solid #fbbf24; }
 .referral-code-box { display: flex; gap: 10px; align-items: center; margin: 12px 0; flex-wrap: wrap; }
 .referral-code { padding: 12px 20px; border-radius: 8px; background: #0b1220; border: 2px dashed #fbbf24; font-size: 22px; font-weight: bold; letter-spacing: 3px; color: #fbbf24; font-family: monospace; }
@@ -157,23 +166,10 @@ th { color: #94a3b8; }
 .ref-badge.active { background: #166534; color: #86efac; }
 .ref-badge.pending { background: #78350f; color: #fcd34d; }
 .nb-hero { width: 100%; height: 180px; border-radius: 15px; margin-bottom: 20px; overflow: hidden; border: 2px solid #334155; background: linear-gradient(135deg,#0b1220,#1e293b); display: flex; align-items: center; justify-content: center; }
-
-/* Wheel hero banner */
 .wheel-hero-img { width: 100%; height: 220px; border-radius: 15px; overflow: hidden; margin-bottom: 20px; border: 2px solid #334155; box-shadow: 0 10px 40px rgba(0,0,0,0.6); }
 .wheel-hero-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
-
 .wheel-page-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
-
-/* Numbers grid inline */
-.nb-grid-inline {
-    display: grid;
-    grid-template-columns: repeat(10, 1fr);
-    gap: 6px;
-    width: 100%;
-    margin-top: 12px;
-}
-
-/* Horizontal winner cards */
+.nb-grid-inline { display: grid; grid-template-columns: repeat(10, 1fr); gap: 6px; width: 100%; margin-top: 12px; }
 .nb-overlay-winners { display: flex; flex-direction: column; gap: 10px; margin-top: 14px; }
 .nb-win-title { font-size: 20px; color: #4ade80; margin-bottom: 6px; }
 .nb-win-row { display: flex; flex-wrap: wrap; gap: 12px; justify-content: flex-start; }
@@ -190,11 +186,7 @@ th { color: #94a3b8; }
 .nb-win-card .nwc-meta { font-size: 11px; color: #94a3b8; font-family: monospace; margin-top: 2px; }
 .nb-win-card .nwc-nums { font-size: 12px; color: #cbd5e1; font-family: monospace; margin-top: 4px; }
 .nb-win-card .nwc-prize { color: #fbbf24; font-weight: bold; font-size: 16px; white-space: nowrap; }
-
-/* Exit public view button */
 #exitPublicBtn { display: none; position: fixed; top: 12px; right: 12px; z-index: 9999; padding: 10px 16px; background: #991b1b; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; box-shadow: 0 6px 20px rgba(0,0,0,0.5); }
-
-/* Full-screen public view for NB */
 body.public-view .header,
 body.public-view .sidebar,
 body.public-view .mobile-topbar,
@@ -213,8 +205,6 @@ body.public-view #exitPublicBtn { display: inline-flex !important; }
 body.public-view .nb-win-card { min-width: 320px; flex: 1 1 320px; max-width: 480px; }
 body.public-view .nwc-name { font-size: 18px; }
 body.public-view .nwc-prize { font-size: 20px; }
-
-/* Full-screen public view for the wheel */
 body.wheel-public .header,
 body.wheel-public .sidebar,
 body.wheel-public .mobile-topbar,
@@ -224,74 +214,23 @@ body.wheel-public .status { display: none !important; }
 body.wheel-public .layout { grid-template-columns: 1fr !important; }
 body.wheel-public .main { max-width: 100% !important; padding: 8px !important; height: 100vh; overflow: hidden; }
 body.wheel-public .card { border: none; background: transparent; padding: 0; margin: 0; }
-body.wheel-public .wheel-layout {
-    grid-template-columns: 1fr;
-    gap: 20px;
-    justify-items: center;
-    height: auto;
-    min-height: 100vh;
-    align-content: start;
-    padding-top: 20px;
-}
-body.wheel-public .wheel-container {
-    width: min(80vh, 90vw);
-    max-width: 900px;
-}
-body.wheel-public .timer {
-    font-size: 80px;
-    padding: 20px 40px;
-    margin: 0 auto 20px;
-    width: fit-content;
-    min-width: 300px;
-}
+body.wheel-public .wheel-layout { grid-template-columns: 1fr; gap: 20px; justify-items: center; height: auto; min-height: 100vh; align-content: start; padding-top: 20px; }
+body.wheel-public .wheel-container { width: min(80vh, 90vw); max-width: 900px; }
+body.wheel-public .timer { font-size: 80px; padding: 20px 40px; margin: 0 auto 20px; width: fit-content; min-width: 300px; }
 body.wheel-public .action-buttons { justify-content: center; }
 body.wheel-public #exitPublicBtn { display: inline-flex !important; }
-
 @media(max-width:1000px) { .stats { grid-template-columns: repeat(2,1fr); } .wheel-layout { grid-template-columns: 1fr; } .nb-stats { grid-template-columns: repeat(2, 1fr); } }
-
-/* ===== MOBILE DRAWER (Change #3) ===== */
-.mobile-topbar {
-    display: none;
-    height: 56px;
-    padding: 0 14px;
-    background: #111827;
-    border-bottom: 1px solid #334155;
-    align-items: center;
-    justify-content: space-between;
-    position: sticky;
-    top: 0;
-    z-index: 500;
-}
+.mobile-topbar { display: none; height: 56px; padding: 0 14px; background: #111827; border-bottom: 1px solid #334155; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 500; }
 .mobile-topbar .mt-logo { font-size: 18px; font-weight: bold; }
 .mobile-topbar .mt-logo span { color: #fbbf24; }
-.mobile-topbar .mt-burger {
-    background: none; border: none; color: #fbbf24;
-    font-size: 26px; padding: 6px 10px; border-radius: 6px;
-}
-.sidebar-backdrop {
-    display: none;
-    position: fixed; inset: 0;
-    background: rgba(0,0,0,.6);
-    z-index: 800;
-}
+.mobile-topbar .mt-burger { background: none; border: none; color: #fbbf24; font-size: 26px; padding: 6px 10px; border-radius: 6px; }
+.sidebar-backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.6); z-index: 800; }
 .sidebar-backdrop.show { display: block; }
-
 @media(max-width:700px) {
     .header { display: none; }
     .mobile-topbar { display: flex; }
     .layout { display: block; min-height: calc(100vh - 56px); }
-    .sidebar {
-        position: fixed;
-        top: 0; left: -260px;
-        width: 250px;
-        height: 100vh;
-        z-index: 900;
-        overflow-y: auto;
-        padding: 16px;
-        transition: left .25s ease;
-        display: flex;
-        flex-direction: column;
-    }
+    .sidebar { position: fixed; top: 0; left: -260px; width: 250px; height: 100vh; z-index: 900; overflow-y: auto; padding: 16px; transition: left .25s ease; display: flex; flex-direction: column; }
     .sidebar.open { left: 0; }
     .nav { min-width: 0; width: 100%; margin-right: 0; }
     .main { padding: 14px; }
@@ -299,50 +238,59 @@ body.wheel-public #exitPublicBtn { display: inline-flex !important; }
     .wheel-container { width: 320px; }
     .timer { font-size: 40px; }
 }
+body.wheel-public #winnerArea { width: 100%; max-width: 1400px; margin: 20px auto 0; padding: 0 20px; }
+body.wheel-public .winners { background: linear-gradient(135deg, #14532d, #0f172a); border: 3px solid #4ade80; border-radius: 20px; padding: 24px; box-shadow: 0 0 60px rgba(74,222,128,0.5); animation: winnerFlash 1.5s ease-in-out infinite; }
+@keyframes winnerFlash { 0%, 100% { box-shadow: 0 0 40px rgba(74,222,128,0.45); } 50% { box-shadow: 0 0 80px rgba(74,222,128,0.95); } }
+body.wheel-public .winners h2 { font-size: 42px; text-align: center; margin-bottom: 20px; text-shadow: 0 0 30px rgba(74,222,128,0.9); }
+body.wheel-public .winners .winner { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; padding: 18px 22px; margin-bottom: 12px; background: #0b1220; border: 2px solid #4ade80; border-radius: 14px; font-size: 22px; font-weight: bold; }
+body.wheel-public .winners .winner .gold { font-size: 26px; color: #fbbf24; text-shadow: 0 0 15px rgba(251,191,36,0.9); }
 
-/* Big winners display for the wheel public view */
-body.wheel-public #winnerArea {
-    width: 100%;
-    max-width: 1400px;
-    margin: 20px auto 0;
-    padding: 0 20px;
-}
-body.wheel-public .winners {
-    background: linear-gradient(135deg, #14532d, #0f172a);
-    border: 3px solid #4ade80;
-    border-radius: 20px;
-    padding: 24px;
-    box-shadow: 0 0 60px rgba(74,222,128,0.5);
-    animation: winnerFlash 1.5s ease-in-out infinite;
-}
-@keyframes winnerFlash {
-    0%, 100% { box-shadow: 0 0 40px rgba(74,222,128,0.45); }
-    50%      { box-shadow: 0 0 80px rgba(74,222,128,0.95); }
-}
-body.wheel-public .winners h2 {
-    font-size: 42px;
-    text-align: center;
-    margin-bottom: 20px;
-    text-shadow: 0 0 30px rgba(74,222,128,0.9);
-}
-body.wheel-public .winners .winner {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    flex-wrap: wrap;
-    gap: 12px;
-    padding: 18px 22px;
-    margin-bottom: 12px;
-    background: #0b1220;
-    border: 2px solid #4ade80;
-    border-radius: 14px;
-    font-size: 22px;
+.login-error-box {
+    display: none;
+    background: #7f1d1d;
+    color: #fca5a5;
+    padding: 12px;
+    border-radius: 8px;
+    border: 1px solid #dc2626;
+    margin-bottom: 15px;
+    font-size: 14px;
     font-weight: bold;
+    text-align: center;
 }
-body.wheel-public .winners .winner .gold {
-    font-size: 26px;
-    color: #fbbf24;
-    text-shadow: 0 0 15px rgba(251,191,36,0.9);
+.dep-shot-thumb { max-width: 260px; max-height: 260px; border-radius: 8px; border: 1px solid #334155; margin-top: 6px; cursor: pointer; }
+
+.custom-modal { position: fixed; inset: 0; z-index: 100000; background: rgba(0,0,0,.8); display: flex; justify-content: center; align-items: center; padding: 20px; }
+.custom-modal-box { background: #111827; border: 1px solid #334155; border-radius: 12px; width: 100%; max-width: 400px; padding: 25px; }
+.custom-modal-box h3 { margin-bottom: 15px; color: #fbbf24; }
+.custom-modal-box input { background: #0b1220; }
+.custom-modal-box .btn-row { display: flex; gap: 10px; margin-top: 15px; }
+.custom-modal-box input { font-size: 16px; }
+@media (max-width: 480px) {
+    .custom-modal-box { padding: 20px; }
+    .custom-modal-box .btn-row { flex-direction: column; }
+    .custom-modal-box .btn-row button { width: 100%; }
+}
+
+/* Print styles */
+@media print {
+    body * { visibility: hidden; }
+    #print-ticket-container, #print-ticket-container * { visibility: visible; }
+    #print-ticket-container { 
+        position: absolute; 
+        left: 0; 
+        top: 0; 
+        width: 100%; 
+        margin: 0; 
+        padding: 0; 
+        background: white; 
+        color: black;
+    }
+    .receipt-box {
+        box-shadow: none !important;
+        border: none !important;
+        max-height: none !important;
+        overflow: visible !important;
+    }
 }
 </style>
 </head>
@@ -350,6 +298,7 @@ body.wheel-public .winners .winner .gold {
 <div id="toast" class="toast hidden"></div>
 <button id="exitPublicBtn" onclick="exitPublicView()">✕ Exit Public View</button>
 <div id="receiptArea"></div>
+<div id="modalArea"></div>
 
 <section id="loginPage" class="login-page">
 <div class="login-card">
@@ -421,20 +370,24 @@ body.wheel-public .winners .winner .gold {
     </div>
     <div class="logo">LUCKY<span>WHEEL</span></div>
     <p class="login-description">Teshe Number Lucky Wheel · Number Betting</p>
+    
     <div id="loginForm">
+        <div id="loginError" class="login-error-box"></div>
         <input id="loginPhone" placeholder="Phone Number">
         <input id="loginPassword" type="password" placeholder="Password">
-        <button class="main-button" onclick="loginUser()">Login</button>
+        <button id="loginBtn" class="main-button" onclick="loginUser()">Login</button>
         <div class="login-footer">Don't have an account? <button class="link-button" onclick="showRegister()">Register</button></div>
     </div>
+    
     <div id="register" class="hidden">
+        <div id="registerError" class="login-error-box"></div>
         <h2 style="margin-bottom:20px">Create Account</h2>
         <input id="regName" placeholder="Full Name">
         <input id="regPhone" placeholder="Phone Number">
         <input id="regPassword" type="password" placeholder="Password">
         <label>Referral Code (optional)</label>
         <input id="regReferral" placeholder="e.g. ABC1234" style="text-transform:uppercase">
-        <button class="main-button" onclick="register()">Register</button>
+        <button id="registerBtn" class="main-button" onclick="register()">Register</button>
         <div class="login-footer">Already registered? <button class="link-button" onclick="showLogin()">Login</button></div>
     </div>
 </div>
@@ -450,7 +403,6 @@ body.wheel-public .winners .winner .gold {
     </div>
 </header>
 
-<!-- ===== MOBILE TOP BAR (Change #3) ===== -->
 <div class="mobile-topbar">
     <div class="mt-logo">LUCKY<span>WHEEL</span></div>
     <button class="mt-burger" onclick="toggleMobileMenu()">☰</button>
@@ -474,6 +426,7 @@ let CONFIG = { botUsername: 'Numbers_Betting_bot', channelUsername: '@Lucky21_Wh
 let buyGame = 'wheel', assignGame = 'wheel', historyGame = 'wheel', settingsGame = 'wheel';
 let buySelected = [], nbBuyPicked = [], assignSelectedWheel = [], assignSelectedNB = [];
 let verifyGame = 'wheel', _drawStartClient = null, _drawRoundKey = null, _lastShown = -1;
+let _depScreenshotData = null;
 
 const IMG = {
   dash:    'image2.jpg',
@@ -492,19 +445,18 @@ const IMG = {
 
 const BOT_LINK = 'https://t.me/TE21HUSH';
 
-/* ===== MOBILE MENU HELPERS ===== */
 function toggleMobileMenu() {
-    const sb = document.getElementById('sidebar');
-    const bd = document.getElementById('sidebarBackdrop');
-    if (!sb || !bd) return;
-    sb.classList.toggle('open');
-    bd.classList.toggle('show', sb.classList.contains('open'));
+    const s = document.getElementById('sidebar');
+    const b = document.getElementById('sidebarBackdrop');
+    if (!s || !b) return;
+    s.classList.toggle('open');
+    b.classList.toggle('show', s.classList.contains('open'));
 }
 function closeMobileMenu() {
-    const sb = document.getElementById('sidebar');
-    const bd = document.getElementById('sidebarBackdrop');
-    if (sb) sb.classList.remove('open');
-    if (bd) bd.classList.remove('show');
+    const s = document.getElementById('sidebar');
+    const b = document.getElementById('sidebarBackdrop');
+    if (s) s.classList.remove('open');
+    if (b) b.classList.remove('show');
 }
 
 function renderSidebar() {
@@ -550,6 +502,50 @@ function toast(msg, isError = false) {
     t._timer = setTimeout(() => t.classList.remove('show'), 4500);
 }
 
+/* ====== Non-blocking confirm + prompt helpers ====== */
+function confirmToast(msg, { title = 'Confirm', okText = 'Confirm', cancelText = 'Cancel' } = {}) {
+    return new Promise((resolve) => {
+        const area = document.getElementById('modalArea');
+        area.innerHTML = `
+            <div class="custom-modal" onclick="if(event.target===this){this.remove();}">
+                <div class="custom-modal-box">
+                    <h3>${escapeHTML(title)}</h3>
+                    <p class="muted" style="margin-bottom:15px;line-height:1.5">${escapeHTML(msg)}</p>
+                    <div class="btn-row">
+                        <button class="main-button" id="confirmYes">${escapeHTML(okText)}</button>
+                        <button class="main-button" style="background:#64748b;color:white" id="confirmNo">${escapeHTML(cancelText)}</button>
+                    </div>
+                </div>
+            </div>`;
+        const cleanup = (v) => { area.innerHTML = ''; resolve(v); };
+        document.getElementById('confirmYes').onclick = () => cleanup(true);
+        document.getElementById('confirmNo').onclick = () => cleanup(false);
+    });
+}
+
+function promptModal(title, { placeholder = '', type = 'text', okText = 'Submit' } = {}) {
+    return new Promise((resolve) => {
+        const area = document.getElementById('modalArea');
+        area.innerHTML = `
+            <div class="custom-modal" onclick="if(event.target===this){this.remove();}">
+                <div class="custom-modal-box">
+                    <h3>${escapeHTML(title)}</h3>
+                    <input id="modalInput" type="${type}" placeholder="${escapeHTML(placeholder)}">
+                    <div class="btn-row">
+                        <button class="main-button" id="modalOk">${escapeHTML(okText)}</button>
+                        <button class="main-button" style="background:#64748b;color:white" id="modalCancel">Cancel</button>
+                    </div>
+                </div>
+            </div>`;
+        const cleanup = (v) => { area.innerHTML = ''; resolve(v); };
+        const input = document.getElementById('modalInput');
+        setTimeout(() => input.focus(), 80);
+        input.addEventListener('keydown', (e) => { if (e.key === 'Enter') cleanup(input.value); });
+        document.getElementById('modalOk').onclick = () => cleanup(input.value);
+        document.getElementById('modalCancel').onclick = () => cleanup(null);
+    });
+}
+
 async function api(path, options = {}) {
     let res;
     try {
@@ -558,7 +554,7 @@ async function api(path, options = {}) {
             headers: { 'Content-Type': 'application/json', ...(TOKEN ? { Authorization: 'Bearer ' + TOKEN } : {}) },
             body: options.body ? JSON.stringify(options.body) : undefined
         });
-    } catch (err) { throw new Error('Network error.'); }
+    } catch (err) { throw new Error('Network error. Is the backend server running?'); }
     let data = {};
     try { data = await res.json(); } catch (e) {}
     if (!res.ok) throw new Error(data.error || 'Something went wrong.');
@@ -591,36 +587,81 @@ function showRegister() {
     const rg = document.getElementById('register');
     if (lf) lf.classList.add('hidden');
     if (rg) rg.classList.remove('hidden');
+    const err = document.getElementById('registerError');
+    if (err) err.style.display = 'none';
 }
 function showLogin() {
     const lf = document.getElementById('loginForm');
     const rg = document.getElementById('register');
     if (lf) lf.classList.remove('hidden');
     if (rg) rg.classList.add('hidden');
+    const err = document.getElementById('loginError');
+    if (err) err.style.display = 'none';
 }
+
 async function register() {
     const name = document.getElementById('regName').value.trim();
     const phone = document.getElementById('regPhone').value.trim();
     const password = document.getElementById('regPassword').value.trim();
     const referralCode = document.getElementById('regReferral').value.trim().toUpperCase();
-    if (!name || !phone || !password) { alert('Fill all fields.'); return; }
+    const errorBox = document.getElementById('registerError');
+    const btn = document.getElementById('registerBtn');
+    
+    errorBox.style.display = 'none';
+
+    if (!name || !phone || !password) { 
+        errorBox.textContent = 'Please fill in all fields.';
+        errorBox.style.display = 'block';
+        return; 
+    }
+
+    btn.textContent = 'Creating...';
+    btn.disabled = true;
+
     try {
         const res = await api('/auth/register', { method: 'POST', body: { name, phone, password, referralCode } });
-        alert('✅ Account created!\n\nReferral code: ' + res.referral_code);
+        toast('✅ Account created! Your code: ' + res.referral_code);
         showLogin();
-    } catch (e) { alert('❌ ' + e.message); }
+    } catch (e) { 
+        errorBox.textContent = '❌ ' + e.message;
+        errorBox.style.display = 'block';
+    } finally {
+        btn.textContent = 'Register';
+        btn.disabled = false;
+    }
 }
+
 async function loginUser() {
     const phone = document.getElementById('loginPhone').value.trim();
     const password = document.getElementById('loginPassword').value.trim();
-    if (!phone || !password) { alert('Enter phone and password.'); return; }
+    const errorBox = document.getElementById('loginError');
+    const btn = document.getElementById('loginBtn');
+    
+    errorBox.style.display = 'none';
+
+    if (!phone || !password) { 
+        errorBox.textContent = 'Please enter phone and password.';
+        errorBox.style.display = 'block';
+        return; 
+    }
+
+    btn.textContent = 'Logging in...';
+    btn.disabled = true;
+
     try {
         const data = await api('/auth/login', { method: 'POST', body: { phone, password } });
         TOKEN = data.token;
         localStorage.setItem('lw_token', TOKEN);
         await enterApp();
-    } catch (e) { alert('❌ ' + e.message); }
+    } catch (e) { 
+        errorBox.textContent = '❌ ' + e.message;
+        errorBox.style.display = 'block';
+    } finally {
+        btn.textContent = 'Login';
+        btn.disabled = false;
+    }
 }
+
 async function enterApp() {
     await refreshState();
     const lp = document.getElementById('loginPage');
@@ -665,7 +706,7 @@ function startAutoPoll() {
 function openPage(page) {
     PAGE = page;
     document.querySelectorAll('.nav').forEach(btn => btn.classList.toggle('active', btn.dataset.page === page));
-    closeMobileMenu();   // <-- closes the mobile drawer
+    closeMobileMenu();
     renderPage();
 }
 async function renderPage() {
@@ -688,8 +729,8 @@ async function renderPage() {
 }
 function stopLivePolls() { if (nbPollId) { clearInterval(nbPollId); nbPollId = null; } if (nbSettleId) { clearInterval(nbSettleId); nbSettleId = null; } }
 
-function logout() {
-    if (!confirm('Logout?')) return;
+async function logout() {
+    if (!(await confirmToast('Are you sure you want to logout?', { title: 'Logout', okText: 'Logout' }))) return;
     try { localStorage.removeItem('lw_token'); } catch (e) {}
     TOKEN = null; ME = null;
     if (sb) { try { sb.removeAllChannels(); } catch (e) {} }
@@ -717,7 +758,7 @@ function enterPublicView() { document.body.classList.add('public-view'); }
 function exitPublicView() { document.body.classList.remove('public-view', 'wheel-public'); closeMobileMenu(); }
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape') exitPublicView(); });
 
-/* ================= RECEIPT ================= */
+/* ================= RECEIPT / DOWNLOAD ================= */
 function showReceipt(data) {
     const el = document.getElementById('receiptArea');
     if (!el) return;
@@ -726,36 +767,110 @@ function showReceipt(data) {
         rows = data.tickets.map(t => {
             const num = typeof t === 'object' ? t.number : t;
             const code = typeof t === 'object' && t.printer_code ? t.printer_code : '—';
-            const qr = code && code !== '—' ? 'https://api.qrserver.com/v1/create-qr-code/?size=90x90&data=' + encodeURIComponent(code) : '';
-            return '<div class="receipt-row"><span><b>#' + num + '</b>' + (code && code !== '—' ? ' · <code>' + code + '</code>' : '') + '</span>' +
-                   (qr ? '<img src="' + qr + '" style="width:70px;height:70px;border:1px solid #ccc;padding:2px">' : '') + '</div>';
+            const qrData = code !== '—' ? code : 'TICKET-' + num;
+            const qr = 'https://api.qrserver.com/v1/create-qr-code/?size=90x90&data=' + encodeURIComponent(qrData);
+            return '<div class="receipt-row"><span><b>#' + num + '</b></span>' +
+                   '<img src="' + qr + '" loading="eager" style="width:70px;height:70px;border:1px solid #ccc;padding:2px" crossorigin="anonymous">' + '</div>';
         }).join('');
     }
+    
+    const displayRef = (data.ref && data.ref !== '—') ? data.ref : (data.unique_id && data.unique_id !== '—' ? data.unique_id : 'TKT-' + Date.now().toString().slice(-6));
+
     el.innerHTML = `
         <div class="receipt-modal" onclick="if(event.target===this)closeReceipt()">
-            <div class="receipt-box">
+            <div class="receipt-box" id="ticketBox">
                 <h2>🎡 LUCKY WHEEL</h2>
                 <p style="text-align:center;font-size:12px;margin-bottom:16px">Official Ticket Receipt</p>
                 <div class="receipt-row"><b>Game:</b> <span>${escapeHTML(data.game)}</span></div>
                 <div class="receipt-row"><b>Round:</b> <span>#${data.round}</span></div>
-                <div class="receipt-row"><b>Ref:</b> <span>${escapeHTML(data.ref)}</span></div>
+                <div class="receipt-row"><b>Ticket ID (Ref):</b> <span style="font-weight:bold; font-size:15px; color:#0ea5e9;">${escapeHTML(displayRef)}</span></div>
                 <div class="receipt-row"><b>Date:</b> <span>${new Date(data.date).toLocaleString()}</span></div>
                 <div class="receipt-row"><b>Owner:</b> <span>${escapeHTML(data.owner.name)}</span></div>
                 <div class="receipt-row"><b>Phone:</b> <span>${escapeHTML(data.owner.phone)}</span></div>
                 ${data.owner.public_code ? '<div class="receipt-row"><b>User ID:</b> <span>' + escapeHTML(data.owner.public_code) + '</span></div>' : ''}
-                ${data.unique_id ? '<div class="receipt-row"><b>Unique ID:</b> <span style="font-family:monospace">' + escapeHTML(data.unique_id) + '</span></div>' : ''}
                 <div class="receipt-row"><b>Price:</b> <span>${money(data.price)}</span></div>
                 <div style="margin-top:14px"><b>TICKETS:</b></div>
                 ${rows || '<p style="text-align:center">No tickets</p>'}
-                <div class="receipt-footer">Keep safe. Scan QR to verify.</div>
-                <div class="receipt-buttons">
-                    <button class="rcpt-print" onclick="window.print()">🖨️ Print / Save PDF</button>
-                    <button class="rcpt-close" onclick="closeReceipt()">✕ Close</button>
+                
+                <div style="margin-top: 30px; text-align: center;">
+                    <div style="font-family: 'Brush Script MT', cursive, sans-serif; font-size: 26px; color: #1e3a8a; font-weight: bold; transform: rotate(-5deg);">Teshe Betting</div>
+                    <div style="border-top: 1px solid #333; width: 80%; margin: 5px auto 0; padding-top: 5px; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #555;">Authorized Signature</div>
                 </div>
+
+                <div class="receipt-footer">Keep safe. Scan QR to verify.</div>
+            </div>
+            <div class="receipt-buttons">
+                <button class="rcpt-print" onclick="downloadTicketImage()">📥 DOWNLOAD</button>
+                <button class="rcpt-print" style="background: #0ea5e9;" onclick="printTicket()">🖨️ PRINT</button>
+                <button class="rcpt-close" onclick="closeReceipt()">✕ Close</button>
             </div>
         </div>`;
 }
 function closeReceipt() { const el = document.getElementById('receiptArea'); if (el) el.innerHTML = ''; }
+function viewImg(src) {
+    const el = document.getElementById('receiptArea');
+    el.innerHTML = '<div class="receipt-modal" onclick="if(event.target===this)closeReceipt()"><div style="max-width:90vw;max-height:90vh"><img src="' + src + '" style="max-width:90vw;max-height:88vh;border-radius:10px"></div></div>';
+}
+
+function downloadTicketImage() {
+    const box = document.getElementById('ticketBox');
+    if (!box) return;
+    html2canvas(box, { scale: 2, backgroundColor: '#ffffff', useCORS: true }).then(canvas => {
+        const link = document.createElement('a');
+        link.download = 'LuckyWheel-Ticket.png';
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+    }).catch(err => toast('Error downloading ticket: ' + err, true));
+}
+
+function printTicket() {
+    const box = document.getElementById('ticketBox');
+    if (!box) return;
+
+    // Create an invisible iframe to print only the ticket
+    const iframe = document.createElement('iframe');
+    iframe.style.position = 'fixed';
+    iframe.style.right = '0';
+    iframe.style.bottom = '0';
+    iframe.style.width = '0';
+    iframe.style.height = '0';
+    iframe.style.border = '0';
+    document.body.appendChild(iframe);
+
+    const doc = iframe.contentWindow.document;
+    
+    // Copy styles from the main document so the ticket keeps its design
+    const styles = Array.from(document.querySelectorAll('style, link[rel="stylesheet"]')).map(style => style.outerHTML).join('');
+    
+    doc.open();
+    doc.write(`
+        <html>
+            <head>
+                <title>Print Ticket</title>
+                ${styles}
+                <style>
+                    body { background: white !important; margin: 0; padding: 20px; display: flex; justify-content: center; }
+                    .receipt-box { box-shadow: none !important; border: none !important; max-width: 100% !important; overflow: visible !important; }
+                    @page { margin: 10mm; }
+                </style>
+            </head>
+            <body>
+                <div id="print-ticket-container">
+                    ${box.outerHTML}
+                </div>
+            </body>
+        </html>
+    `);
+    doc.close();
+
+    // Trigger print after a slight delay to allow images/QR codes to load
+    setTimeout(() => {
+        iframe.contentWindow.focus();
+        iframe.contentWindow.print();
+        // Remove the iframe after printing
+        setTimeout(() => document.body.removeChild(iframe), 1000);
+    }, 500);
+}
 
 /* ================= MY TICKETS ================= */
 async function myTicketsPage() {
@@ -768,32 +883,48 @@ async function myTicketsPage() {
     if (wheelMine.length) {
         const groups = {};
         wheelMine.forEach(t => {
-            const key = t.printer_code || ('noid-' + t.ticket_number);
-            if (!groups[key]) groups[key] = { unique_id: t.printer_code || '—', round: t.round_number, numbers: [] };
+            const key = t.printer_code || t.batch_id || ('noid-' + t.ticket_number);
+            if (!groups[key]) groups[key] = { unique_id: t.batch_id || t.printer_code || '—', round: t.round_number, numbers: [] };
             groups[key].numbers.push(t.ticket_number);
         });
-        wheelHtml = Object.values(groups).map(g => `
+        wheelHtml = Object.values(groups).map(g => {
+            const dataObj = {
+                game: 'Lucky Wheel', round: g.round, ref: g.unique_id, date: new Date().toISOString(),
+                owner: { name: ME.name, phone: ME.phone, public_code: ME.public_code },
+                unique_id: g.unique_id, tickets: g.numbers.map(n => ({number: n, printer_code: g.unique_id})), price: SETTINGS.ticket_price
+            };
+            return `
             <div class="req-card" style="margin-bottom:8px">
                 <div class="row"><b>Numbers</b><span class="gold">${g.numbers.sort((a,b)=>a-b).map(n=>'#'+n).join(' ')}</span></div>
                 <div class="row"><b>Round</b><span>#${g.round}</span></div>
-                <div class="row"><b>Unique ID</b><span style="font-family:monospace;color:#0ea5e9">${escapeHTML(g.unique_id)}</span></div>
-            </div>`).join('');
+                <div class="row"><b>Ticket ID</b><span style="font-family:monospace;color:#0ea5e9">${escapeHTML(g.unique_id)}</span></div>
+                <button class="small-button gold-button" style="margin-top:10px; width:100%; padding:10px; border-radius:8px; border:none; font-weight:bold; cursor:pointer;" onclick='showReceipt(${JSON.stringify(dataObj)})'>🖨️ View / Download Receipt</button>
+            </div>`;
+        }).join('');
     }
 
     let nbHtml = '<p class="muted">No tickets yet.</p>';
     if (nbMine.length) {
         const groups = {};
         nbMine.forEach(t => {
-            const key = t.printer_code || ('noid-' + t.number);
-            if (!groups[key]) groups[key] = { unique_id: t.printer_code || '—', round: t.round_number, numbers: [] };
+            const key = t.batch_id || t.printer_code || ('noid-' + t.number);
+            if (!groups[key]) groups[key] = { unique_id: t.batch_id || t.printer_code || '—', round: t.round_number, numbers: [] };
             groups[key].numbers.push(t.number);
         });
-        nbHtml = Object.values(groups).map(g => `
+        nbHtml = Object.values(groups).map(g => {
+            const dataObj = {
+                game: 'Number Betting', round: g.round, ref: g.unique_id, date: new Date().toISOString(),
+                owner: { name: ME.name, phone: ME.phone, public_code: ME.public_code },
+                unique_id: g.unique_id, tickets: g.numbers.map(n => ({number: n, printer_code: g.unique_id})), price: SETTINGS.ticket_price
+            };
+            return `
             <div class="req-card" style="margin-bottom:8px">
                 <div class="row"><b>Numbers</b><span class="gold">${g.numbers.sort((a,b)=>a-b).map(n=>'#'+n).join(' ')}</span></div>
                 <div class="row"><b>Round</b><span>#${g.round}</span></div>
-                <div class="row"><b>Unique ID</b><span style="font-family:monospace;color:#0ea5e9">${escapeHTML(g.unique_id)}</span></div>
-            </div>`).join('');
+                <div class="row"><b>Ticket ID</b><span style="font-family:monospace;color:#0ea5e9">${escapeHTML(g.unique_id)}</span></div>
+                <button class="small-button gold-button" style="margin-top:10px; width:100%; padding:10px; border-radius:8px; border:none; font-weight:bold; cursor:pointer;" onclick='showReceipt(${JSON.stringify(dataObj)})'>🖨️ View / Download Receipt</button>
+            </div>`;
+        }).join('');
     }
 
     document.getElementById('main').innerHTML = `
@@ -815,10 +946,9 @@ function verifyPage() {
         <div class="card" style="border-color:#fbbf24">
             <h2>⚡ Enter Unique ID</h2>
             <p class="muted" style="margin-bottom:10px">
-                Enter the Unique ID printed on the ticket (e.g. <code>LW-123456-A3F2</code> or <code>NB-654321-B7C1</code>).
-                <br><span style="color:#f87171">Note: Typing ticket numbers is disabled to prevent collisions between users.</span>
+                Enter the Unique ID printed on the ticket (e.g. <code>LW-123456</code> or <code>NB-654321</code>).
             </p>
-            <input id="verifyQuick" placeholder="e.g. LW-123456-A3F2" style="text-transform:uppercase;font-family:monospace">
+            <input id="verifyQuick" placeholder="e.g. LW-123456" style="text-transform:uppercase;font-family:monospace">
             <button class="main-button" onclick="doVerifyQuick()">🔍 VERIFY</button>
         </div>
         <div class="card" style="border-color:#22c55e">
@@ -835,10 +965,10 @@ function verifySwitchGame(g) { verifyGame = g; verifyPage(); }
 async function doVerifyQuick() {
     const raw = document.getElementById('verifyQuick').value.trim();
     const out = document.getElementById('verifyResult');
-    if (!raw) { alert('Enter a Unique ID'); return; }
+    if (!raw) { toast('Enter a Unique ID', true); return; }
     out.innerHTML = '<div class="card"><p>⏳ Checking...</p></div>';
     try {
-        const res = await api('/verify-ticket', { method: 'POST', body: { printerCode: raw.toUpperCase() } });
+        const res = await api('/verify-ticket', { method: 'POST', body: { printerCode: raw.toUpperCase(), ticketNumber: raw.toUpperCase() } });
         out.innerHTML = renderVerifyResult(res);
     } catch (e) {
         out.innerHTML = '<div class="card" style="border-color:#991b1b"><h2 style="color:#f87171">❌ ' + escapeHTML(e.message) + '</h2></div>';
@@ -866,7 +996,7 @@ async function startScanner() {
 async function submitScannedCode() {
     const code = document.getElementById('scanResult').value.trim();
     const out = document.getElementById('verifyResult');
-    if (!code) { alert('Scan or paste a code first'); return; }
+    if (!code) { toast('Scan or paste a code first', true); return; }
     out.innerHTML = '<div class="card"><p>⏳ Checking...</p></div>';
     try {
         const res = await api('/verify-ticket', { method: 'POST', body: { printerCode: code.toUpperCase() } });
@@ -907,7 +1037,7 @@ function renderVerifyResult(res) {
 /* ================= DASHBOARD ================= */
 function dashboard() {
     const sold = TICKETS.filter(t => t.user_id !== null).length;
-    
+
     if (ME.role === 'admin') {
         document.getElementById('main').innerHTML = `
             <div class="wheel-hero-img"><img src="image2.jpg" onerror="this.src='https://images.unsplash.com/photo-1542751371-adc38448a05e?w=1600&h=500&fit=crop'"></div>
@@ -932,13 +1062,12 @@ function dashboard() {
         api('/admin/users').then(l => { const e = document.getElementById('statUsers'); if (e) e.textContent = l.users.length; }).catch(() => {});
         return;
     }
-    
+
     const mine = TICKETS.filter(t => String(t.user_id) === String(ME.id));
     document.getElementById('main').innerHTML = `
         <div class="wheel-hero-img"><img src="image2.jpg" onerror="this.src='https://images.unsplash.com/photo-1542751371-adc38448a05e?w=1600&h=500&fit=crop'"></div>
         <h1 class="title">Welcome, ${escapeHTML(ME.name)}</h1>
-        
-                <!-- Customer Service Link -->
+
         <div class="telegram-banner" style="background:linear-gradient(135deg,#22c55e,#16a34a);border-color:#4ade80">
             <div class="icon">💬</div>
             <div class="text">
@@ -948,14 +1077,13 @@ function dashboard() {
             <a href="https://t.me/TE21HUSH" target="_blank" class="join-btn" style="color:#16a34a">Contact</a>
         </div>
 
-        <!-- Telegram Channel Link -->
         <div class="telegram-banner">
             <div class="icon">📢</div>
             <div class="text">
                 <h3>Telegram Channel</h3>
                 <p>Winners & new rounds.</p>
             </div>
-            <a href="https://t.me/Lucky21_Wheel " target="_blank" class="join-btn">Join</a>
+            <a href="https://t.me/Lucky21_Wheel" target="_blank" class="join-btn">Join</a>
         </div>
 
         <div class="stats">
@@ -1053,17 +1181,22 @@ function updateBuyTotals() {
     const c2 = document.getElementById('buyCost'); if (c2) c2.textContent = money(cost);
 }
 async function buySelectedTickets() {
-    if (!buySelected.length) { alert('Select at least one'); return; }
+    if (!buySelected.length) { toast('Select at least one ticket', true); return; }
     const free = document.getElementById('buyUseFree').checked;
-    if (free && buySelected.length > 1) { alert('Free ticket = 1 only'); return; }
+    if (free && buySelected.length > 1) { toast('Free ticket allows only 1 selection', true); return; }
     const cost = free ? 0 : buySelected.length * Number(SETTINGS.ticket_price);
-    if (!free && Number(ME.balance) < cost) { alert('Insufficient balance'); return; }
-    if (!confirm('Buy ' + buySelected.length + ' for ' + money(cost) + '?')) return;
+    if (!free && Number(ME.balance) < cost) { toast('Insufficient balance', true); return; }
+    const ok = await confirmToast(`Buy ${buySelected.length} ticket(s) for ${money(cost)}?`, { title: 'Confirm Purchase', okText: 'Buy' });
+    if (!ok) return;
     try {
         await api('/user/tickets/buy', { method: 'POST', body: { numbers: buySelected, useFreeTicket: free } });
         await refreshState();
-        buyPage();
-    } catch (e) { alert('❌ ' + e.message); }
+        const rec = await api('/ticket-receipt', { method: 'POST', body: { game: 'wheel', round: SETTINGS.round_number, tickets: buySelected } });
+        rec.owner = { name: ME.name, phone: ME.phone, public_code: ME.public_code };
+        buyPage(); 
+        showReceipt(rec);
+        toast('🎟️ Purchase successful!');
+    } catch (e) { toast('❌ ' + e.message, true); }
 }
 async function buyRenderNB(cfg) {
     if (!cfg) { document.getElementById('buyContent').innerHTML = '<div class="card"><p>NB not available</p></div>'; return; }
@@ -1099,15 +1232,20 @@ function nbBuyClick(num, cell, tpp) {
 }
 async function nbBuyConfirm() {
     const cfg = await api('/nb/config');
-    if (nbBuyPicked.length !== cfg.tickets_per_purchase) { alert('Pick ' + cfg.tickets_per_purchase); return; }
-    if (Number(ME.balance) < Number(cfg.price_per_purchase)) { alert('Insufficient'); return; }
-    if (!confirm('Buy ' + cfg.tickets_per_purchase + ' for ' + money(cfg.price_per_purchase) + '?')) return;
+    if (nbBuyPicked.length !== cfg.tickets_per_purchase) { toast('Pick ' + cfg.tickets_per_purchase + ' numbers', true); return; }
+    if (Number(ME.balance) < Number(cfg.price_per_purchase)) { toast('Insufficient balance', true); return; }
+    const ok = await confirmToast(`Buy ${cfg.tickets_per_purchase} number(s) for ${money(cfg.price_per_purchase)}?`, { title: 'Confirm Purchase', okText: 'Buy' });
+    if (!ok) return;
     try {
         await api('/nb/buy', { method: 'POST', body: { numbers: nbBuyPicked } });
         await refreshState();
+        const rec = await api('/ticket-receipt', { method: 'POST', body: { game: 'nb', round: cfg.round_number, tickets: nbBuyPicked } });
+        rec.owner = { name: ME.name, phone: ME.phone, public_code: ME.public_code };
         nbBuyPicked = [];
         await buyPage();
-    } catch (e) { alert('❌ ' + e.message); }
+        showReceipt(rec);
+        toast('🎟️ Purchase successful!');
+    } catch (e) { toast('❌ ' + e.message, true); }
 }
 
 /* ================= ASSIGN ================= */
@@ -1161,15 +1299,15 @@ async function assignTicketsWheel() {
     const password = document.getElementById('assignPassword').value;
     const balance = Number(document.getElementById('assignBalance').value) || 0;
     const free = document.getElementById('useFreeTicket').checked;
-    if (!name || !phone) { alert('Enter name and phone'); return; }
-    if (!assignSelectedWheel.length) { alert('Select at least one'); return; }
+    if (!name || !phone) { toast('Enter name and phone', true); return; }
+    if (!assignSelectedWheel.length) { toast('Select at least one ticket', true); return; }
     try {
         await api('/admin/tickets/assign', { method: 'POST', body: { name, phone, password, balance, numbers: assignSelectedWheel, useFreeTicket: free } });
         await refreshState();
         const rec = await api('/ticket-receipt', { method: 'POST', body: { game: 'wheel', round: SETTINGS.round_number, tickets: assignSelectedWheel } });
         rec.owner = { name, phone };
         ticketsPage(); showReceipt(rec);
-    } catch (e) { alert('❌ ' + e.message); }
+    } catch (e) { toast('❌ ' + e.message, true); }
 }
 async function assignRenderNB(cfg) {
     if (!cfg) { document.getElementById('assignContent').innerHTML = '<div class="card"><p>NB not available</p></div>'; return; }
@@ -1204,8 +1342,8 @@ async function assignTicketsNB() {
     const password = document.getElementById('assignNbPassword').value;
     const balance = Number(document.getElementById('assignNbBalance').value) || 0;
     const cfg = await api('/nb/config');
-    if (!name || !phone) { alert('Enter name and phone'); return; }
-    if (assignSelectedNB.length !== cfg.tickets_per_purchase) { alert('Pick ' + cfg.tickets_per_purchase); return; }
+    if (!name || !phone) { toast('Enter name and phone', true); return; }
+    if (assignSelectedNB.length !== cfg.tickets_per_purchase) { toast('Pick ' + cfg.tickets_per_purchase + ' numbers', true); return; }
     try {
         await api('/admin/nb/assign', { method: 'POST', body: { name, phone, password, balance, numbers: assignSelectedNB } });
         await refreshState();
@@ -1213,7 +1351,7 @@ async function assignTicketsNB() {
         rec.owner = { name, phone };
         assignSelectedNB = [];
         ticketsPage(); showReceipt(rec);
-    } catch (e) { alert('❌ ' + e.message); }
+    } catch (e) { toast('❌ ' + e.message, true); }
 }
 
 /* ================= NB PAGE ================= */
@@ -1300,13 +1438,24 @@ function nbDrawnSoFar(s) {
     const elapsed = (Date.now() - start) / 1000;
     return Math.min(s.winning_numbers.length, Math.max(0, Math.floor(elapsed / Math.max(1, s.draw_delay_seconds)) + 1));
 }
+
 function nbStartPolls(s) {
     if (nbPollId) clearInterval(nbPollId);
     if (nbSettleId) clearInterval(nbSettleId);
+
+    if (s) {
+        if (s.round_duration_minutes == null && s.duration_minutes != null) s.round_duration_minutes = s.duration_minutes;
+        if (s.round_duration_minutes == null) s.round_duration_minutes = 120;
+        if (s.sales_state === 'open' && !s.sales_started_at) {
+            s.sales_started_at = new Date().toISOString();
+        }
+    }
+
     if (s.round_state === 'drawing' && s.drawing_started_at) {
         const key = s.round_number + ':' + s.drawing_started_at;
         if (_drawRoundKey !== key) { _drawRoundKey = key; _drawStartClient = Date.now(); _lastShown = -1; }
     } else { _drawStartClient = null; _drawRoundKey = null; _lastShown = -1; }
+
     nbTickTimer();
     nbPollId = setInterval(() => { nbTickTimer(); nbRevealTick(); }, 200);
     nbSettleId = setInterval(async () => {
@@ -1345,23 +1494,35 @@ function nbRevealTick() {
         if (s.round_state === 'finished') renderNbWinnersOverlay(s);
     }
 }
+
 function nbTickTimer() {
     if (!nbState) return;
     const s = nbState.settings;
     const el = document.getElementById('nbTimer'); if (!el) return;
+    const roundMin = Number(s.round_duration_minutes || s.duration_minutes || 120);
+
     if (s.round_state === 'drawing' && s.drawing_started_at) {
-        const elapsed = (Date.now() - new Date(s.drawing_started_at).getTime()) / 1000;
-        const secs = Math.max(0, (s.drawn_count * s.draw_delay_seconds) - elapsed);
+        const started = new Date(s.drawing_started_at).getTime();
+        if (!Number.isFinite(started)) { el.textContent = '--:--'; return; }
+        const elapsed = (Date.now() - started) / 1000;
+        const secs = Math.max(0, (Number(s.drawn_count) * Number(s.draw_delay_seconds)) - elapsed);
         el.textContent = 'DRAW ' + nbDrawnSoFar(s) + '/' + s.drawn_count + ' · ' + formatTime(Math.ceil(secs));
-    } else if (s.sales_state === 'open' && s.sales_started_at) {
-        const elapsed = (Date.now() - new Date(s.sales_started_at).getTime()) / 1000;
-        el.textContent = 'SALES ' + formatTime(Math.ceil(Math.max(0, s.round_duration_minutes * 60 - elapsed)));
-    } else el.textContent = '--:--';
+    } else if (s.sales_state === 'open') {
+        let started;
+        if (s.sales_started_at) started = new Date(s.sales_started_at).getTime();
+        else started = Date.now(); 
+        if (!Number.isFinite(started)) started = Date.now();
+        const elapsed = (Date.now() - started) / 1000;
+        const remaining = Math.max(0, (roundMin * 60) - elapsed);
+        el.textContent = 'SALES ' + formatTime(Math.ceil(remaining));
+    } else {
+        el.textContent = '--:--';
+    }
 }
-async function nbStartSales() { try { await api('/admin/nb/start-sales', { method: 'POST' }); toast('🟢'); await nbPage(); } catch (e) { alert('❌ ' + e.message); } }
-async function nbCloseSales() { try { await api('/admin/nb/close-sales', { method: 'POST' }); toast('🔴'); await nbPage(); } catch (e) { alert('❌ ' + e.message); } }
-async function nbDraw() { if (!confirm('Draw?')) return; try { await api('/admin/nb/draw', { method: 'POST' }); _drawStartClient = Date.now(); _drawRoundKey = null; toast('🎬'); await nbPage(); } catch (e) { alert('❌ ' + e.message); } }
-async function nbNewRound() { if (!confirm('New round?')) return; try { await api('/admin/nb/new-round', { method: 'POST' }); toast('🔄'); await nbPage(); } catch (e) { alert('❌ ' + e.message); } }
+async function nbStartSales() { try { await api('/admin/nb/start-sales', { method: 'POST' }); toast('🟢 Sales opened'); await nbPage(); } catch (e) { toast('❌ ' + e.message, true); } }
+async function nbCloseSales() { try { await api('/admin/nb/close-sales', { method: 'POST' }); toast('🔴 Sales closed'); await nbPage(); } catch (e) { toast('❌ ' + e.message, true); } }
+async function nbDraw() { if (!(await confirmToast('Start the draw now?', { title: 'Draw', okText: 'Draw' }))) return; try { await api('/admin/nb/draw', { method: 'POST' }); _drawStartClient = Date.now(); _drawRoundKey = null; toast('🎬 Draw started'); await nbPage(); } catch (e) { toast('❌ ' + e.message, true); } }
+async function nbNewRound() { if (!(await confirmToast('Start a new round?', { title: 'New Round', okText: 'Start' }))) return; try { await api('/admin/nb/new-round', { method: 'POST' }); toast('🔄 New round started'); await nbPage(); } catch (e) { toast('❌ ' + e.message, true); } }
 
 /* ================= WHEEL PAGE ================= */
 function wheelPage() {
@@ -1533,8 +1694,8 @@ function startCountdown(at, dur) {
     };
     tick(); countdownId = setInterval(tick, 250);
 }
-async function startSpin() { try { await api('/admin/spin/start', { method: 'POST' }); await refreshState(); renderPage(); } catch (e) { alert('❌ ' + e.message); } }
-async function newRound() { if (!confirm('New round?')) return; try { await api('/admin/round/reset', { method: 'POST' }); await refreshState(); renderPage(); } catch (e) { alert('❌ ' + e.message); } }
+async function startSpin() { try { await api('/admin/spin/start', { method: 'POST' }); await refreshState(); renderPage(); } catch (e) { toast('❌ ' + e.message, true); } }
+async function newRound() { if (!(await confirmToast('Start a new round?', { title: 'New Round', okText: 'Start' }))) return; try { await api('/admin/round/reset', { method: 'POST' }); await refreshState(); renderPage(); } catch (e) { toast('❌ ' + e.message, true); } }
 function showWinners(winners) {
     const area = document.getElementById('winnerArea');
     if (!area) return;
@@ -1575,10 +1736,10 @@ function showWinners(winners) {
         }, 300);
     }
 }
-async function startSales() { try { await api('/admin/start-sales', { method: 'POST' }); toast('🟢'); await refreshState(); renderPage(); } catch (e) { alert('❌ ' + e.message); } }
-async function closeSales() { try { await api('/admin/close-sales', { method: 'POST' }); toast('🔴'); await refreshState(); renderPage(); } catch (e) { alert('❌ ' + e.message); } }
+async function startSales() { try { await api('/admin/start-sales', { method: 'POST' }); toast('🟢 Sales opened'); await refreshState(); renderPage(); } catch (e) { toast('❌ ' + e.message, true); } }
+async function closeSales() { try { await api('/admin/close-sales', { method: 'POST' }); toast('🔴 Sales closed'); await refreshState(); renderPage(); } catch (e) { toast('❌ ' + e.message, true); } }
 
-/* ================= DEPOSIT / WITHDRAW / REFERRALS ================= */
+/* ================= DEPOSIT ================= */
 async function depositPage() {
     if (ME.role === 'admin') { document.getElementById('main').innerHTML = '<div class="card"><p class="muted">Users only.</p></div>'; return; }
     let dep = { deposits: [] };
@@ -1593,21 +1754,56 @@ async function depositPage() {
         <div class="card"><h2>Submit</h2><br>
             <label>Method</label><select id="depMethod"><option value="cbe">CBE</option><option value="boa">BOA</option></select>
             <label>Amount (ETB)</label><input id="depAmount" type="number" min="1">
-            <label>Transaction ID</label><input id="depTxn">
+            <label>Transaction ID</label><input id="depTxn" placeholder="e.g. FT23XXXXXX">
+            <label>Transaction Screenshot (optional)</label>
+            <input id="depScreenshot" type="file" accept="image/*" onchange="previewDepScreenshot(this)">
+            <div id="depScreenshotPreview" style="margin:10px 0"></div>
             <button class="main-button" onclick="submitDeposit()">📤 SUBMIT</button>
         </div>
         <div class="card"><h2>My Deposits</h2><br>
-            ${!dep.deposits.length ? '<p class="muted">None</p>' : dep.deposits.map(d => '<div class="req-card"><div class="row"><b>Amount:</b> <span class="gold">' + money(d.amount) + '</span></div><div class="row"><b>Status:</b> <span class="status-badge ' + d.status + '">' + d.status.toUpperCase() + '</span></div></div>').join('')}
+            ${!dep.deposits.length ? '<p class="muted">None</p>' : dep.deposits.map(d =>
+                '<div class="req-card">' +
+                '<div class="row"><b>Amount:</b> <span class="gold">' + money(d.amount) + '</span></div>' +
+                (d.transaction_id ? '<div class="row"><b>Txn ID:</b> <span style="font-family:monospace;color:#0ea5e9">' + escapeHTML(d.transaction_id) + '</span></div>' : '') +
+                '<div class="row"><b>Status:</b> <span class="status-badge ' + d.status + '">' + d.status.toUpperCase() + '</span></div>' +
+                (d.screenshot ? '<div class="row"><b>Screenshot:</b> <img src="' + d.screenshot + '" class="dep-shot-thumb" onclick="viewImg(\'' + d.screenshot + '\')"></div>' : '') +
+                '</div>').join('')
+            }
         </div>`;
 }
+
+function previewDepScreenshot(input) {
+    const box = document.getElementById('depScreenshotPreview');
+    _depScreenshotData = null;
+    box.innerHTML = '';
+    const file = input.files && input.files[0];
+    if (!file) return;
+    if (file.size > 3 * 1024 * 1024) { toast('Image too large (max 3MB)', true); input.value = ''; return; }
+    const reader = new FileReader();
+    reader.onload = e => {
+        _depScreenshotData = e.target.result;
+        box.innerHTML = '<img src="' + e.target.result + '" style="max-width:100%;max-height:220px;border-radius:8px;border:1px solid #334155">';
+    };
+    reader.readAsDataURL(file);
+}
+
 async function submitDeposit() {
     const method = document.getElementById('depMethod').value;
     const amount = Number(document.getElementById('depAmount').value);
     const transactionId = document.getElementById('depTxn').value.trim();
-    if (!amount || amount <= 0) { alert('Enter amount'); return; }
-    if (!transactionId) { alert('Enter Txn ID'); return; }
-    try { await api('/user/deposits', { method: 'POST', body: { method, amount, transactionId } }); alert('✅'); depositPage(); } catch (e) { alert('❌ ' + e.message); }
+    if (!amount || amount <= 0) { toast('Enter a valid amount', true); return; }
+    if (!transactionId) { toast('Enter the transaction ID', true); return; }
+    try {
+        await api('/user/deposits', { method: 'POST', body: {
+            method, amount, transactionId,
+            screenshot: _depScreenshotData || null
+        }});
+        _depScreenshotData = null;
+        toast('✅ Deposit request submitted');
+        depositPage();
+    } catch (e) { toast('❌ ' + e.message, true); }
 }
+
 async function withdrawPage() {
     if (ME.role === 'admin') { document.getElementById('main').innerHTML = '<div class="card"><p class="muted">Users only.</p></div>'; return; }
     let w = { withdrawals: [] };
@@ -1630,11 +1826,17 @@ async function submitWithdraw() {
     const method = document.getElementById('wdMethod').value;
     const amount = Number(document.getElementById('wdAmount').value);
     const accountNumber = document.getElementById('wdAccount').value.trim();
-    if (!amount || amount <= 0) { alert('Enter amount'); return; }
-    if (!accountNumber) { alert('Enter account'); return; }
-    if (amount > Number(ME.balance)) { alert('Insufficient'); return; }
-    if (!confirm('Withdraw ' + money(amount) + '?')) return;
-    try { await api('/user/withdrawals', { method: 'POST', body: { method, amount, accountNumber } }); alert('✅'); await refreshState(); withdrawPage(); } catch (e) { alert('❌ ' + e.message); }
+    if (!amount || amount <= 0) { toast('Enter a valid amount', true); return; }
+    if (!accountNumber) { toast('Enter your account number', true); return; }
+    if (amount > Number(ME.balance)) { toast('Insufficient balance', true); return; }
+    const ok = await confirmToast(`Withdraw ${money(amount)}?`, { title: 'Confirm Withdrawal', okText: 'Withdraw' });
+    if (!ok) return;
+    try {
+        await api('/user/withdrawals', { method: 'POST', body: { method, amount, accountNumber } });
+        toast('✅ Withdrawal request submitted');
+        await refreshState();
+        withdrawPage();
+    } catch (e) { toast('❌ ' + e.message, true); }
 }
 async function referralsPage() {
     if (ME.role === 'admin') { document.getElementById('main').innerHTML = '<div class="card"><p class="muted">Users only.</p></div>'; return; }
@@ -1692,49 +1894,98 @@ async function usersPage() {
         </table></div></div>`;
 }
 async function resetPassword(userId, userName) {
-    const newPw = prompt('New password for "' + userName + '":\n(min 4 characters)');
+    const newPw = await promptModal('New password for "' + userName + '"', { placeholder: 'Min 4 characters', type: 'text', okText: 'Reset' });
     if (newPw === null) return;
-    if (newPw.trim().length < 4) { alert('Min 4 characters'); return; }
+    if (newPw.trim().length < 4) { toast('Min 4 characters', true); return; }
     try {
         await api('/admin/users/reset-password', { method: 'POST', body: { userId, newPassword: newPw.trim() } });
-        alert('✅ Password updated for ' + userName);
+        toast('✅ Password updated for ' + userName);
         usersPage();
-    } catch (e) { alert('❌ ' + e.message); }
+    } catch (e) { toast('❌ ' + e.message, true); }
 }
 async function banUser(id, banned) {
-    if (!confirm(banned ? 'BAN?' : 'RESTORE?')) return;
-    try { await api('/admin/users/ban', { method: 'POST', body: { userId: id, banned } }); usersPage(); } catch (e) { alert('❌ ' + e.message); }
+    if (!(await confirmToast(banned ? 'Ban this user?' : 'Restore this user?', { title: banned ? 'Ban User' : 'Restore User', okText: banned ? 'Ban' : 'Restore' }))) return;
+    try { await api('/admin/users/ban', { method: 'POST', body: { userId: id, banned } }); usersPage(); } catch (e) { toast('❌ ' + e.message, true); }
 }
 async function adjustBalance(id) {
-    const a = prompt('Amount (+/-):');
+    const a = await promptModal('Amount (+/-)', { placeholder: 'e.g. 500 or -200', type: 'number', okText: 'Apply' });
     if (a === null) return;
     const v = Number(a);
-    if (!Number.isFinite(v)) { alert('Invalid'); return; }
-    try { await api('/admin/users/balance', { method: 'POST', body: { userId: id, amount: v } }); await refreshState(); usersPage(); } catch (e) { alert('❌ ' + e.message); }
+    if (!Number.isFinite(v)) { toast('Invalid amount', true); return; }
+    try { await api('/admin/users/balance', { method: 'POST', body: { userId: id, amount: v } }); await refreshState(); usersPage(); } catch (e) { toast('❌ ' + e.message, true); }
 }
 
 /* ================= REQUESTS ================= */
 async function requestsPage() {
     const [dep, wd] = await Promise.all([api('/admin/deposits'), api('/admin/withdrawals')]);
+
+    const depHtml = !dep.deposits.length ? '<p class="muted">None</p>' : dep.deposits.map(d => {
+        const shot = d.screenshot
+            ? '<div class="row" style="flex-direction:column;align-items:flex-start;gap:6px"><b>Screenshot:</b><img src="' + d.screenshot + '" class="dep-shot-thumb" onclick="viewImg(\'' + d.screenshot + '\')"></div>'
+            : '';
+        return '<div class="req-card">' +
+            '<div class="row"><b>User:</b> <span>' + escapeHTML(d.user_name || '—') + '</span></div>' +
+            '<div class="row"><b>Phone:</b> <span style="font-family:monospace">' + escapeHTML(d.phone || '—') + '</span></div>' +
+            (d.public_code && d.public_code !== '—' ? '<div class="row"><b>User ID:</b> <span style="font-family:monospace;color:#fbbf24">' + escapeHTML(d.public_code) + '</span></div>' : '') +
+            '<div class="row"><b>Method:</b> <span>' + escapeHTML((d.method || '—').toUpperCase()) + '</span></div>' +
+            '<div class="row"><b>Amount:</b> <span class="gold">' + money(d.amount) + '</span></div>' +
+            '<div class="row"><b>Txn ID:</b> <span style="font-family:monospace;color:#0ea5e9">' + escapeHTML(d.transaction_id || d.txn_id || '—') + '</span></div>' +
+            '<div class="row"><b>Date:</b> <span>' + (d.created_at ? formatDate(d.created_at) : '—') + '</span></div>' +
+            '<div class="row"><b>Status:</b> <span class="status-badge ' + d.status + '">' + d.status.toUpperCase() + '</span></div>' +
+            shot +
+            (d.status === 'pending' ? '<div class="req-actions"><button class="small-button green-button" onclick="openCustomModal(\'Approve Deposit\', (val)=>{ decideDeposit(' + d.id + ', \'approve\', val) })">✓ Approve</button><button class="small-button red-button" onclick="openCustomModal(\'Reject Deposit\', (val)=>{ decideDeposit(' + d.id + ', \'reject\', val) })">✗ Reject</button></div>' : '') +
+            '</div>';
+    }).join('');
+
+    const wdHtml = !wd.withdrawals.length ? '<p class="muted">None</p>' : wd.withdrawals.map(x =>
+        '<div class="req-card">' +
+        '<div class="row"><b>User:</b> <span>' + escapeHTML(x.user_name || '—') + '</span></div>' +
+        '<div class="row"><b>Phone:</b> <span style="font-family:monospace">' + escapeHTML(x.phone || '—') + '</span></div>' +
+        '<div class="row"><b>Method:</b> <span>' + escapeHTML((x.method || '—').toUpperCase()) + '</span></div>' +
+        '<div class="row"><b>Account:</b> <span style="font-family:monospace">' + escapeHTML(x.account_number || '—') + '</span></div>' +
+        '<div class="row"><b>Amount:</b> <span class="gold">' + money(x.amount) + '</span></div>' +
+        '<div class="row"><b>Status:</b> <span class="status-badge ' + x.status + '">' + x.status.toUpperCase() + '</span></div>' +
+        (x.status === 'pending' ? '<div class="req-actions"><button class="small-button green-button" onclick="openCustomModal(\'Approve Withdrawal\', (val)=>{ decideWithdraw(' + x.id + ', \'approve\', val) })">✓</button><button class="small-button red-button" onclick="openCustomModal(\'Reject Withdrawal\', (val)=>{ decideWithdraw(' + x.id + ', \'reject\', val) })">✗</button></div>' : '') +
+        '</div>').join('');
+
     document.getElementById('main').innerHTML = `
         <img src="${IMG.requests}" class="banner-img" onerror="this.style.display='none'">
         <h1 class="title">📥 Requests</h1>
-        <div class="card"><h2>💰 Deposits</h2><br>
-            ${!dep.deposits.length ? '<p class="muted">None</p>' : dep.deposits.map(d => '<div class="req-card"><div class="row"><b>User:</b> <span>' + escapeHTML(d.user_name) + ' (' + escapeHTML(d.phone) + ')</span></div><div class="row"><b>Amount:</b> <span class="gold">' + money(d.amount) + '</span></div><div class="row"><b>Status:</b> <span class="status-badge ' + d.status + '">' + d.status.toUpperCase() + '</span></div>' + (d.status === 'pending' ? '<div class="req-actions"><button class="small-button green-button" onclick="decideDeposit(' + d.id + ',\'approve\')">✓</button><button class="small-button red-button" onclick="decideDeposit(' + d.id + ',\'reject\')">✗</button></div>' : '') + '</div>').join('')}
+        <div class="card"><h2>💰 Deposits</h2><br>${depHtml}</div>
+        <div class="card"><h2>💸 Withdrawals</h2><br>${wdHtml}</div>`;
+}
+
+async function decideDeposit(id, action, comment) {
+    try { await api('/admin/deposits/' + id + '/decide', { method: 'POST', body: { action, comment } }); await refreshState(); requestsPage(); } catch (e) { toast('❌ ' + e.message, true); }
+}
+async function decideWithdraw(id, action, comment) {
+    try { await api('/admin/withdrawals/' + id + '/decide', { method: 'POST', body: { action, comment } }); await refreshState(); requestsPage(); } catch (e) { toast('❌ ' + e.message, true); }
+}
+
+function openCustomModal(title, callback) {
+    const area = document.getElementById('modalArea');
+    area.innerHTML = `
+        <div class="custom-modal" onclick="if(event.target===this)closeCustomModal()">
+            <div class="custom-modal-box">
+                <h3>${title}</h3>
+                <input id="modalInput" placeholder="Enter comment/amount">
+                <div class="btn-row">
+                    <button class="main-button" onclick="submitModal()">Submit</button>
+                    <button class="main-button" style="background:#64748b;color:white" onclick="closeCustomModal()">Cancel</button>
+                </div>
+            </div>
         </div>
-        <div class="card"><h2>💸 Withdrawals</h2><br>
-            ${!wd.withdrawals.length ? '<p class="muted">None</p>' : wd.withdrawals.map(x => '<div class="req-card"><div class="row"><b>User:</b> <span>' + escapeHTML(x.user_name) + ' (' + escapeHTML(x.phone) + ')</span></div><div class="row"><b>Amount:</b> <span class="gold">' + money(x.amount) + '</span></div><div class="row"><b>Status:</b> <span class="status-badge ' + x.status + '">' + x.status.toUpperCase() + '</span></div>' + (x.status === 'pending' ? '<div class="req-actions"><button class="small-button green-button" onclick="decideWithdraw(' + x.id + ',\'approve\')">✓</button><button class="small-button red-button" onclick="decideWithdraw(' + x.id + ',\'reject\')">✗</button></div>' : '') + '</div>').join('')}
-        </div>`;
+    `;
+    area._callback = callback;
+    setTimeout(() => { document.getElementById('modalInput').focus(); }, 100);
 }
-async function decideDeposit(id, action) {
-    const comment = prompt(action === 'approve' ? 'Comment:' : 'Reason:');
-    if (comment === null) return;
-    try { await api('/admin/deposits/' + id + '/decide', { method: 'POST', body: { action, comment } }); await refreshState(); requestsPage(); } catch (e) { alert('❌ ' + e.message); }
-}
-async function decideWithdraw(id, action) {
-    const comment = prompt(action === 'approve' ? 'Ref:' : 'Reason:');
-    if (comment === null) return;
-    try { await api('/admin/withdrawals/' + id + '/decide', { method: 'POST', body: { action, comment } }); await refreshState(); requestsPage(); } catch (e) { alert('❌ ' + e.message); }
+function closeCustomModal() { document.getElementById('modalArea').innerHTML = ''; }
+function submitModal() {
+    const val = document.getElementById('modalInput').value;
+    if (document.getElementById('modalArea')._callback) {
+        document.getElementById('modalArea')._callback(val);
+    }
+    closeCustomModal();
 }
 
 /* ================= HISTORY ================= */
@@ -1828,13 +2079,15 @@ async function saveWheelSettings() {
     try {
         if (ticketCount !== SETTINGS.ticket_count) await api('/admin/tickets/count', { method: 'POST', body: { count: ticketCount } });
         await api('/admin/settings', { method: 'POST', body: { duration, winners, ticketPrice: price, referralGoal, referralReward, prizePercents, usePercentPrizes: true, salesDuration } });
-        await refreshState(); alert('✅ Saved.'); settingsPage();
-    } catch (e) { alert('❌ ' + e.message); }
+        await refreshState(); toast('✅ Saved.'); settingsPage();
+    } catch (e) { toast('❌ ' + e.message, true); }
 }
+
 function renderNBSettings(s) {
     if (!s) { document.getElementById('settingsContent').innerHTML = '<div class="card"><p class="muted">Not available</p></div>'; return; }
     const wc = s.winner_count || 1;
     const pcts = s.prize_percents || [];
+    const roundMin = Number(s.round_duration_minutes || s.duration_minutes || 120);
     let inputs = '';
     for (let i = 0; i < wc; i++) {
         const v = pcts[i] !== undefined ? pcts[i] : (i === 0 ? 50 : i === 1 ? 30 : 10);
@@ -1848,7 +2101,7 @@ function renderNBSettings(s) {
             <label>Tickets per Purchase</label><input id="nbTpp" type="number" min="1" max="20" value="${s.tickets_per_purchase}">
             <label>Price per Purchase</label><input id="nbPrice" type="number" min="0" value="${s.price_per_purchase}">
             <label>Draw Speed (seconds)</label><input id="nbDelay" type="number" min="1" max="30" value="${s.draw_delay_seconds}">
-            <label>Round Duration (minutes)</label><input id="nbDuration" type="number" min="1" max="120" value="${s.round_duration_minutes}">
+            <label>Round Duration (minutes)</label><input id="nbDuration" type="number" min="1" max="1440" value="${roundMin}">
             <label>Number of Winners</label><input id="nbWinners" type="number" min="1" max="20" value="${wc}" onchange="nbSettingsReloadPrizes()">
             <br><hr style="border-color:#334155;margin:16px 0"><br>
             <h3 style="color:#fbbf24">🏆 Prize % per place</h3>
@@ -1880,18 +2133,29 @@ async function saveNBSettings() {
     const round_duration_minutes = Number(document.getElementById('nbDuration').value);
     const winner_count = Number(document.getElementById('nbWinners').value);
     const prize_percents = Array.from(document.querySelectorAll('.nb-pct-input')).map(i => Number(i.value) || 0);
-    try { await api('/admin/nb/settings', { method: 'POST', body: { total_numbers, drawn_count, tickets_per_purchase, price_per_purchase, draw_delay_seconds, round_duration_minutes, winner_count, prize_percents, use_percent_prizes: true } }); alert('✅ Saved'); await settingsPage(); }
-    catch (e) { alert('❌ ' + e.message); }
+    if (!round_duration_minutes || round_duration_minutes < 1) { toast('Duration must be ≥ 1 minute', true); return; }
+    try {
+        await api('/admin/nb/settings', { method: 'POST', body: {
+            total_numbers, drawn_count, tickets_per_purchase, price_per_purchase,
+            draw_delay_seconds,
+            round_duration_minutes,
+            duration_minutes: round_duration_minutes,
+            winner_count, prize_percents, use_percent_prizes: true
+        }});
+        toast('✅ Saved');
+        try { nbState = await api('/nb/state'); } catch (e) {}
+        await settingsPage();
+    } catch (e) { toast('❌ ' + e.message, true); }
 }
 async function changeAdminPassword(suffix = '') {
     const pwEl = document.getElementById('newAdminPw' + suffix);
     const codeEl = document.getElementById('resetCode' + suffix);
     const pw = pwEl.value.trim(), code = codeEl.value.trim();
-    if (!pw || pw.length < 4) { alert('Min 4 characters'); return; }
-    if (!code) { alert('Enter code'); return; }
-    if (!confirm('Change?')) return;
-    try { await api('/admin/change-password', { method: 'POST', body: { newPassword: pw, code } }); alert('✅ Changed!'); pwEl.value = ''; codeEl.value = ''; }
-    catch (e) { alert('❌ ' + e.message); }
+    if (!pw || pw.length < 4) { toast('Min 4 characters', true); return; }
+    if (!code) { toast('Enter code', true); return; }
+    if (!(await confirmToast('Change admin password?', { title: 'Change Password', okText: 'Change' }))) return;
+    try { await api('/admin/change-password', { method: 'POST', body: { newPassword: pw, code } }); toast('✅ Changed!'); pwEl.value = ''; codeEl.value = ''; }
+    catch (e) { toast('❌ ' + e.message, true); }
 }
 
 boot();
