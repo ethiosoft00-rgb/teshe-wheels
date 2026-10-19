@@ -861,8 +861,13 @@ function printTicket() {
 /* ================= MY TICKETS ================= */
 async function myTicketsPage() {
     if (ME.role === 'admin') { document.getElementById('main').innerHTML = '<div class="card"><p class="muted">Admins — use Assign Tickets.</p></div>'; return; }
+    
+    // --- FIX: Ensure nbMine is always an array ---
     let nbMine = [];
-    try { nbMine = (await api('/nb/my-tickets')).tickets || []; } catch (e) {}
+    try { 
+        const res = await api('/nb/my-tickets'); 
+        nbMine = res.tickets || []; 
+    } catch (e) { console.error("NB Fetch error", e); }
 
     const wheelMine = TICKETS.filter(t => String(t.user_id) === String(ME.id));
     let wheelHtml = '<p class="muted">No tickets yet.</p>';
@@ -944,6 +949,12 @@ function verifyPage() {
             <input id="scanResult" placeholder="Scanned code appears here — press Submit" style="margin-top:10px;font-family:monospace;text-transform:uppercase">
             <button class="main-button" style="background:#fbbf24;color:#111827" onclick="submitScannedCode()">✅ SUBMIT SCANNED CODE</button>
         </div>
+        <div class="card" style="border-color:#a855f7">
+            <h2>📂 Upload File</h2>
+            <p class="muted" style="margin-bottom:10px">Upload a screenshot or photo of the ticket to scan the QR code.</p>
+            <input type="file" id="qr-file-input" accept="image/*" style="display:none" onchange="scanQRFile(this)">
+            <button class="main-button" style="background:#a855f7;color:white" onclick="document.getElementById('qr-file-input').click()">📁 CHOOSE FILE</button>
+        </div>
         <div id="verifyResult"></div>`;
 }
 function verifySwitchGame(g) { verifyGame = g; verifyPage(); }
@@ -979,6 +990,32 @@ async function startScanner() {
         }, (e) => {});
     } catch (e) { container.innerHTML = '<p style="color:#f87171">❌ Camera unavailable: ' + escapeHTML(e.message) + '</p>'; }
 }
+
+async function scanQRFile(input) {
+    if (!input.files || input.files.length === 0) return;
+    
+    if (!window.Html5Qrcode) {
+        await new Promise((res, rej) => { const s = document.createElement('script'); s.src = 'https://unpkg.com/html5-qrcode'; s.onload = res; s.onerror = rej; document.head.appendChild(s); });
+    }
+    
+    const file = input.files[0];
+    const out = document.getElementById('verifyResult');
+    out.innerHTML = '<div class="card"><p>⏳ Scanning file...</p></div>';
+    
+    try {
+        const scanner = new window.Html5Qrcode("qr-reader-dummy");
+        const decodedText = await scanner.scanFile(file, true);
+        document.getElementById('scanResult').value = decodedText;
+        toast('✅ File scanned — press Submit');
+        
+        const res = await api('/verify-ticket', { method: 'POST', body: { printerCode: decodedText.toUpperCase() } });
+        out.innerHTML = renderVerifyResult(res);
+    } catch (err) {
+        out.innerHTML = '<div class="card" style="border-color:#991b1b"><h2 style="color:#f87171">❌ Could not find a QR code in this image.</h2></div>';
+        toast('No QR code found in the file', true);
+    }
+}
+
 async function submitScannedCode() {
     const code = document.getElementById('scanResult').value.trim();
     const out = document.getElementById('verifyResult');
