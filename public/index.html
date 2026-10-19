@@ -862,7 +862,7 @@ function printTicket() {
 async function myTicketsPage() {
     if (ME.role === 'admin') { document.getElementById('main').innerHTML = '<div class="card"><p class="muted">Admins — use Assign Tickets.</p></div>'; return; }
     
-    // --- FIX: Ensure nbMine is always an array ---
+    // Fetch both Wheel and NB tickets
     let nbMine = [];
     try { 
         const res = await api('/nb/my-tickets'); 
@@ -870,6 +870,8 @@ async function myTicketsPage() {
     } catch (e) { console.error("NB Fetch error", e); }
 
     const wheelMine = TICKETS.filter(t => String(t.user_id) === String(ME.id));
+    
+    // --- LUCKY WHEEL ---
     let wheelHtml = '<p class="muted">No tickets yet.</p>';
     if (wheelMine.length) {
         const groups = {};
@@ -894,10 +896,12 @@ async function myTicketsPage() {
         }).join('');
     }
 
+    // --- NUMBER BETTING ---
     let nbHtml = '<p class="muted">No tickets yet.</p>';
     if (nbMine.length) {
         const groups = {};
         nbMine.forEach(t => {
+            // FIX: Ensure we catch the batch_id correctly
             const key = t.batch_id || t.printer_code || ('noid-' + t.number);
             if (!groups[key]) groups[key] = { unique_id: t.batch_id || t.printer_code || '—', round: t.round_number, numbers: [] };
             groups[key].numbers.push(t.number);
@@ -930,45 +934,126 @@ function verifyPage() {
     document.getElementById('main').innerHTML = `
         <img src="${IMG.verify}" class="banner-img" onerror="this.style.display='none'">
         <h1 class="title">🔍 Verify Ticket</h1>
-        <div class="game-tabs">
+        
+        <div class="game-tabs" style="margin-bottom: 15px;">
             <button class="game-tab ${verifyGame === 'wheel' ? 'active' : ''}" onclick="verifySwitchGame('wheel')">🎡 Lucky Wheel</button>
             <button class="game-tab ${verifyGame === 'nb' ? 'active' : ''}" onclick="verifySwitchGame('nb')">🎰 Number Betting</button>
         </div>
-        <div class="card" style="border-color:#fbbf24">
-            <h2>⚡ Enter Unique ID</h2>
-            <p class="muted" style="margin-bottom:10px">
-                Enter the Unique ID printed on the ticket (e.g. <code>LW-123456</code> or <code>NB-654321</code>).
-            </p>
-            <input id="verifyQuick" placeholder="e.g. LW-123456" style="text-transform:uppercase;font-family:monospace">
-            <button class="main-button" onclick="doVerifyQuick()">🔍 VERIFY</button>
-        </div>
-        <div class="card" style="border-color:#22c55e">
-            <h2>📷 Scan QR</h2>
-            <button class="main-button" style="background:#22c55e;color:white" onclick="startScanner()">📷 OPEN CAMERA</button>
-            <div id="qr-reader" style="margin-top:12px"></div>
-            <input id="scanResult" placeholder="Scanned code appears here — press Submit" style="margin-top:10px;font-family:monospace;text-transform:uppercase">
-            <button class="main-button" style="background:#fbbf24;color:#111827" onclick="submitScannedCode()">✅ SUBMIT SCANNED CODE</button>
-        </div>
-        <div class="card" style="border-color:#a855f7">
-            <h2>📂 Upload File</h2>
-            <p class="muted" style="margin-bottom:10px">Upload a screenshot or photo of the ticket to scan the QR code.</p>
-            <input type="file" id="qr-file-input" accept="image/*" style="display:none" onchange="scanQRFile(this)">
-            <button class="main-button" style="background:#a855f7;color:white" onclick="document.getElementById('qr-file-input').click()">📁 CHOOSE FILE</button>
-        </div>
-        <div id="verifyResult"></div>`;
-}
-function verifySwitchGame(g) { verifyGame = g; verifyPage(); }
 
-async function doVerifyQuick() {
-    const raw = document.getElementById('verifyQuick').value.trim();
+        <div class="card" style="border-color:#fbbf24">
+            <h2 style="margin-bottom: 15px;">Verify Method</h2>
+            
+            <!-- HORIZONTAL TABS -->
+            <div style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;">
+                <button class="small-button" id="tab-id" onclick="switchVerifyTab('id')" style="flex:1; padding: 12px; border-radius: 8px;">🔤 Enter ID</button>
+                <button class="small-button" id="tab-scan" onclick="switchVerifyTab('scan')" style="flex:1; padding: 12px; border-radius: 8px;">📷 Camera Scan</button>
+                <button class="small-button" id="tab-file" onclick="switchVerifyTab('file')" style="flex:1; padding: 12px; border-radius: 8px;">📂 Upload File</button>
+            </div>
+
+            <!-- TAB CONTENT: ID -->
+            <div id="verify-tab-id" class="verify-tab-content">
+                <p class="muted" style="margin-bottom:10px; font-size: 13px;">Enter the Unique ID printed on the ticket (e.g. <code>LW-123456</code>).</p>
+                <input id="verifyQuick" placeholder="e.g. LW-123456" style="text-transform:uppercase;font-family:monospace; margin-bottom: 10px;">
+            </div>
+
+            <!-- TAB CONTENT: CAMERA SCAN -->
+            <div id="verify-tab-scan" class="verify-tab-content hidden">
+                <p class="muted" style="margin-bottom:10px; font-size: 13px;">Use your camera to scan the QR code directly.</p>
+                <button class="main-button" style="background:#22c55e;color:white; margin-bottom: 10px;" onclick="startScanner()">📷 OPEN CAMERA</button>
+                <div id="qr-reader" style="margin-top:12px"></div>
+                <input id="scanResult" placeholder="Scanned code appears here" style="margin-top:10px;font-family:monospace;text-transform:uppercase; margin-bottom: 10px;" readonly>
+            </div>
+
+            <!-- TAB CONTENT: FILE UPLOAD -->
+            <div id="verify-tab-file" class="verify-tab-content hidden">
+                <p class="muted" style="margin-bottom:10px; font-size: 13px;">Upload a screenshot or photo of the ticket. The system will auto-filter and extract the QR code.</p>
+                <input type="file" id="qr-file-input" accept="image/*" style="display:none" onchange="scanQRFile(this)">
+                <button class="main-button" style="background:#a855f7;color:white; margin-bottom: 10px;" onclick="document.getElementById('qr-file-input').click()">📁 CHOOSE IMAGE FILE</button>
+                <div id="file-upload-preview" style="font-size: 13px; color: #86efac;"></div>
+            </div>
+
+            <!-- GLOBAL SUBMIT BUTTON -->
+            <hr style="border-color:#334155; margin: 20px 0;">
+            <button class="main-button" style="background:#fbbf24;color:#111827; font-size: 16px;" onclick="submitUniversalVerify()">✅ SUBMIT & VERIFY</button>
+        </div>
+
+        <div id="verifyResult"></div>`;
+        
+    switchVerifyTab('id'); // Default tab
+}
+
+// Tab Logic
+function switchVerifyTab(tab) {
+    document.querySelectorAll('.verify-tab-content').forEach(el => el.classList.add('hidden'));
+    document.getElementById('verify-tab-' + tab).classList.remove('hidden');
+    
+    document.querySelectorAll('#tab-id, #tab-scan, #tab-file').forEach(el => {
+        el.style.background = '#334155';
+        el.style.color = 'white';
+    });
+    
+    const activeBtn = document.getElementById('tab-' + tab);
+    activeBtn.style.background = '#fbbf24';
+    activeBtn.style.color = '#111827';
+}
+
+// Universal Submit Logic
+async function submitUniversalVerify() {
     const out = document.getElementById('verifyResult');
+    
+    // Check if camera tab is active
+    if (!document.getElementById('verify-tab-scan').classList.contains('hidden')) {
+        const code = document.getElementById('scanResult').value.trim();
+        if (!code) { toast('Please scan a code first', true); return; }
+        return doVerifyCode(code);
+    }
+    
+    // Check if file tab is active
+    if (!document.getElementById('verify-tab-file').classList.contains('hidden')) {
+        const fileInput = document.getElementById('qr-file-input');
+        if (!fileInput.files || fileInput.files.length === 0) { toast('Please choose a file first', true); return; }
+        return doVerifyFile(fileInput.files[0]);
+    }
+    
+    // Default: ID tab
+    const raw = document.getElementById('verifyQuick').value.trim();
     if (!raw) { toast('Enter a Unique ID', true); return; }
-    out.innerHTML = '<div class="card"><p>⏳ Checking...</p></div>';
+    return doVerifyCode(raw);
+}
+
+async function doVerifyCode(code) {
+    const out = document.getElementById('verifyResult');
+    out.innerHTML = '<div class="card"><p>⏳ Verifying code...</p></div>';
     try {
-        const res = await api('/verify-ticket', { method: 'POST', body: { printerCode: raw.toUpperCase(), ticketNumber: raw.toUpperCase() } });
+        const res = await api('/verify-ticket', { method: 'POST', body: { printerCode: code.toUpperCase(), ticketNumber: code.toUpperCase() } });
         out.innerHTML = renderVerifyResult(res);
     } catch (e) {
         out.innerHTML = '<div class="card" style="border-color:#991b1b"><h2 style="color:#f87171">❌ ' + escapeHTML(e.message) + '</h2></div>';
+    }
+}
+
+// File upload logic
+async function doVerifyFile(file) {
+    const out = document.getElementById('verifyResult');
+    const preview = document.getElementById('file-upload-preview');
+    
+    preview.innerHTML = 'Scanning file for QR codes...';
+    out.innerHTML = '<div class="card"><p>⏳ Scanning image...</p></div>';
+    
+    if (!window.Html5Qrcode) {
+        await new Promise((res, rej) => { const s = document.createElement('script'); s.src = 'https://unpkg.com/html5-qrcode'; s.onload = res; s.onerror = rej; document.head.appendChild(s); });
+    }
+    
+    try {
+        const scanner = new window.Html5Qrcode("qr-reader-dummy");
+        const decodedText = await scanner.scanFile(file, true);
+        preview.innerHTML = '✅ QR code found: <b>' + decodedText + '</b>';
+        
+        await doVerifyCode(decodedText);
+    } catch (err) {
+        preview.innerHTML = '';
+        out.innerHTML = '<div class="card" style="border-color:#991b1b"><h2 style="color:#f87171">❌ Could not find a valid QR code in this image.</h2></div>';
+        toast('No QR code found in the file', true);
     }
 }
 
@@ -986,48 +1071,12 @@ async function startScanner() {
             try { _qrScanner.stop(); } catch (e) {}
             const inp = document.getElementById('scanResult');
             if (inp) inp.value = String(decoded).trim().toUpperCase();
-            toast('✅ Scanned — press Submit');
+            toast('✅ Scanned! Press Submit.');
         }, (e) => {});
     } catch (e) { container.innerHTML = '<p style="color:#f87171">❌ Camera unavailable: ' + escapeHTML(e.message) + '</p>'; }
 }
 
-async function scanQRFile(input) {
-    if (!input.files || input.files.length === 0) return;
-    
-    if (!window.Html5Qrcode) {
-        await new Promise((res, rej) => { const s = document.createElement('script'); s.src = 'https://unpkg.com/html5-qrcode'; s.onload = res; s.onerror = rej; document.head.appendChild(s); });
-    }
-    
-    const file = input.files[0];
-    const out = document.getElementById('verifyResult');
-    out.innerHTML = '<div class="card"><p>⏳ Scanning file...</p></div>';
-    
-    try {
-        const scanner = new window.Html5Qrcode("qr-reader-dummy");
-        const decodedText = await scanner.scanFile(file, true);
-        document.getElementById('scanResult').value = decodedText;
-        toast('✅ File scanned — press Submit');
-        
-        const res = await api('/verify-ticket', { method: 'POST', body: { printerCode: decodedText.toUpperCase() } });
-        out.innerHTML = renderVerifyResult(res);
-    } catch (err) {
-        out.innerHTML = '<div class="card" style="border-color:#991b1b"><h2 style="color:#f87171">❌ Could not find a QR code in this image.</h2></div>';
-        toast('No QR code found in the file', true);
-    }
-}
-
-async function submitScannedCode() {
-    const code = document.getElementById('scanResult').value.trim();
-    const out = document.getElementById('verifyResult');
-    if (!code) { toast('Scan or paste a code first', true); return; }
-    out.innerHTML = '<div class="card"><p>⏳ Checking...</p></div>';
-    try {
-        const res = await api('/verify-ticket', { method: 'POST', body: { printerCode: code.toUpperCase() } });
-        out.innerHTML = renderVerifyResult(res);
-    } catch (e) {
-        out.innerHTML = '<div class="card" style="border-color:#991b1b"><h2 style="color:#f87171">❌ ' + escapeHTML(e.message) + '</h2></div>';
-    }
-}
+function verifySwitchGame(g) { verifyGame = g; verifyPage(); }
 
 function renderVerifyResult(res) {
     const isWinner = res.is_winner === true;
