@@ -303,6 +303,12 @@ body.wheel-public .winners .winner .gold { font-size: 26px; color: #fbbf24; text
   60% { transform: scale(1.35) rotate(8deg); opacity: 1; }
   100% { transform: scale(1) rotate(0); opacity: 1; }
 }
+
+/* NEW: Settings scope banner */
+.scope-banner { padding: 14px 18px; border-radius: 12px; margin-bottom: 16px; font-size: 14px; line-height: 1.5; }
+.scope-banner.branch { background: #0c2a3a; border: 1px solid #0ea5e9; color: #7dd3fc; }
+.scope-banner.global { background: #3a2a0c; border: 1px solid #fbbf24; color: #fcd34d; }
+.scope-banner b { color: #fff; }
 </style>
 </head>
 <body>
@@ -344,9 +350,9 @@ body.wheel-public .winners .winner .gold { font-size: 26px; color: #fbbf24; text
     </div>
     <div class="logo">LUCKY<span>WHEEL</span></div>
     <p class="login-description">Teshe Number Lucky Wheel · Number Betting</p>
-    
+
     <input type="hidden" id="regBranch" value="">
-    
+
     <div id="loginForm">
         <div id="loginError" class="login-error-box"></div>
         <input id="loginPhone" placeholder="Phone Number">
@@ -354,7 +360,7 @@ body.wheel-public .winners .winner .gold { font-size: 26px; color: #fbbf24; text
         <button id="loginBtn" class="main-button" onclick="loginUser()">Login</button>
         <div class="login-footer">Don't have an account? <button class="link-button" onclick="showRegister()">Register</button></div>
     </div>
-    
+
     <div id="register" class="hidden">
         <div id="registerError" class="login-error-box"></div>
         <h2 style="margin-bottom:20px">Create Account</h2>
@@ -447,9 +453,9 @@ function getMyBranch() {
     if (ME.role === 'main_admin' || ME.role === 'admin') return null;
     if (ME.role === 'branch' || ME.branch_id) {
         return {
-            id: ME.branch_id,
+            id: ME.branch_id || ME.id,
             name: ME.branch_name || ME.name,
-            code: ME.branch_code || '',
+            code: ME.branch_code || ME.code || '',
             telegram_link: ME.telegram_link || SUPPORT_LINK
         };
     }
@@ -495,7 +501,8 @@ function renderSidebar() {
             <button class="nav" data-page="tickets" onclick="openPage('tickets')">🎟️ Assign Tickets</button>
             <button class="nav" data-page="verify" onclick="openPage('verify')">🔍 Verify Ticket</button>
             <button class="nav" data-page="requests" onclick="openPage('requests')">📥 Requests</button>
-            <button class="nav" data-page="history" onclick="openPage('history')">📜 History</button>`;
+            <button class="nav" data-page="history" onclick="openPage('history')">📜 History</button>
+            <button class="nav" data-page="settings" onclick="openPage('settings')">⚙️ Branch Settings</button>`;
     } else {
         html = `
             <button class="nav active" data-page="dashboard" onclick="openPage('dashboard')">🏠 Dashboard</button>
@@ -510,7 +517,6 @@ function renderSidebar() {
             <button class="nav" data-page="history" onclick="openPage('history')">📜 History</button>`;
     }
     
-    // Uses branch-specific telegram link if user has a branch, otherwise falls back to default
     const currentSupportLink = ME.telegram_link ? ME.telegram_link : SUPPORT_LINK;
 
     html += `<div style="margin-top:20px;padding-top:20px;border-top:1px solid #334155">
@@ -1218,7 +1224,7 @@ function dashboard() {
             <div class="wheel-hero-img"><img src="image2.jpg" onerror="this.src='https://images.unsplash.com/photo-1542751371-adc38448a05e?w=1600&h=500&fit=crop'"></div>
             <h1 class="title">${isBranch ? '🏢 ' + escapeHTML(branchName) : 'Admin Dashboard'}</h1>
             <div class="stats"><div class="stat"><small>Users</small><h2 id="statUsers">—</h2></div><div class="stat"><small>Wheel Sold</small><h2>${wheelSold}/${SETTINGS.ticket_count}</h2></div><div class="stat"><small>Sales</small><h2>${SETTINGS.sales_state === 'open' ? '🟢 OPEN' : '⚪ ' + (SETTINGS.sales_state || 'idle').toUpperCase()}</h2></div><div class="stat"><small>Round</small><h2>${SETTINGS.round_state}</h2></div></div>
-            <div class="card"><h2>Admin Actions</h2><div class="action-buttons"><button class="action-btn green" onclick="startSales()">🟢 OPEN SALES</button><button class="action-btn red" onclick="closeSales()">🔴 CLOSE SALES</button><button class="action-btn" onclick="openPage('tickets')">🎟️ Assign</button><button class="action-btn blue" onclick="openPage('requests')">📥 Requests</button><button class="action-btn green" onclick="openPage('wheel')">🎡 Wheel</button><button class="action-btn purple" onclick="openPage('nb')">🎰 NB</button>${!isBranch ? '<button class="action-btn purple" onclick="openPage(\'settings\')">⚙️ Settings</button>' : ''}</div></div>
+            <div class="card"><h2>Admin Actions</h2><div class="action-buttons"><button class="action-btn green" onclick="startSales()">🟢 OPEN SALES</button><button class="action-btn red" onclick="closeSales()">🔴 CLOSE SALES</button><button class="action-btn" onclick="openPage('tickets')">🎟️ Assign</button><button class="action-btn blue" onclick="openPage('requests')">📥 Requests</button><button class="action-btn green" onclick="openPage('wheel')">🎡 Wheel</button><button class="action-btn purple" onclick="openPage('nb')">🎰 NB</button>${!isBranch ? '<button class="action-btn purple" onclick="openPage(\'settings\')">⚙️ Settings</button>' : '<button class="action-btn purple" onclick="openPage(\'settings\')">⚙️ Branch Settings</button>'}</div></div>
         `;
         api('/admin/users/full').then(l => { const e = document.getElementById('statUsers'); if (e) e.textContent = l.users.length; }).catch(() => {});
         return;
@@ -1498,7 +1504,6 @@ async function submitDeposit() {
     if (!amount || amount <= 0) { toast('Enter a valid amount', true); return; } 
     if (!transactionId && !_depScreenshotData) { toast('Enter a Transaction ID or upload a screenshot', true); return; } 
     try { 
-        // Send fallback string so backend doesn't reject null on a NOT NULL column
         const finalTxnId = transactionId || 'SCREENSHOT_ONLY';
         await api('/user/deposits', { method: 'POST', body: { method, amount, transactionId: finalTxnId, screenshot: _depScreenshotData || null }}); 
         _depScreenshotData = null; 
@@ -1595,7 +1600,8 @@ function submitModal() { const val = document.getElementById('modalInput').value
 async function historyPage() {
     const [w, nb] = await Promise.all([api('/rounds').catch(() => ({rounds:[]})), api('/nb/rounds').catch(() => ({rounds:[]}))]);
     const isMainAdmin = ME.role === 'main_admin' || ME.role === 'admin';
-    
+    const isAdmin = isMainAdmin || ME.role === 'branch';
+
     document.getElementById('main').innerHTML = `
         <img src="${IMG.history}" class="banner-img" onerror="this.style.display='none'">
         <h1 class="title">📜 History</h1>
@@ -1606,7 +1612,7 @@ async function historyPage() {
         <div id="historyContent"></div>
     `;
     const c = document.getElementById('historyContent');
-    
+
     const renderHistoryCard = (r, gameIcon) => {
         let html = `<div class="history"><h3>${gameIcon} Round #${r.round_number}</h3><p class="muted">${formatDate(r.created_at)}</p>`;
         if (r.winners && r.winners.length) {
@@ -1616,7 +1622,7 @@ async function historyPage() {
                     <div class="row"><b>Phone:</b> <span>${escapeHTML(x.phone_masked || x.phone || '—')}</span></div>
                     <div class="row"><b>Numbers:</b> <span class="gold">${x.shown_numbers ? x.shown_numbers.map(n=>'#'+n).join(', ') : '#'+x.ticket}</span></div>
                     <div class="row"><b>Prize:</b> <span class="gold">${money(x.prize)}</span></div>
-                    ${isMainAdmin || ME.role === 'branch' ? `<button class="small-button red-button" style="margin-top:8px; width:100%" onclick="deleteHistoryRecord('${gameIcon === '🎡' ? 'wheel' : 'nb'}', ${r.id})">🗑️ Delete Record</button>` : ''}
+                    ${isAdmin ? `<button class="small-button red-button" style="margin-top:8px; width:100%" onclick="deleteHistoryRecord('${gameIcon === '🎡' ? 'wheel' : 'nb'}', ${r.id})">🗑️ Delete Record</button>` : ''}
                 </div>
             `).join('');
         } else {
@@ -1644,16 +1650,65 @@ async function deleteHistoryRecord(game, roundId) {
     } catch (e) { toast('❌ ' + e.message, true); }
 }
 
+/* ============================================================
+   SETTINGS PAGE (WITH ADMIN-ONLY PASSWORD CHANGE)
+   ============================================================ */
+function settingsScopeBanner() {
+    if (!ME) return '';
+    if (ME.role === 'branch') {
+        return `<div class="scope-banner branch">
+            🏢 Editing settings for <b>${escapeHTML(ME.branch_name || ME.name || 'your branch')}</b> only.
+            Your changes will <b>not</b> affect other branches or the main admin.
+        </div>`;
+    }
+    return `<div class="scope-banner global">
+        🌐 Editing <b>GLOBAL</b> settings — used by the main admin's own rounds.
+        Each branch can override these with their own settings.
+    </div>`;
+}
+
 async function settingsPage() {
     let nbs = null; try { nbs = await api('/nb/config'); } catch (e) {}
-    document.getElementById('main').innerHTML = `<img src="${IMG.settings}" class="banner-img" onerror="this.style.display='none'"><h1 class="title">⚙️ Settings</h1><div class="game-tabs"><button class="game-tab ${settingsGame==='wheel'?'active':''}" onclick="settingsSwitchGame('wheel')">🎡 Wheel</button><button class="game-tab ${settingsGame==='nb'?'active':''}" onclick="settingsSwitchGame('nb')">🎰 NB</button></div><div id="settingsContent"></div>`;
+    document.getElementById('main').innerHTML = `<img src="${IMG.settings}" class="banner-img" onerror="this.style.display='none'"><h1 class="title">⚙️ ${ME.role === 'branch' ? 'Branch Settings' : 'Settings'}</h1>${settingsScopeBanner()}<div class="game-tabs"><button class="game-tab ${settingsGame==='wheel'?'active':''}" onclick="settingsSwitchGame('wheel')">🎡 Wheel</button><button class="game-tab ${settingsGame==='nb'?'active':''}" onclick="settingsSwitchGame('nb')">🎰 NB</button></div><div id="settingsContent"></div>`;
     if (settingsGame === 'wheel') renderWheelSettings(); else renderNBSettings(nbs);
 }
 function settingsSwitchGame(g) { if (settingsGame === g) return; settingsGame = g; settingsPage(); }
+
 function renderWheelSettings() {
     const wc = SETTINGS.winner_count || 1; const pcts = SETTINGS.prize_percents || []; let inputs = '';
     for (let i = 0; i < wc; i++) { const v = pcts[i] !== undefined ? pcts[i] : (i === 0 ? 50 : i === 1 ? 30 : 10); inputs += '<label>Winner #' + (i + 1) + ' — % of revenue</label><input class="pct-input" type="number" min="0" max="100" value="' + v + '">'; }
-    document.getElementById('settingsContent').innerHTML = `<div class="card"><h2>🎡 Wheel Configuration</h2><br><label>Number Of Sections</label><input id="ticketCount" type="number" min="2" max="60" value="${SETTINGS.ticket_count}"><label>Sales Duration (minutes)</label><input id="salesDuration" type="number" min="1" value="${SETTINGS.sales_duration || 120}"><label>Spin Duration (seconds)</label><input id="duration" type="number" min="5" value="${SETTINGS.duration_seconds}"><label>Number Of Winners</label><input id="winnerCount" type="number" min="1" max="60" value="${wc}" onchange="reloadPrizeInputs()"><label>Ticket Price (ETB)</label><input id="ticketPrice" type="number" min="0" value="${SETTINGS.ticket_price}"><br><hr style="border-color:#334155;margin:20px 0"><br><h3 style="color:#fbbf24">🏆 Prize % per place</h3><div id="prizeList">${inputs}</div><br><hr style="border-color:#334155;margin:20px 0"><br><h3 style="color:#fbbf24">🎁 Referral Rewards</h3><label>Referrals For Free Ticket</label><input id="referralGoal" type="number" min="1" value="${SETTINGS.referral_goal || 8}"><label>Free Tickets Per Goal</label><input id="referralReward" type="number" min="1" value="${SETTINGS.referral_reward || 1}"><button class="main-button" onclick="saveWheelSettings()">Save Wheel Settings</button></div><div class="card" style="border-color:#dc2626"><h2 style="color:#dc2626">🔐 Change Admin Password</h2><label>New Password</label><input id="newAdminPw" type="password"><label>Secret Reset Code</label><input id="resetCode" type="password"><button class="main-button" style="background:#dc2626;color:white" onclick="changeAdminPassword('')">🔐 Change Password</button></div>`;
+    
+    // ONLY show the password box to main admins
+    const isMainAdmin = ME.role === 'main_admin' || ME.role === 'admin';
+    const passwordHtml = isMainAdmin ? `
+        <div class="card" style="border-color:#dc2626; margin-top:20px;">
+            <h2 style="color:#dc2626">🔐 Change Admin Password</h2>
+            <label>New Password</label>
+            <input id="newAdminPw" type="password">
+            <label>Secret Reset Code</label>
+            <input id="resetCode" type="password">
+            <button class="main-button" style="background:#dc2626;color:white" onclick="changeAdminPassword('')">🔐 Change Password</button>
+        </div>` : '';
+
+    document.getElementById('settingsContent').innerHTML = `
+    <div class="card">
+        <h2>🎡 Wheel Configuration</h2><br>
+        <label>Number Of Sections</label><input id="ticketCount" type="number" min="2" max="60" value="${SETTINGS.ticket_count}">
+        <label>Sales Duration (minutes)</label><input id="salesDuration" type="number" min="1" value="${SETTINGS.sales_duration || 120}">
+        <label>Spin Duration (seconds)</label><input id="duration" type="number" min="5" value="${SETTINGS.duration_seconds}">
+        <label>Number Of Winners</label><input id="winnerCount" type="number" min="1" max="60" value="${wc}" onchange="reloadPrizeInputs()">
+        <label>Ticket Price (ETB)</label><input id="ticketPrice" type="number" min="0" value="${SETTINGS.ticket_price}">
+        <br><hr style="border-color:#334155;margin:20px 0"><br>
+        <h3 style="color:#fbbf24">🏆 Prize % per place</h3>
+        <div id="prizeList">${inputs}</div>
+        <br><hr style="border-color:#334155;margin:20px 0"><br>
+        <h3 style="color:#fbbf24">🎁 Referral Rewards</h3>
+        <label>Referrals For Free Ticket</label><input id="referralGoal" type="number" min="1" value="${SETTINGS.referral_goal || 8}">
+        <label>Free Tickets Per Goal</label><input id="referralReward" type="number" min="1" value="${SETTINGS.referral_reward || 1}">
+        <button class="main-button" onclick="saveWheelSettings()">Save Wheel Settings</button>
+    </div>
+    ${passwordHtml}
+    `;
 }
 function reloadPrizeInputs() { const wc = Math.max(1, Math.min(60, Number(document.getElementById('winnerCount').value) || 1)); let h = ''; for (let i = 0; i < wc; i++) { const d = i === 0 ? 50 : i === 1 ? 30 : i === 2 ? 10 : 5; h += '<label>Winner #' + (i + 1) + ' — %</label><input class="pct-input" type="number" min="0" max="100" value="' + d + '">'; } document.getElementById('prizeList').innerHTML = h; }
 async function saveWheelSettings() {
@@ -1664,7 +1719,36 @@ function renderNBSettings(s) {
     if (!s) { document.getElementById('settingsContent').innerHTML = '<div class="card"><p class="muted">Not available</p></div>'; return; }
     const wc = s.winner_count || 1; const pcts = s.prize_percents || []; const roundMin = Number(s.round_duration_minutes || s.duration_minutes || 120); let inputs = '';
     for (let i = 0; i < wc; i++) { const v = pcts[i] !== undefined ? pcts[i] : (i === 0 ? 50 : i === 1 ? 30 : 10); inputs += '<label>Winner #' + (i + 1) + ' — % of revenue</label><input class="nb-pct-input" type="number" min="0" max="100" value="' + v + '">'; }
-    document.getElementById('settingsContent').innerHTML = `<div class="card"><h2>🎰 NB Configuration</h2><br><label>Total Numbers</label><input id="nbTotal" type="number" min="10" max="200" value="${s.total_numbers}"><label>Drawn per Round</label><input id="nbDrawn" type="number" min="1" max="50" value="${s.drawn_count}"><label>Tickets per Purchase</label><input id="nbTpp" type="number" min="1" max="20" value="${s.tickets_per_purchase}"><label>Price per Purchase</label><input id="nbPrice" type="number" min="0" value="${s.price_per_purchase}"><label>Draw Speed (seconds)</label><input id="nbDelay" type="number" min="1" max="30" value="${s.draw_delay_seconds}"><label>Round Duration (minutes)</label><input id="nbDuration" type="number" min="1" max="1440" value="${roundMin}"><label>Number of Winners</label><input id="nbWinners" type="number" min="1" max="20" value="${wc}" onchange="nbSettingsReloadPrizes()"><br><hr style="border-color:#334155;margin:16px 0"><br><h3 style="color:#fbbf24">🏆 Prize % per place</h3><div id="nbPrizeList">${inputs}</div><button class="main-button" onclick="saveNBSettings()">Save NB Settings</button></div><div class="card" style="border-color:#dc2626"><h2 style="color:#dc2626">🔐 Change Admin Password</h2><label>New Password</label><input id="newAdminPwNb" type="password"><label>Secret Reset Code</label><input id="resetCodeNb" type="password"><button class="main-button" style="background:#dc2626;color:white" onclick="changeAdminPassword('Nb')">🔐 Change Password</button></div>`;
+    
+    // ONLY show the password box to main admins
+    const isMainAdmin = ME.role === 'main_admin' || ME.role === 'admin';
+    const passwordHtml = isMainAdmin ? `
+        <div class="card" style="border-color:#dc2626; margin-top:20px;">
+            <h2 style="color:#dc2626">🔐 Change Admin Password</h2>
+            <label>New Password</label>
+            <input id="newAdminPwNb" type="password">
+            <label>Secret Reset Code</label>
+            <input id="resetCodeNb" type="password">
+            <button class="main-button" style="background:#dc2626;color:white" onclick="changeAdminPassword('Nb')">🔐 Change Password</button>
+        </div>` : '';
+
+    document.getElementById('settingsContent').innerHTML = `
+    <div class="card">
+        <h2>🎰 NB Configuration</h2><br>
+        <label>Total Numbers</label><input id="nbTotal" type="number" min="10" max="200" value="${s.total_numbers}">
+        <label>Drawn per Round</label><input id="nbDrawn" type="number" min="1" max="50" value="${s.drawn_count}">
+        <label>Tickets per Purchase</label><input id="nbTpp" type="number" min="1" max="20" value="${s.tickets_per_purchase}">
+        <label>Price per Purchase</label><input id="nbPrice" type="number" min="0" value="${s.price_per_purchase}">
+        <label>Draw Speed (seconds)</label><input id="nbDelay" type="number" min="1" max="30" value="${s.draw_delay_seconds}">
+        <label>Round Duration (minutes)</label><input id="nbDuration" type="number" min="1" max="1440" value="${roundMin}">
+        <label>Number of Winners</label><input id="nbWinners" type="number" min="1" max="20" value="${wc}" onchange="nbSettingsReloadPrizes()">
+        <br><hr style="border-color:#334155;margin:16px 0"><br>
+        <h3 style="color:#fbbf24">🏆 Prize % per place</h3>
+        <div id="nbPrizeList">${inputs}</div>
+        <button class="main-button" onclick="saveNBSettings()">Save NB Settings</button>
+    </div>
+    ${passwordHtml}
+    `;
 }
 function nbSettingsReloadPrizes() { const c = Math.max(1, Math.min(20, Number(document.getElementById('nbWinners').value) || 1)); let h = ''; for (let i = 0; i < c; i++) { const d = i === 0 ? 50 : i === 1 ? 30 : i === 2 ? 10 : 5; h += '<label>Winner #' + (i + 1) + ' — %</label><input class="nb-pct-input" type="number" min="0" max="100" value="' + d + '">'; } document.getElementById('nbPrizeList').innerHTML = h; }
 async function saveNBSettings() {
@@ -1672,8 +1756,11 @@ async function saveNBSettings() {
     if (!round_duration_minutes || round_duration_minutes < 1) { toast('Duration must be ≥ 1 minute', true); return; }
     try { await api('/admin/nb/settings', { method: 'POST', body: { total_numbers, drawn_count, tickets_per_purchase, price_per_purchase, draw_delay_seconds, round_duration_minutes, duration_minutes: round_duration_minutes, winner_count, prize_percents, use_percent_prizes: true }}); toast('✅ Saved'); try { nbState = await api('/nb/state'); } catch (e) {} await settingsPage(); } catch (e) { toast('❌ ' + e.message, true); }
 }
+
 async function changeAdminPassword(suffix = '') {
-    const pwEl = document.getElementById('newAdminPw' + suffix); const codeEl = document.getElementById('resetCode' + suffix); const pw = pwEl.value.trim(), code = codeEl.value.trim();
+    const pwEl = document.getElementById('newAdminPw' + suffix); const codeEl = document.getElementById('resetCode' + suffix);
+    if (!pwEl || !codeEl) return;
+    const pw = pwEl.value.trim(), code = codeEl.value.trim();
     if (!pw || pw.length < 4) { toast('Min 4 characters', true); return; } if (!code) { toast('Enter code', true); return; }
     if (!(await confirmToast('Change admin password?', { title: 'Change Password', okText: 'Change' }))) return;
     try { await api('/admin/change-password', { method: 'POST', body: { newPassword: pw, code } }); toast('✅ Changed!'); pwEl.value = ''; codeEl.value = ''; } catch (e) { toast('❌ ' + e.message, true); }
