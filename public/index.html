@@ -610,6 +610,10 @@ async function register() {
     try {
         const res = await api('/auth/register', { method: 'POST', body: { name, phone, password, referralCode } });
         toast('✅ Account created! Your code: ' + res.referral_code);
+        // Show recommendation to join channel after register
+        setTimeout(() => {
+            alert("🎉 Registration Successful!\n\n📢 Please join our Telegram channel for updates and announcements:\nhttps://t.me/Lucky21_Wheel");
+        }, 500);
         showLogin();
     } catch (e) { errorBox.textContent = '❌ ' + e.message; errorBox.style.display = 'block'; }
     finally { btn.textContent = 'Register'; btn.disabled = false; }
@@ -938,10 +942,12 @@ async function doVerify(input) {
         html += '<div class="row"><b>Owner:</b> <span>' + escapeHTML(res.owner_name || '—') + '</span></div>';
         html += '<div class="row"><b>Phone:</b> <span style="font-family:monospace">' + escapeHTML(res.owner_phone || '—') + '</span></div>';
         html += '<div class="row"><b>Date:</b> <span>' + formatDate(res.sold_date) + '</span></div>';
+        
         if (res.status === 'progress') html += '<div style="margin-top:15px; padding:12px; background:#0369a1; border-radius:8px; text-align:center; border: 1px solid #0ea5e9;">⏳ <b>Round In Progress</b><br><span style="font-size:12px; opacity:0.8">Wait for the draw to see if you won.</span></div>';
         else if (res.status === 'winner') html += '<div style="margin-top:15px; padding:12px; background:#166534; border-radius:8px; text-align:center; border: 1px solid #4ade80;">🏆 <b>WINNER!</b><br>Prize: <b class="gold" style="font-size:18px">' + money(res.prize) + '</b></div>';
         else if (res.status === 'not_winner') html += '<div style="margin-top:15px; padding:12px; background:#7f1d1d; border-radius:8px; text-align:center; border: 1px solid #ef4444;">😔 <b>Not a winner this round.</b><br><span style="font-size:12px; opacity:0.8">Better luck next time!</span></div>';
         else if (res.status === 'past_round') html += '<div style="margin-top:15px; padding:12px; background:#334155; border-radius:8px; text-align:center; border: 1px solid #64748b;">📜 This ticket is from a <b>Past Round</b> (#' + res.round + ').</div>';
+        
         html += '</div>'; if (resultDiv) resultDiv.innerHTML = html;
     } catch (e) { if (resultDiv) resultDiv.innerHTML = '<div class="req-card" style="border-color:#ef4444; background:#7f1d1d"><h3 style="color:#fca5a5">❌ Ticket Not Found</h3><p>The ID or number you entered does not exist in our system.</p></div>'; }
     finally { if (btn) { btn.textContent = '🔍 VERIFY TICKET'; btn.disabled = false; } }

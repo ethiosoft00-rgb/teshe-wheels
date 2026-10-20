@@ -160,29 +160,40 @@ app.post('/api/ticket-receipt', auth, async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// ✅ COMPLETELY FIXED VERIFICATION LOGIC
 app.post('/api/verify-ticket', auth, async (req, res) => {
   try {
     let { printerCode, ticketNumber, unique_id } = req.body;
     let searchNum = String(ticketNumber || unique_id || printerCode || '').trim();
     const originalInput = searchNum;
+    
+    // Clean the input
     if (searchNum.startsWith('TICKET-')) searchNum = searchNum.replace('TICKET-', '');
     if (searchNum.startsWith('NB-')) searchNum = searchNum.replace('NB-', '');
+    if (searchNum.startsWith('LW-')) searchNum = searchNum.replace('LW-', '');
 
     let ticket = null; let isNb = false;
+    
+    // 1. Try finding by batch_id (the unique reference)
     let { data: t1 } = await sb.from('tickets').select('*').eq('batch_id', originalInput).limit(1);
+    let { data: t2 } = await sb.from('nb_tickets').select('*').eq('batch_id', originalInput).limit(1);
+    
+    // 2. If batch fails, try finding by the actual number
     if (!t1 || t1.length === 0) {
         const { data: t1b } = await sb.from('tickets').select('*').eq('ticket_number', searchNum).limit(1);
         if (t1b && t1b.length > 0) t1 = t1b;
     }
-    let { data: t2 } = await sb.from('nb_tickets').select('*').eq('batch_id', originalInput).limit(1);
     if (!t2 || t2.length === 0) {
         const { data: t2b } = await sb.from('nb_tickets').select('*').eq('number', searchNum).limit(1);
         if (t2b && t2b.length > 0) t2 = t2b;
     }
+
     if (t1 && t1.length > 0) { ticket = t1[0]; isNb = false; }
     else if (t2 && t2.length > 0) { ticket = t2[0]; isNb = true; }
+    
     if (!ticket) return res.status(404).json({ error: 'Ticket not found' });
 
+    // Get current round settings
     let roundSettings;
     if (isNb) {
       const { data: s } = await sb.from('nb_settings').select('*').eq('id', 1).single();
@@ -192,21 +203,52 @@ app.post('/api/verify-ticket', auth, async (req, res) => {
       roundSettings = s;
     }
 
-    let isWinner = false; let prize = 0; let status = 'progress';
+    let status = 'progress'; // Default: round not finished
+    let prize = 0;
+    let isWinner = false;
     const isCurrentRound = (ticket.round_number === roundSettings.round_number);
+    
     if (isCurrentRound) {
       if (roundSettings.round_state === 'finished') {
-        const winningNums = isNb ? (roundSettings.winning_numbers || []) : (roundSettings.winner_numbers || []);
+        // Round is finished. Check if this specific ticket is in the winners array
         const winnersList = roundSettings.winners || [];
         const ticketNum = isNb ? ticket.number : ticket.ticket_number;
-        if (winningNums.includes(ticketNum)) {
-            const winnerObj = winnersList.find(w => w.ticket === ticketNum || (w.shown_numbers || []).includes(ticketNum));
-            if (winnerObj) { isWinner = true; prize = winnerObj.prize; status = 'winner'; } else { status = 'not_winner'; }
-        } else { status = 'not_winner'; }
-      } else { status = 'progress'; }
-    } else { status = 'past_round'; }
+        
+        // Look for this ticket in the winners list
+        const winnerObj = winnersList.find(w => 
+            (w.ticket && Number(w.ticket) === Number(ticketNum)) || 
+            (w.shown_numbers && w.shown_numbers.map(Number).includes(Number(ticketNum)))
+        );
 
-    res.json({ ok: true, game: isNb ? 'Number Betting' : 'Lucky Wheel', numbers: [isNb ? ticket.number : ticket.ticket_number], unique_id: ticket.batch_id || 'TICKET-' + (isNb ? ticket.number : ticket.ticket_number), round: ticket.round_number, owner_name: ticket.user_name, owner_phone: ticket.phone, sold_date: ticket.sold_date, is_current_round: isCurrentRound, round_finished: isCurrentRound ? roundSettings.round_state === 'finished' : true, is_winner: isWinner, prize: prize, status: status });
+        if (winnerObj) {
+            isWinner = true;
+            prize = winnerObj.prize;
+            status = 'winner';
+        } else {
+            status = 'not_winner';
+        }
+      } else {
+        status = 'progress';
+      }
+    } else {
+      status = 'past_round';
+    }
+
+    res.json({ 
+        ok: true, 
+        game: isNb ? 'Number Betting' : 'Lucky Wheel', 
+        numbers: [isNb ? ticket.number : ticket.ticket_number], 
+        unique_id: ticket.batch_id || 'TICKET-' + (isNb ? ticket.number : ticket.ticket_number), 
+        round: ticket.round_number, 
+        owner_name: ticket.user_name, 
+        owner_phone: ticket.phone, 
+        sold_date: ticket.sold_date, 
+        is_current_round: isCurrentRound, 
+        round_finished: isCurrentRound ? roundSettings.round_state === 'finished' : true, 
+        is_winner: isWinner, 
+        prize: prize, 
+        status: status 
+    });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
