@@ -18,6 +18,7 @@ dotenv.config();
 const app = express();
 app.use(cors());
 app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ limit: '10mb', extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
 
@@ -28,7 +29,7 @@ const sb = createClient(
 
 const JWT_SECRET = process.env.JWT_SECRET || 'change-me';
 const OWNER_PHONE = process.env.OWNER_PHONE || '0945757361';
-const GROQ_API_KEY = process.env.GROQ_API_KEY || process.env.GROK_API_KEY; 
+const GROQ_API_KEY = process.env.GROQ_API_KEY || process.env.GROK_API_KEY;
 
 async function auth(req, res, next) {
   const h = req.headers.authorization || '';
@@ -38,7 +39,15 @@ async function auth(req, res, next) {
   catch { return res.status(401).json({ error: 'Invalid token' }); }
 }
 function adminOnly(req, res, next) {
-  if (req.user.role !== 'admin') return res.status(403).json({ error: 'Admin only' });
+  if (req.user.role !== 'admin' && req.user.role !== 'main_admin' && req.user.role !== 'branch') {
+    return res.status(403).json({ error: 'Admin only' });
+  }
+  next();
+}
+function mainAdminOnly(req, res, next) {
+  if (req.user.role !== 'main_admin' && req.user.role !== 'admin') {
+    return res.status(403).json({ error: 'Main Admin only' });
+  }
   next();
 }
 
@@ -84,24 +93,42 @@ app.get('/api/config', (req, res) => {
   res.json({ supabaseUrl: process.env.SUPABASE_URL, supabaseAnonKey: process.env.SUPABASE_ANON_KEY });
 });
 
+// ==========================================
+// REGISTER & LOGIN
+// ==========================================
 app.post('/api/auth/register', async (req, res) => {
   try {
-    const { name, phone, password, referralCode } = req.body;
+    const { name, phone, password, referralCode, branchCode } = req.body;
     if (!name || !phone || !password) return res.status(400).json({ error: 'Please fill all fields' });
-    const cleanName = String(name).trim(); const cleanPhone = String(phone).trim(); const cleanPassword = String(password).trim();
+    const cleanName = String(name).trim();
+    const cleanPhone = String(phone).trim();
+    const cleanPassword = String(password).trim();
     if (cleanPassword.length < 4) return res.status(400).json({ error: 'Password too short' });
     if (cleanPhone === OWNER_PHONE) return res.status(400).json({ error: 'This phone number is reserved' });
     const { data: exists } = await sb.from('users').select('id').eq('phone', cleanPhone).maybeSingle();
     if (exists) return res.status(400).json({ error: 'Phone already registered' });
+
     let referredBy = null;
+    let branchId = null;
+
     if (referralCode && String(referralCode).trim()) {
-      const { data: ref } = await sb.from('users').select('id').eq('referral_code', String(referralCode).trim().toUpperCase()).maybeSingle();
-      if (ref) referredBy = ref.id;
+      const cleanRef = String(referralCode).trim().toUpperCase();
+      const { data: refUser } = await sb.from('users').select('id').eq('referral_code', cleanRef).maybeSingle();
+      if (refUser) referredBy = refUser.id;
     }
+    
+    if (branchCode && String(branchCode).trim()) {
+      const cleanBranch = String(branchCode).trim().toUpperCase();
+      const { data: refBranch } = await sb.from('branches').select('id').eq('code', cleanBranch).maybeSingle();
+      if (refBranch) branchId = refBranch.id;
+    }
+
     const hash = await bcrypt.hash(cleanPassword, 10);
     const myCode = await generateReferralCode();
     const { error } = await sb.from('users').insert({
-      name: cleanName, phone: cleanPhone, password_hash: hash, password_plain: cleanPassword, role: 'user', balance: 0, referral_code: myCode, referred_by: referredBy, banned: false
+      name: cleanName, phone: cleanPhone, password_hash: hash, password_plain: cleanPassword,
+      role: 'user', balance: 0, referral_code: myCode, referred_by: referredBy,
+      branch_id: branchId, banned: false
     });
     if (error) return res.status(500).json({ error: error.message });
     res.json({ ok: true, referral_code: myCode });
@@ -112,7 +139,19 @@ app.post('/api/auth/login', async (req, res) => {
   try {
     const { phone, password } = req.body;
     if (!phone || !password) return res.status(400).json({ error: 'Phone and password required' });
-    const cleanPhone = String(phone).trim(); const cleanPassword = String(password).trim();
+    const cleanPhone = String(phone).trim();
+    const cleanPassword = String(password).trim();
+
+    // Branch admin login
+    const { data: branch } = await sb.from('branches').select('*').eq('admin_phone', cleanPhone).maybeSingle();
+    if (branch) {
+      const ok = await bcrypt.compare(cleanPassword, branch.password_hash);
+      if (!ok) return res.status(401).json({ error: 'Invalid phone number or password' });
+      const token = sign({ id: branch.id, role: 'branch', phone: branch.admin_phone });
+      return res.json({ token, role: 'branch', name: branch.name });
+    }
+
+    // Normal user / main admin
     const { data: user, error } = await sb.from('users').select('*').eq('phone', cleanPhone).maybeSingle();
     if (error) return res.status(500).json({ error: 'DB error' });
     if (!user) return res.status(401).json({ error: 'Invalid phone number or password' });
@@ -127,26 +166,157 @@ app.post('/api/auth/login', async (req, res) => {
 app.get('/api/state', auth, async (req, res) => {
   try {
     const settings = await getSettings(); const tickets = await getTickets(); let me;
-    if (req.user.role === 'admin') {
+    if (req.user.role === 'main_admin' || req.user.role === 'admin') {
       const { data } = await sb.from('users').select('id,name,phone,role,balance,free_tickets,referral_code,active_referrals,public_id').eq('id', req.user.id).single();
       me = data || { id: req.user.id, name: 'Admin', phone: req.user.phone, role: 'admin', balance: 0, free_tickets: 0 };
+    } else if (req.user.role === 'branch') {
+      const { data } = await sb.from('branches').select('id,name,admin_phone,code,telegram_link,holder_name,receipt_company_name').eq('id', req.user.id).single();
+      me = { ...(data || {}), role: 'branch' };
     } else {
-      const { data } = await sb.from('users').select('id,name,phone,balance,role,referral_code,active_referrals,free_tickets,has_bought_ticket,public_id').eq('id', req.user.id).single();
+      const { data } = await sb.from('users').select('id,name,phone,balance,role,referral_code,active_referrals,free_tickets,has_bought_ticket,public_id,branch_id').eq('id', req.user.id).single();
       me = data;
+      
+      // Fetch branch telegram link for regular users so they see the updated link
+      if (me && me.branch_id) {
+        const { data: b } = await sb.from('branches').select('telegram_link').eq('id', me.branch_id).single();
+        if (b) me.telegram_link = b.telegram_link;
+      }
     }
     res.json({ settings, tickets, me });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+app.get('/api/referrals', auth, async (req, res) => {
+  try {
+    if (req.user.role === 'admin' || req.user.role === 'main_admin' || req.user.role === 'branch') {
+      return res.json({ referrals: [] });
+    }
+    const { data, error } = await sb.from('users')
+      .select('name, phone, has_bought_ticket')
+      .eq('referred_by', req.user.id);
+    if (error) throw error;
+    res.json({ referrals: data || [] });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// ==========================================
+// BRANCH ROUTES
+// ==========================================
+
+app.get('/api/admin/branches', auth, mainAdminOnly, async (req, res) => {
+  try {
+    const { data, error } = await sb.from('branches').select('*').order('created_at', { ascending: false });
+    if (error) throw error;
+    res.json({ branches: data || [] });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.post('/api/admin/branches', auth, mainAdminOnly, async (req, res) => {
+  try {
+    const { name, code, admin_phone, password, cbe_account, boa_account, holder_name, telegram_link, receipt_company_name } = req.body;
+    if (!name || !code || !admin_phone || !password) return res.status(400).json({ error: 'Missing required fields' });
+    
+    const cleanCode = String(code).trim().toUpperCase();
+    const cleanPhone = String(admin_phone).trim();
+    const hash = await bcrypt.hash(String(password).trim(), 10);
+
+    const { data, error } = await sb.from('branches').insert({
+      name: String(name).trim(), 
+      code: cleanCode, 
+      admin_phone: cleanPhone, 
+      password_hash: hash, 
+      cbe_account, 
+      boa_account,
+      holder_name: holder_name ? String(holder_name).trim() : null,
+      telegram_link: telegram_link ? String(telegram_link).trim() : null,
+      receipt_company_name: receipt_company_name ? String(receipt_company_name).trim() : null
+    }).select().single();
+
+    if (error) return res.status(500).json({ error: error.message });
+    res.json({ ok: true, branch: data });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// ✅ FIXED: ALLOW BOTH MAIN ADMIN AND USERS TO UPDATE TELEGRAM LINK
+app.put('/api/admin/branches/:id', auth, async (req, res) => {
+  try {
+    const branchId = req.params.id;
+    
+    // Security: Only Main Admin OR a user belonging to this branch can update
+    if (req.user.role !== 'main_admin' && req.user.role !== 'admin') {
+      if (req.user.role === 'branch' && req.user.id !== branchId) {
+        return res.status(403).json({ error: 'Not authorized for this branch' });
+      }
+      if (req.user.role === 'user') {
+        const { data: u } = await sb.from('users').select('branch_id').eq('id', req.user.id).single();
+        if (!u || u.branch_id !== branchId) {
+          return res.status(403).json({ error: 'You do not belong to this branch' });
+        }
+      }
+    }
+
+    const { name, admin_phone, password, cbe_account, boa_account, holder_name, telegram_link, receipt_company_name } = req.body;
+    const update = {};
+    
+    // Only allow updating specific fields for security
+    if (name !== undefined) update.name = name;
+    if (admin_phone !== undefined) update.admin_phone = admin_phone;
+    if (cbe_account !== undefined) update.cbe_account = cbe_account;
+    if (boa_account !== undefined) update.boa_account = boa_account;
+    if (holder_name !== undefined) update.holder_name = holder_name ? String(holder_name).trim() : null;
+    if (telegram_link !== undefined) update.telegram_link = telegram_link ? String(telegram_link).trim() : null;
+    if (receipt_company_name !== undefined) update.receipt_company_name = receipt_company_name ? String(receipt_company_name).trim() : null;
+    
+    if (password) update.password_hash = await bcrypt.hash(String(password).trim(), 10);
+    
+    const { error } = await sb.from('branches').update(update).eq('id', branchId);
+    if (error) throw error;
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.delete('/api/admin/branches/:id', auth, mainAdminOnly, async (req, res) => {
+  try {
+    await sb.from('users').update({ branch_id: null }).eq('branch_id', req.params.id);
+    const { error } = await sb.from('branches').delete().eq('id', req.params.id);
+    if (error) throw error;
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.get('/api/user/branch-details', auth, async (req, res) => {
+  try {
+    if (!req.user.id) return res.json({});
+    const { data: user } = await sb.from('users').select('branch_id').eq('id', req.user.id).single();
+    if (!user || !user.branch_id) return res.json({});
+    const { data: branch } = await sb.from('branches').select('cbe_account, boa_account, holder_name, telegram_link').eq('id', user.branch_id).single();
+    res.json(branch || {});
+  } catch (e) { res.json({}); }
+});
+
+// ==========================================
+// ADMIN / OTHER ROUTES
+// ==========================================
+
 app.post('/api/ticket-receipt', auth, async (req, res) => {
   try {
     const { game, round, tickets } = req.body;
     const settings = game === 'nb' ? await getNbSettings() : await getSettings();
+    
     let owner = { name: 'Admin', phone: '-' };
-    if (req.user.role !== 'admin') {
-      const { data: u } = await sb.from('users').select('name,phone,public_id').eq('id', req.user.id).single();
-      if (u) owner = { name: u.name, phone: u.phone, public_code: u.public_id ? 'U' + String(u.public_id).padStart(5, '0') : null };
+    let receipt_company = 'Lucky Wheel';
+    
+    if (req.user.role !== 'admin' && req.user.role !== 'main_admin') {
+      const { data: u } = await sb.from('users').select('name,phone,public_id,branch_id').eq('id', req.user.id).single();
+      if (u) {
+        owner = { name: u.name, phone: u.phone, public_code: u.public_id ? 'U' + String(u.public_id).padStart(5, '0') : null };
+        if (u.branch_id) {
+          const { data: b } = await sb.from('branches').select('receipt_company_name, name').eq('id', u.branch_id).single();
+          if (b) receipt_company = b.receipt_company_name || b.name;
+        }
+      }
     }
+
     let batchId = 'TICKET-' + tickets[0];
     if (game === 'nb') {
       const { data } = await sb.from('nb_tickets').select('batch_id, number').eq('round_number', round).in('number', tickets);
@@ -156,44 +326,52 @@ app.post('/api/ticket-receipt', auth, async (req, res) => {
       if (data && data.length && data[0].batch_id) batchId = data[0].batch_id;
     }
     const enriched = tickets.map(t => ({ number: typeof t === 'object' ? t.number : t, printer_code: batchId }));
-    res.json({ ok: true, game: game === 'nb' ? 'Number Betting' : 'Lucky Wheel', round, tickets: enriched, owner, ref: batchId, date: new Date().toISOString(), price: game === 'nb' ? Number(settings.price_per_purchase) : Number(settings.ticket_price) });
+    
+    res.json({ 
+      ok: true, 
+      game: game === 'nb' ? 'Number Betting' : 'Lucky Wheel', 
+      round, tickets: enriched, owner, ref: batchId, date: new Date().toISOString(), 
+      price: game === 'nb' ? Number(settings.price_per_purchase) : Number(settings.ticket_price),
+      receipt_company: receipt_company
+    });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// ✅ COMPLETELY FIXED VERIFICATION LOGIC
 app.post('/api/verify-ticket', auth, async (req, res) => {
   try {
     let { printerCode, ticketNumber, unique_id } = req.body;
     let searchNum = String(ticketNumber || unique_id || printerCode || '').trim();
     const originalInput = searchNum;
-    
-    // Clean the input
+
     if (searchNum.startsWith('TICKET-')) searchNum = searchNum.replace('TICKET-', '');
     if (searchNum.startsWith('NB-')) searchNum = searchNum.replace('NB-', '');
     if (searchNum.startsWith('LW-')) searchNum = searchNum.replace('LW-', '');
 
     let ticket = null; let isNb = false;
-    
-    // 1. Try finding by batch_id (the unique reference)
+
     let { data: t1 } = await sb.from('tickets').select('*').eq('batch_id', originalInput).limit(1);
     let { data: t2 } = await sb.from('nb_tickets').select('*').eq('batch_id', originalInput).limit(1);
-    
-    // 2. If batch fails, try finding by the actual number
+
     if (!t1 || t1.length === 0) {
-        const { data: t1b } = await sb.from('tickets').select('*').eq('ticket_number', searchNum).limit(1);
-        if (t1b && t1b.length > 0) t1 = t1b;
+      const { data: t1b } = await sb.from('tickets').select('*').eq('ticket_number', searchNum).limit(1);
+      if (t1b && t1b.length > 0) t1 = t1b;
     }
     if (!t2 || t2.length === 0) {
-        const { data: t2b } = await sb.from('nb_tickets').select('*').eq('number', searchNum).limit(1);
-        if (t2b && t2b.length > 0) t2 = t2b;
+      const { data: t2b } = await sb.from('nb_tickets').select('*').eq('number', searchNum).limit(1);
+      if (t2b && t2b.length > 0) t2 = t2b;
     }
 
     if (t1 && t1.length > 0) { ticket = t1[0]; isNb = false; }
     else if (t2 && t2.length > 0) { ticket = t2[0]; isNb = true; }
-    
-    if (!ticket) return res.status(404).json({ error: 'Ticket not found' });
 
-    // Get current round settings
+    if (!ticket) return res.status(404).json({ error: 'Ticket not found in the system.' });
+
+    if (req.user.role === 'branch') {
+      if (ticket.branch_id !== req.user.id) {
+        return res.status(403).json({ error: 'This ticket does not belong to your branch.' });
+      }
+    }
+
     let roundSettings;
     if (isNb) {
       const { data: s } = await sb.from('nb_settings').select('*').eq('id', 1).single();
@@ -203,51 +381,47 @@ app.post('/api/verify-ticket', auth, async (req, res) => {
       roundSettings = s;
     }
 
-    let status = 'progress'; // Default: round not finished
+    let status = 'progress';
     let prize = 0;
     let isWinner = false;
+    let match_count = 0;
     const isCurrentRound = (ticket.round_number === roundSettings.round_number);
-    
-    if (isCurrentRound) {
-      if (roundSettings.round_state === 'finished') {
-        // Round is finished. Check if this specific ticket is in the winners array
-        const winnersList = roundSettings.winners || [];
-        const ticketNum = isNb ? ticket.number : ticket.ticket_number;
-        
-        // Look for this ticket in the winners list
-        const winnerObj = winnersList.find(w => 
-            (w.ticket && Number(w.ticket) === Number(ticketNum)) || 
-            (w.shown_numbers && w.shown_numbers.map(Number).includes(Number(ticketNum)))
-        );
 
-        if (winnerObj) {
-            isWinner = true;
-            prize = winnerObj.prize;
-            status = 'winner';
-        } else {
-            status = 'not_winner';
-        }
-      } else {
+    if (ticket.round_number <= roundSettings.round_number) {
+      const { data: history } = await sb.from('round_history').select('*').eq('round_number', ticket.round_number).eq('game_type', isNb ? 'nb' : 'wheel').maybeSingle();
+      
+      if (history && history.winners) {
+        const ticketNum = isNb ? ticket.number : ticket.ticket_number;
+        const winnerObj = history.winners.find(w =>
+          (w.ticket && Number(w.ticket) === Number(ticketNum)) ||
+          (w.shown_numbers && w.shown_numbers.map(Number).includes(Number(ticketNum)))
+        );
+        
+        if (winnerObj) { isWinner = true; prize = winnerObj.prize; status = 'winner'; match_count = winnerObj.matches || 1; }
+        else { status = 'not_winner'; }
+      } else if (isCurrentRound) {
         status = 'progress';
+      } else {
+        status = 'past_round';
       }
-    } else {
-      status = 'past_round';
     }
 
-    res.json({ 
-        ok: true, 
-        game: isNb ? 'Number Betting' : 'Lucky Wheel', 
-        numbers: [isNb ? ticket.number : ticket.ticket_number], 
-        unique_id: ticket.batch_id || 'TICKET-' + (isNb ? ticket.number : ticket.ticket_number), 
-        round: ticket.round_number, 
-        owner_name: ticket.user_name, 
-        owner_phone: ticket.phone, 
-        sold_date: ticket.sold_date, 
-        is_current_round: isCurrentRound, 
-        round_finished: isCurrentRound ? roundSettings.round_state === 'finished' : true, 
-        is_winner: isWinner, 
-        prize: prize, 
-        status: status 
+    res.json({
+      ok: true,
+      game: isNb ? 'Number Betting' : 'Lucky Wheel',
+      numbers: [isNb ? ticket.number : ticket.ticket_number],
+      unique_id: ticket.batch_id || 'TICKET-' + (isNb ? ticket.number : ticket.ticket_number),
+      round: ticket.round_number,
+      owner_name: ticket.user_name,
+      owner_phone: ticket.phone,
+      sold_date: ticket.sold_date,
+      is_current_round: isCurrentRound,
+      round_finished: status === 'winner' || status === 'not_winner',
+      is_winner: isWinner,
+      prize: prize,
+      match_count: match_count,
+      status: status,
+      branch_id: ticket.branch_id
     });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
@@ -265,7 +439,7 @@ app.get('/api/wheel/my-tickets', auth, async (req, res) => { try { const { data,
 
 app.post('/api/user/tickets/buy', auth, async (req, res) => {
   try {
-    if (req.user.role === 'admin') return res.status(403).json({ error: 'Admins cannot buy' });
+    if (req.user.role === 'admin' || req.user.role === 'main_admin' || req.user.role === 'branch') return res.status(403).json({ error: 'Admins cannot buy' });
     const { numbers, useFreeTicket } = req.body;
     const s = await getSettings();
     if (s.sales_state !== 'open') return res.status(400).json({ error: 'Sales are closed' });
@@ -285,7 +459,7 @@ app.post('/api/user/tickets/buy', auth, async (req, res) => {
     if (!usedFree && Number(me.balance) < cost) return res.status(400).json({ error: 'Insufficient balance' });
     const batchId = generateUniqueId('LW'); const now = new Date().toISOString();
     await sb.from('tickets').delete().eq('round_number', s.round_number).in('ticket_number', numbers).is('user_id', null);
-    const insertRows = numbers.map(n => ({ ticket_number: n, user_id: me.id, user_name: me.name, phone: me.phone, sold_date: now, round_number: s.round_number, used_free_ticket: usedFree, batch_id: batchId }));
+    const insertRows = numbers.map(n => ({ ticket_number: n, user_id: me.id, user_name: me.name, phone: me.phone, sold_date: now, round_number: s.round_number, used_free_ticket: usedFree, batch_id: batchId, branch_id: me.branch_id }));
     const { error: insErr } = await sb.from('tickets').insert(insertRows);
     if (insErr) return res.status(500).json({ error: insErr.message });
     const update = { balance: Number(me.balance) - cost, has_bought_ticket: true };
@@ -297,7 +471,7 @@ app.post('/api/user/tickets/buy', auth, async (req, res) => {
 
 app.post('/api/nb/buy', auth, async (req, res) => {
   try {
-    if (req.user.role === 'admin') return res.status(403).json({ error: 'Admins cannot buy' });
+    if (req.user.role === 'admin' || req.user.role === 'main_admin' || req.user.role === 'branch') return res.status(403).json({ error: 'Admins cannot buy' });
     const { numbers } = req.body; const s = await getNbSettings();
     if (s.sales_state !== 'open') return res.status(400).json({ error: 'NB sales are closed' });
     if (!Array.isArray(numbers) || numbers.length !== s.tickets_per_purchase) return res.status(400).json({ error: 'Pick exactly ' + s.tickets_per_purchase + ' numbers' });
@@ -305,7 +479,7 @@ app.post('/api/nb/buy', auth, async (req, res) => {
     if (!me || me.banned) return res.status(403).json({ error: 'Account not allowed' });
     if (Number(me.balance) < Number(s.price_per_purchase)) return res.status(400).json({ error: 'Insufficient balance' });
     const batchId = generateUniqueId('NB'); const now = new Date().toISOString();
-    const insertRows = numbers.map(n => ({ number: n, user_id: me.id, user_name: me.name, phone: me.phone, round_number: s.round_number, sold_date: now, batch_id: batchId, is_free: false }));
+    const insertRows = numbers.map(n => ({ number: n, user_id: me.id, user_name: me.name, phone: me.phone, round_number: s.round_number, sold_date: now, batch_id: batchId, is_free: false, branch_id: me.branch_id }));
     const { error: insertErr } = await sb.from('nb_tickets').insert(insertRows);
     if (insertErr) return res.status(500).json({ error: insertErr.message });
     await sb.from('users').update({ balance: Number(me.balance) - Number(s.price_per_purchase) }).eq('id', me.id);
@@ -318,10 +492,13 @@ app.post('/api/admin/tickets/assign', auth, adminOnly, async (req, res) => {
     const { name, phone, password, balance, numbers, useFreeTicket } = req.body;
     const cleanName = String(name).trim(); const cleanPhone = String(phone).trim();
     let { data: user } = await sb.from('users').select('*').eq('phone', cleanPhone).maybeSingle();
+    
+    let branchId = req.user.role === 'branch' ? req.user.id : null;
+    
     if (!user) {
       const hash = await bcrypt.hash(String(password || '1234').trim(), 10);
       const newCode = await generateReferralCode();
-      const { data: created, error } = await sb.from('users').insert({ name: cleanName, phone: cleanPhone, password_hash: hash, password_plain: String(password || '1234').trim(), role: 'user', balance: Math.max(0, Number(balance) || 0), referral_code: newCode, banned: false }).select().single();
+      const { data: created, error } = await sb.from('users').insert({ name: cleanName, phone: cleanPhone, password_hash: hash, password_plain: String(password || '1234').trim(), role: 'user', balance: Math.max(0, Number(balance) || 0), referral_code: newCode, banned: false, branch_id: branchId }).select().single();
       if (error) return res.status(500).json({ error: error.message });
       user = created;
     } else {
@@ -336,7 +513,7 @@ app.post('/api/admin/tickets/assign', auth, adminOnly, async (req, res) => {
     }
     const batchId = generateUniqueId('LW'); const now = new Date().toISOString();
     await sb.from('tickets').delete().eq('round_number', settings.round_number).in('ticket_number', numbers).is('user_id', null);
-    const insertRows = numbers.map(n => ({ ticket_number: n, user_id: user.id, user_name: cleanName, phone: cleanPhone, sold_date: now, round_number: settings.round_number, used_free_ticket: usedFree, batch_id: batchId }));
+    const insertRows = numbers.map(n => ({ ticket_number: n, user_id: user.id, user_name: cleanName, phone: cleanPhone, sold_date: now, round_number: settings.round_number, used_free_ticket: usedFree, batch_id: batchId, branch_id: branchId }));
     const { error } = await sb.from('tickets').insert(insertRows);
     if (error) return res.status(500).json({ error: error.message });
     res.json({ ok: true, batch_id: batchId });
@@ -348,10 +525,13 @@ app.post('/api/admin/nb/assign', auth, adminOnly, async (req, res) => {
     const { name, phone, password, balance, numbers } = req.body;
     const cleanName = String(name).trim(); const cleanPhone = String(phone).trim();
     let { data: user } = await sb.from('users').select('*').eq('phone', cleanPhone).maybeSingle();
+
+    let branchId = req.user.role === 'branch' ? req.user.id : null;
+
     if (!user) {
       const hash = await bcrypt.hash(String(password || '1234').trim(), 10);
       const newCode = await generateReferralCode();
-      const { data: created, error } = await sb.from('users').insert({ name: cleanName, phone: cleanPhone, password_hash: hash, password_plain: String(password || '1234').trim(), role: 'user', balance: Math.max(0, Number(balance) || 0), referral_code: newCode, banned: false }).select().single();
+      const { data: created, error } = await sb.from('users').insert({ name: cleanName, phone: cleanPhone, password_hash: hash, password_plain: String(password || '1234').trim(), role: 'user', balance: Math.max(0, Number(balance) || 0), referral_code: newCode, banned: false, branch_id: branchId }).select().single();
       if (error) return res.status(500).json({ error: error.message });
       user = created;
     } else {
@@ -359,7 +539,7 @@ app.post('/api/admin/nb/assign', auth, adminOnly, async (req, res) => {
       await sb.from('users').update({ name: cleanName, balance: nb }).eq('id', user.id);
     }
     const s = await getNbSettings(); const batchId = generateUniqueId('NB'); const now = new Date().toISOString();
-    const insertRows = numbers.map(n => ({ number: n, user_id: user.id, user_name: cleanName, phone: cleanPhone, round_number: s.round_number, sold_date: now, batch_id: batchId, is_free: false }));
+    const insertRows = numbers.map(n => ({ number: n, user_id: user.id, user_name: cleanName, phone: cleanPhone, round_number: s.round_number, sold_date: now, batch_id: batchId, is_free: false, branch_id: branchId }));
     const { error } = await sb.from('nb_tickets').insert(insertRows);
     if (error) return res.status(500).json({ error: error.message });
     res.json({ ok: true, batch_id: batchId });
@@ -367,7 +547,15 @@ app.post('/api/admin/nb/assign', auth, adminOnly, async (req, res) => {
 });
 
 app.get('/api/admin/users/full', auth, adminOnly, async (req, res) => {
-  try { const { data: users, error } = await sb.from('users').select('*').eq('role', 'user').order('created_at'); if (error) throw error; res.json({ users: users || [] }); } catch (e) { res.status(500).json({ error: e.message }); }
+  try { 
+    let query = sb.from('users').select('*').eq('role', 'user');
+    if (req.user.role === 'branch') {
+      query = query.eq('branch_id', req.user.id);
+    }
+    const { data: users, error } = await query.order('created_at'); 
+    if (error) throw error; 
+    res.json({ users: users || [] }); 
+  } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 app.get('/api/user/withdrawals', auth, async (req, res) => {
@@ -386,16 +574,55 @@ app.post('/api/user/withdrawals', auth, async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// ✅ FIXED DEPOSIT ROUTE (NO MORE CRASH)
+app.post('/api/user/deposits', auth, async (req, res) => {
+  try {
+    const { method, amount, transactionId, screenshot } = req.body;
+    if (!amount || amount <= 0) return res.status(400).json({ error: 'Invalid amount' });
+    if (!transactionId && !screenshot) return res.status(400).json({ error: 'Provide a Transaction ID or Screenshot' });
+
+    // If the user only provided a screenshot, generate a unique fallback ID
+    // to prevent SQL unique constraint crashes
+    let finalTxnId = transactionId;
+    if (!finalTxnId || finalTxnId === 'SCREENSHOT_ONLY') {
+      finalTxnId = 'IMG-' + Date.now() + '-' + Math.floor(Math.random() * 1000);
+    }
+
+    const { error } = await sb.from('deposits').insert({ 
+      user_id: req.user.id, 
+      user_name: req.user.phone, 
+      phone: req.user.phone, 
+      method, 
+      amount, 
+      transaction_id: finalTxnId, 
+      screenshot: screenshot || null, 
+      status: 'pending' 
+    });
+    
+    if (error) throw error;
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 app.get('/api/admin/deposits', auth, adminOnly, async (req, res) => {
   try {
-    const { data, error } = await sb.from('deposits').select('*, users(name, phone)').order('created_at', { ascending: false });
+    let query = sb.from('deposits').select('*, users!inner(name, phone, branch_id)').order('created_at', { ascending: false });
+    if (req.user.role === 'branch') {
+      query = query.eq('users.branch_id', req.user.id);
+    }
+    const { data, error } = await query;
     if (error) throw error;
     res.json({ deposits: (data || []).map(d => ({ ...d, user_name: d.users?.name || 'Unknown', phone: d.users?.phone || d.phone })) });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
+
 app.get('/api/admin/withdrawals', auth, adminOnly, async (req, res) => {
   try {
-    const { data, error } = await sb.from('withdrawals').select('*, users(name, phone)').order('created_at', { ascending: false });
+    let query = sb.from('withdrawals').select('*, users!inner(name, phone, branch_id)').order('created_at', { ascending: false });
+    if (req.user.role === 'branch') {
+      query = query.eq('users.branch_id', req.user.id);
+    }
+    const { data, error } = await query;
     if (error) throw error;
     res.json({ withdrawals: (data || []).map(w => ({ ...w, user_name: w.users?.name || 'Unknown', phone: w.users?.phone || w.phone })) });
   } catch (e) { res.status(500).json({ error: e.message }); }
@@ -426,6 +653,22 @@ app.get('/api/nb/rounds', auth, async (req, res) => {
   try { const { data, error } = await sb.from('round_history').select('*').eq('game_type', 'nb').order('created_at', { ascending: false }).limit(50); if (error) throw error; res.json({ rounds: data || [] }); } catch(e) { res.json({ rounds: [] }); }
 });
 
+// ✅ NEW: DELETE HISTORY RECORD
+app.delete('/api/admin/rounds/:id', auth, adminOnly, async (req, res) => {
+  try {
+    const { error } = await sb.from('round_history').delete().eq('id', req.params.id);
+    if (error) throw error;
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+app.delete('/api/admin/nb/rounds/:id', auth, adminOnly, async (req, res) => {
+  try {
+    const { error } = await sb.from('round_history').delete().eq('id', req.params.id);
+    if (error) throw error;
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 // --- WHEEL ADMIN ROUTES ---
 app.post('/api/admin/start-sales', auth, adminOnly, async (req, res) => {
   const s = await getSettings();
@@ -450,7 +693,7 @@ app.post('/api/admin/spin/start', auth, adminOnly, async (req, res) => {
   const totalSales = sold.length * s.ticket_price;
   const shuffled = sold.sort(() => Math.random() - 0.5);
   const winnersList = [];
-  
+
   for (let i = 0; i < Math.min(winnersCount, sold.length); i++) {
     const t = shuffled[i];
     const pct = pcts[i] !== undefined ? pcts[i] : (i === 0 ? 50 : i === 1 ? 30 : 10);
@@ -568,7 +811,7 @@ app.post('/api/ai/chat', auth, async (req, res) => {
   try {
     if (!GROQ_API_KEY) return res.status(500).json({ error: 'Groq API key not found in .env' });
     const { message } = req.body;
-    const isAdmin = req.user.role === 'admin';
+    const isAdmin = req.user.role === 'admin' || req.user.role === 'main_admin';
     const systemPrompt = isAdmin ? `You are the Teshe Betting Admin Assistant.` : `You are the Teshe Betting Customer Support AI.`;
     const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${GROQ_API_KEY}` },

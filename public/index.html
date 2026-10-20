@@ -119,18 +119,6 @@ th { color: #94a3b8; }
 .req-card img { max-width: 100%; height: auto; }
 .req-actions { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
 .req-actions > button { flex: 1 1 auto; }
-
-@media (max-width: 700px) {
-    .req-card .row { flex-direction: column; align-items: stretch; gap: 2px; }
-    .req-card .row span { text-align: left; }
-    .req-card .row b { font-size: 12px; color: #94a3b8; }
-    .req-card { padding: 14px; }
-    .dep-shot-thumb { max-width: 100%; max-height: 220px; }
-    .req-actions > button { width: 100%; flex: 1 1 100%; }
-    .status-badge { display: inline-block; }
-    .table-box table th, .table-box table td { padding: 10px 8px; font-size: 13px; }
-}
-
 .method-box { padding: 20px; border-radius: 12px; border: 2px dashed #fbbf24; background: #0b1220; margin: 12px 0; }
 .method-box h3 { color: #fbbf24; margin-bottom: 8px; }
 .method-box .acct { font-size: 22px; font-weight: bold; font-family: monospace; letter-spacing: 2px; color: #ffffff; margin: 6px 0; }
@@ -273,6 +261,48 @@ body.wheel-public .winners .winner .gold { font-size: 26px; color: #fbbf24; text
 .ai-chat-footer { padding: 12px; background: #1e293b; border-top: 1px solid #334155; display: flex; gap: 8px; }
 .ai-chat-footer input { margin: 0; padding: 10px 14px; border-radius: 20px; font-size: 14px; }
 .ai-chat-footer button { padding: 0 16px; border-radius: 20px; background: #fbbf24; color: #111827; border: none; font-weight: bold; cursor: pointer; }
+
+/* NEW: Verification status cards */
+.verify-status { margin-top: 15px; padding: 20px; border-radius: 12px; text-align: center; border: 2px solid; box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
+.verify-status.progress { background: #0369a1; border-color: #0ea5e9; }
+.verify-status.winner { background: #14532d; border-color: #4ade80; }
+.verify-status.not_winner { background: #7f1d1d; border-color: #ef4444; }
+.verify-status.past_round { background: #334155; border-color: #64748b; }
+.verify-status h3 { font-size: 22px; margin-bottom: 8px; letter-spacing: 1px; }
+.verify-status .prize { font-size: 28px; font-weight: bold; color: #fbbf24; margin: 10px 0; text-shadow: 0 0 10px rgba(251,191,36,0.5); }
+.verify-status small { font-size: 13px; opacity: 0.9; display: block; margin-top: 8px; line-height: 1.4; }
+
+@keyframes bounceIn {
+    0% { transform: scale(0.3); opacity: 0; }
+    50% { transform: scale(1.05); opacity: 1; }
+    70% { transform: scale(0.9); }
+    100% { transform: scale(1); }
+}
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+    20%, 40%, 60%, 80% { transform: translateX(5px); }
+}
+
+/* NEW: Support banner */
+.support-banner { display: flex; align-items: center; gap: 12px; padding: 14px 18px; background: linear-gradient(135deg, #0088cc, #006699); border: 1px solid #4dd0e1; border-radius: 12px; margin-bottom: 20px; flex-wrap: wrap; }
+.support-banner .icon { font-size: 32px; }
+.support-banner .text { flex: 1; min-width: 200px; }
+.support-banner .text h3 { color: #fff; margin-bottom: 4px; font-size: 16px; }
+.support-banner .text p { color: #e0f7fa; font-size: 13px; }
+.support-banner .join-btn { padding: 10px 20px; background: #fff; color: #006699; border: none; border-radius: 8px; font-weight: bold; text-decoration: none; cursor: pointer; }
+
+/* Branch branding on receipt */
+.receipt-branch-head h2 { text-align:center; margin-bottom:2px; }
+.receipt-branch-code { text-align:center; font-size:11px; color:#555; margin-bottom:2px; letter-spacing:1px; }
+
+/* Winner celebration */
+.congrats-burst { font-size: 50px; margin-bottom: 5px; animation: burst 0.9s ease-out; }
+@keyframes burst {
+  0% { transform: scale(0.2) rotate(-20deg); opacity: 0; }
+  60% { transform: scale(1.35) rotate(8deg); opacity: 1; }
+  100% { transform: scale(1) rotate(0); opacity: 1; }
+}
 </style>
 </head>
 <body>
@@ -286,12 +316,6 @@ body.wheel-public .winners .winner .gold { font-size: 26px; color: #fbbf24; text
     <div class="login-banner-wrap">
         <div class="login-animated-header">
             <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:180px;filter:drop-shadow(0 0 20px rgba(251,191,36,0.6))">
-                <defs>
-                    <radialGradient id="wheelGlow" cx="50%" cy="50%" r="50%">
-                        <stop offset="0%" stop-color="#fbbf24" stop-opacity="0.5"/>
-                        <stop offset="70%" stop-color="#fbbf24" stop-opacity="0"/>
-                    </radialGradient>
-                </defs>
                 <circle cx="100" cy="100" r="95" fill="url(#wheelGlow)"/>
                 <circle cx="100" cy="100" r="85" fill="#0f172a" stroke="#fbbf24" stroke-width="4"/>
                 <g style="transform-origin:100px 100px;animation:spin 8s linear infinite">
@@ -301,49 +325,18 @@ body.wheel-public .winners .winner .gold { font-size: 26px; color: #fbbf24; text
                     <path d="M100,100 L100,185 A85,85 0 0,1 26.4,142.5 Z" fill="#3b82f6"/>
                     <path d="M100,100 L26.4,142.5 A85,85 0 0,1 26.4,57.5 Z" fill="#a855f7"/>
                     <path d="M100,100 L26.4,57.5 A85,85 0 0,1 100,15 Z" fill="#f97316"/>
-                    <text x="140" y="80" fill="#fff" font-size="16" font-weight="bold" text-anchor="middle">1</text>
-                    <text x="155" y="110" fill="#111827" font-size="16" font-weight="bold" text-anchor="middle">2</text>
-                    <text x="140" y="150" fill="#fff" font-size="16" font-weight="bold" text-anchor="middle">3</text>
-                    <text x="100" y="165" fill="#fff" font-size="16" font-weight="bold" text-anchor="middle">4</text>
-                    <text x="60" y="150" fill="#fff" font-size="16" font-weight="bold" text-anchor="middle">5</text>
-                    <text x="45" y="110" fill="#fff" font-size="16" font-weight="bold" text-anchor="middle">6</text>
-                    <text x="60" y="80" fill="#111827" font-size="16" font-weight="bold" text-anchor="middle">7</text>
-                    <text x="100" y="60" fill="#fff" font-size="16" font-weight="bold" text-anchor="middle">8</text>
                 </g>
                 <circle cx="100" cy="100" r="20" fill="#111827" stroke="#fbbf24" stroke-width="4"/>
                 <circle cx="100" cy="100" r="7" fill="#fbbf24"/>
                 <polygon points="100,0 92,18 108,18" fill="#dc2626"/>
             </svg>
             <svg viewBox="0 0 200 160" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:200px;filter:drop-shadow(0 0 20px rgba(34,197,94,0.5))">
-                <defs>
-                    <radialGradient id="numGlow" cx="50%" cy="50%" r="50%">
-                        <stop offset="0%" stop-color="#22c55e" stop-opacity="0.5"/>
-                        <stop offset="70%" stop-color="#22c55e" stop-opacity="0"/>
-                    </radialGradient>
-                </defs>
                 <rect x="5" y="5" width="190" height="150" rx="12" fill="url(#numGlow)"/>
                 <rect x="5" y="5" width="190" height="150" rx="12" fill="#0f172a" stroke="#fbbf24" stroke-width="3"/>
                 <g style="animation:pulse 2s ease-in-out infinite">
                     <rect x="15" y="20" width="30" height="20" rx="4" fill="#22c55e" opacity="0.9"/>
                     <rect x="50" y="20" width="30" height="20" rx="4" fill="#1e293b"/>
                     <rect x="85" y="20" width="30" height="20" rx="4" fill="#22c55e" opacity="0.6"/>
-                    <rect x="120" y="20" width="30" height="20" rx="4" fill="#1e293b"/>
-                    <rect x="155" y="20" width="30" height="20" rx="4" fill="#22c55e" opacity="0.3"/>
-                    <rect x="15" y="50" width="30" height="20" rx="4" fill="#22c55e" opacity="0.6"/>
-                    <rect x="50" y="50" width="30" height="20" rx="4" fill="#1e293b"/>
-                    <rect x="85" y="50" width="30" height="20" rx="4" fill="#22c55e" opacity="0.9"/>
-                    <rect x="120" y="50" width="30" height="20" rx="4" fill="#1e293b"/>
-                    <rect x="155" y="50" width="30" height="20" rx="4" fill="#22c55e" opacity="0.4"/>
-                    <rect x="15" y="80" width="30" height="20" rx="4" fill="#1e293b"/>
-                    <rect x="50" y="80" width="30" height="20" rx="4" fill="#22c55e" opacity="0.7"/>
-                    <rect x="85" y="80" width="30" height="20" rx="4" fill="#1e293b"/>
-                    <rect x="120" y="80" width="30" height="20" rx="4" fill="#22c55e" opacity="0.5"/>
-                    <rect x="155" y="80" width="30" height="20" rx="4" fill="#1e293b"/>
-                    <rect x="15" y="110" width="30" height="20" rx="4" fill="#22c55e" opacity="0.4"/>
-                    <rect x="50" y="110" width="30" height="20" rx="4" fill="#1e293b"/>
-                    <rect x="85" y="110" width="30" height="20" rx="4" fill="#22c55e" opacity="0.8"/>
-                    <rect x="120" y="110" width="30" height="20" rx="4" fill="#1e293b"/>
-                    <rect x="155" y="110" width="30" height="20" rx="4" fill="#22c55e" opacity="0.6"/>
                 </g>
                 <text x="100" y="148" fill="#fbbf24" font-size="12" font-weight="bold" text-anchor="middle" letter-spacing="1">NUMBER BETTING</text>
             </svg>
@@ -351,6 +344,8 @@ body.wheel-public .winners .winner .gold { font-size: 26px; color: #fbbf24; text
     </div>
     <div class="logo">LUCKY<span>WHEEL</span></div>
     <p class="login-description">Teshe Number Lucky Wheel · Number Betting</p>
+    
+    <input type="hidden" id="regBranch" value="">
     
     <div id="loginForm">
         <div id="loginError" class="login-error-box"></div>
@@ -423,7 +418,10 @@ let buyGame = 'wheel', assignGame = 'wheel', historyGame = 'wheel', settingsGame
 let buySelected = [], nbBuyPicked = [], assignSelectedWheel = [], assignSelectedNB = [];
 let verifyGame = 'wheel', verifyMethod = 'manual', _drawStartClient = null, _drawRoundKey = null, _lastShown = -1;
 let _depScreenshotData = null;
-let html5QrCode = null; // For camera scanning
+let html5QrCode = null;
+
+const TELEGRAM_CHANNEL = 'https://t.me/Lucky21_Wheel';
+const SUPPORT_LINK = 'https://t.me/TE21HUSH'; 
 
 const IMG = {
   dash:    'image2.jpg',
@@ -437,10 +435,26 @@ const IMG = {
   users:   'https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=1200&h=300&fit=crop',
   requests:'https://images.unsplash.com/photo-1563986768609-322da13575f3?w=1200&h=300&fit=crop',
   history: 'https://images.unsplash.com/photo-1501139083538-0139583c060f?w=1200&h=300&fit=crop',
-  settings:'https://images.unsplash.com/photo-1518770660439-4636190af475?w=1200&h=300&fit=crop'
+  settings:'https://images.unsplash.com/photo-1518770660439-4636190af475?w=1200&h=300&fit=crop',
+  branches:'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=1200&h=300&fit=crop'
 };
 
-const BOT_LINK = 'https://t.me/TE21HUSH';
+/* ======================================================================
+   BRANCH HELPERS
+   ====================================================================== */
+function getMyBranch() {
+    if (!ME) return null;
+    if (ME.role === 'main_admin' || ME.role === 'admin') return null;
+    if (ME.role === 'branch' || ME.branch_id) {
+        return {
+            id: ME.branch_id,
+            name: ME.branch_name || ME.name,
+            code: ME.branch_code || '',
+            telegram_link: ME.telegram_link || SUPPORT_LINK
+        };
+    }
+    return null;
+}
 
 function toggleMobileMenu() {
     const s = document.getElementById('sidebar');
@@ -457,12 +471,13 @@ function closeMobileMenu() {
 }
 
 function renderSidebar() {
-    const isAdmin = ME.role === 'admin';
+    const isMainAdmin = ME.role === 'main_admin' || ME.role === 'admin';
     const s = document.getElementById('sidebar');
     let html = '';
-    if (isAdmin) {
+    if (isMainAdmin) {
         html = `
             <button class="nav active" data-page="dashboard" onclick="openPage('dashboard')">🏠 Dashboard</button>
+            <button class="nav" data-page="branches" onclick="openPage('branches')">🏢 Branches</button>
             <button class="nav" data-page="wheel" onclick="openPage('wheel')">🎡 Lucky Wheel</button>
             <button class="nav" data-page="nb" onclick="openPage('nb')">🎰 Number Betting</button>
             <button class="nav" data-page="users" onclick="openPage('users')">👥 Users</button>
@@ -471,6 +486,16 @@ function renderSidebar() {
             <button class="nav" data-page="requests" onclick="openPage('requests')">📥 Requests</button>
             <button class="nav" data-page="history" onclick="openPage('history')">📜 History</button>
             <button class="nav" data-page="settings" onclick="openPage('settings')">⚙️ Settings</button>`;
+    } else if (ME.role === 'branch') {
+        html = `
+            <button class="nav active" data-page="dashboard" onclick="openPage('dashboard')">🏠 Dashboard</button>
+            <button class="nav" data-page="wheel" onclick="openPage('wheel')">🎡 Lucky Wheel</button>
+            <button class="nav" data-page="nb" onclick="openPage('nb')">🎰 Number Betting</button>
+            <button class="nav" data-page="users" onclick="openPage('users')">👥 Users</button>
+            <button class="nav" data-page="tickets" onclick="openPage('tickets')">🎟️ Assign Tickets</button>
+            <button class="nav" data-page="verify" onclick="openPage('verify')">🔍 Verify Ticket</button>
+            <button class="nav" data-page="requests" onclick="openPage('requests')">📥 Requests</button>
+            <button class="nav" data-page="history" onclick="openPage('history')">📜 History</button>`;
     } else {
         html = `
             <button class="nav active" data-page="dashboard" onclick="openPage('dashboard')">🏠 Dashboard</button>
@@ -484,7 +509,13 @@ function renderSidebar() {
             <button class="nav" data-page="referrals" onclick="openPage('referrals')">🎁 Referrals</button>
             <button class="nav" data-page="history" onclick="openPage('history')">📜 History</button>`;
     }
+    
+    // Uses branch-specific telegram link if user has a branch, otherwise falls back to default
+    const currentSupportLink = ME.telegram_link ? ME.telegram_link : SUPPORT_LINK;
+
     html += `<div style="margin-top:20px;padding-top:20px;border-top:1px solid #334155">
+        <a href="${currentSupportLink}" target="_blank" rel="noopener" class="nav" style="background:#0088cc;color:white;font-weight:bold;margin-bottom:8px;text-decoration:none;display:block;text-align:left">💬 Contact Support</a>
+        <a href="${TELEGRAM_CHANNEL}" target="_blank" rel="noopener" class="nav" style="background:#0ea5e9;color:white;font-weight:bold;margin-bottom:8px;text-decoration:none;display:block;text-align:left">📢 Telegram Channel</a>
         <button class="nav" style="background:#0ea5e9;color:white;font-weight:bold;margin-bottom:8px" onclick="toggleAIChat()">🤖 AI Support</button>
         <button class="nav" style="background:#991b1b;color:white;font-weight:bold" onclick="logout()">🚪 Logout</button>
     </div>`;
@@ -543,6 +574,34 @@ function promptModal(title, { placeholder = '', type = 'text', okText = 'Submit'
     });
 }
 
+function showTelegramJoinModal(referralCode) {
+    const area = document.getElementById('modalArea');
+    area.innerHTML = `
+        <div class="custom-modal" onclick="if(event.target===this)this.remove()">
+            <div class="custom-modal-box" style="max-width:440px;text-align:center">
+                <div style="font-size:56px;margin-bottom:10px">🎉</div>
+                <h3 style="color:#fbbf24;margin-bottom:8px">Registration Successful!</h3>
+                ${referralCode ? `<p class="muted" style="margin-bottom:12px">Your referral code: <b class="gold" style="font-size:18px;letter-spacing:2px">${escapeHTML(referralCode)}</b></p>` : ''}
+                <p class="muted" style="margin:15px 0;line-height:1.6">
+                    📢 <b style="color:#fff">Join our Telegram channel</b><br>
+                    for live updates, announcements and winning results.
+                </p>
+                <a href="${TELEGRAM_CHANNEL}" target="_blank" rel="noopener"
+                   style="display:block;text-decoration:none;text-align:center;background:#0088cc;color:white;font-weight:bold;padding:14px;border-radius:10px;margin-bottom:10px">
+                   📢 Join Telegram Channel
+                </a>
+                <a href="${SUPPORT_LINK}" target="_blank" rel="noopener"
+                   style="display:block;text-decoration:none;text-align:center;background:#22c55e;color:white;font-weight:bold;padding:14px;border-radius:10px;margin-bottom:10px">
+                   💬 Contact Support
+                </a>
+                <button class="main-button" style="background:#64748b;color:white"
+                        onclick="document.getElementById('modalArea').innerHTML=''">
+                    Maybe Later
+                </button>
+            </div>
+        </div>`;
+}
+
 async function api(path, options = {}) {
     let res;
     try {
@@ -564,12 +623,21 @@ async function boot() {
         CONFIG = cfg;
         sb = window.supabase.createClient(cfg.supabaseUrl, cfg.supabaseAnonKey);
     } catch (e) { console.error('Realtime init failed', e); }
-    const urlRef = new URLSearchParams(window.location.search).get('ref');
+    
+    const urlParams = new URLSearchParams(window.location.search);
+    const urlRef = urlParams.get('ref');
+    const urlBranch = urlParams.get('branch');
+    
     if (urlRef) {
         const input = document.getElementById('regReferral');
         if (input) input.value = urlRef.toUpperCase();
         setTimeout(() => showRegister(), 100);
     }
+    if (urlBranch) {
+        document.getElementById('regBranch').value = urlBranch;
+        setTimeout(() => showRegister(), 100);
+    }
+
     if (TOKEN) { try { await enterApp(); return; } catch (e) { TOKEN = null; localStorage.removeItem('lw_token'); } }
     showLoginPage();
 }
@@ -602,19 +670,17 @@ async function register() {
     const phone = document.getElementById('regPhone').value.trim();
     const password = document.getElementById('regPassword').value.trim();
     const referralCode = document.getElementById('regReferral').value.trim().toUpperCase();
+    const branchCode = document.getElementById('regBranch').value.trim();
     const errorBox = document.getElementById('registerError');
     const btn = document.getElementById('registerBtn');
     errorBox.style.display = 'none';
     if (!name || !phone || !password) { errorBox.textContent = 'Please fill in all fields.'; errorBox.style.display = 'block'; return; }
     btn.textContent = 'Creating...'; btn.disabled = true;
     try {
-        const res = await api('/auth/register', { method: 'POST', body: { name, phone, password, referralCode } });
+        const res = await api('/auth/register', { method: 'POST', body: { name, phone, password, referralCode, branchCode } });
         toast('✅ Account created! Your code: ' + res.referral_code);
-        // Show recommendation to join channel after register
-        setTimeout(() => {
-            alert("🎉 Registration Successful!\n\n📢 Please join our Telegram channel for updates and announcements:\nhttps://t.me/Lucky21_Wheel");
-        }, 500);
         showLogin();
+        setTimeout(() => showTelegramJoinModal(res.referral_code), 300);
     } catch (e) { errorBox.textContent = '❌ ' + e.message; errorBox.style.display = 'block'; }
     finally { btn.textContent = 'Register'; btn.disabled = false; }
 }
@@ -640,7 +706,7 @@ async function enterApp() {
     const lp = document.getElementById('loginPage'); const ap = document.getElementById('app');
     if (lp) lp.classList.add('hidden'); if (ap) ap.classList.remove('hidden');
     const hn = document.getElementById('headerName');
-    if (hn) hn.textContent = ME.role === 'admin' ? 'Admin' : ME.name;
+    if (hn) hn.textContent = ME.role === 'main_admin' || ME.role === 'admin' ? 'Main Admin' : ME.role === 'branch' ? (ME.branch_name || 'Branch Admin') : ME.name;
     renderSidebar(); subscribeRealtime(); startAutoPoll(); openPage('dashboard');
 }
 async function refreshState() {
@@ -681,6 +747,7 @@ async function renderPage() {
     stopLivePolls();
     try {
         if (PAGE === 'dashboard')  return await dashboard();
+        if (PAGE === 'branches')   return await branchesPage();
         if (PAGE === 'wheel')      return await wheelPage();
         if (PAGE === 'nb')         return await nbPage();
         if (PAGE === 'buy')        return await buyPage();
@@ -730,7 +797,6 @@ function enterPublicView() { document.body.classList.add('public-view'); }
 function exitPublicView() { document.body.classList.remove('public-view', 'wheel-public'); closeMobileMenu(); }
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape') exitPublicView(); });
 
-/* ================= AI CHATBOT ================= */
 function toggleAIChat() {
     const c = document.getElementById('aiChatContainer');
     c.classList.toggle('hidden');
@@ -757,25 +823,38 @@ async function sendAIMessage() {
     body.scrollTop = body.scrollHeight;
 }
 
-/* ================= RECEIPT / DOWNLOAD ================= */
 function showReceipt(data) {
     const el = document.getElementById('receiptArea');
     if (!el) return;
+
+    const myBranch = getMyBranch();
+    const branchName = data.branch_name || (myBranch && myBranch.name) || 'Lucky Wheel';
+    const branchCode = data.branch_code || (myBranch && myBranch.code) || '';
+    const branchSupport = data.branch_telegram || (myBranch && myBranch.telegram_link) || SUPPORT_LINK;
+
     let rows = '';
     if (data.tickets && data.tickets.length) {
         rows = data.tickets.map(t => {
             const num = typeof t === 'object' ? t.number : t;
             const code = (typeof t === 'object' && t.printer_code) ? t.printer_code : ('TICKET-' + num);
             const qr = 'https://api.qrserver.com/v1/create-qr-code/?size=90x90&data=' + encodeURIComponent(code);
-            return '<div class="receipt-row"><span><b>#' + num + '</b></span>' + '<img src="' + qr + '" loading="eager" style="width:70px;height:70px;border:1px solid #ccc;padding:2px" crossorigin="anonymous">' + '</div>';
+            return '<div class="receipt-row"><span><b>#' + num + '</b></span>' +
+                   '<img src="' + qr + '" loading="eager" style="width:70px;height:70px;border:1px solid #ccc;padding:2px" crossorigin="anonymous">' +
+                   '</div>';
         }).join('');
     }
-    const displayRef = (data.ref && data.ref !== '—') ? data.ref : (data.unique_id && data.unique_id !== '—' ? data.unique_id : 'TKT-' + Date.now().toString().slice(-6));
+    const displayRef = (data.ref && data.ref !== '—')
+        ? data.ref
+        : (data.unique_id && data.unique_id !== '—' ? data.unique_id : 'TKT-' + Date.now().toString().slice(-6));
+
     el.innerHTML = `
         <div class="receipt-modal" onclick="if(event.target===this)closeReceipt()">
             <div class="receipt-box" id="ticketBox">
-                <h2>🎡 LUCKY WHEEL</h2>
-                <p style="text-align:center;font-size:12px;margin-bottom:16px">Official Ticket Receipt</p>
+                <div class="receipt-branch-head">
+                    <h2>🎡 ${escapeHTML(branchName)}</h2>
+                    ${branchCode ? `<p class="receipt-branch-code">Branch Code: ${escapeHTML(branchCode)}</p>` : ''}
+                    <p style="text-align:center;font-size:12px;margin-bottom:16px">Official Ticket Receipt</p>
+                </div>
                 <div class="receipt-row"><b>Game:</b> <span>${escapeHTML(data.game)}</span></div>
                 <div class="receipt-row"><b>Round:</b> <span>#${data.round}</span></div>
                 <div class="receipt-row"><b>Ticket ID (Ref):</b> <span style="font-weight:bold; font-size:15px; color:#0ea5e9;">${escapeHTML(displayRef)}</span></div>
@@ -787,10 +866,13 @@ function showReceipt(data) {
                 <div style="margin-top:14px"><b>TICKETS:</b></div>
                 ${rows || '<p style="text-align:center">No tickets</p>'}
                 <div style="margin-top: 30px; text-align: center;">
-                    <div style="font-family: 'Brush Script MT', cursive, sans-serif; font-size: 26px; color: #1e3a8a; font-weight: bold; transform: rotate(-5deg);">Teshe Betting</div>
+                    <div style="font-family: 'Brush Script MT', cursive, sans-serif; font-size: 26px; color: #1e3a8a; font-weight: bold; transform: rotate(-5deg);">${escapeHTML(branchName)}</div>
                     <div style="border-top: 1px solid #333; width: 80%; margin: 5px auto 0; padding-top: 5px; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #555;">Authorized Signature</div>
                 </div>
-                <div class="receipt-footer">Keep safe. Scan QR to verify.</div>
+                <div class="receipt-footer">
+                    Keep safe. Scan QR to verify.<br>
+                    <a href="${escapeHTML(branchSupport)}" target="_blank" rel="noopener" style="color:#0ea5e9;font-weight:bold">💬 Contact this branch</a>
+                </div>
             </div>
             <div class="receipt-buttons">
                 <button class="rcpt-print" onclick="downloadTicketImage()">📥 DOWNLOAD</button>
@@ -825,7 +907,7 @@ function downloadTicketImage() {
     const box = document.getElementById('ticketBox');
     if (!box) return;
     html2canvas(box, { scale: 2, backgroundColor: '#ffffff', useCORS: true }).then(canvas => {
-        const link = document.createElement('a'); link.download = 'LuckyWheel-Ticket.png'; link.href = canvas.toDataURL('image/png'); link.click();
+        const link = document.createElement('a'); link.download = 'Ticket.png'; link.href = canvas.toDataURL('image/png'); link.click();
     }).catch(err => toast('Error downloading ticket: ' + err, true));
 }
 function printTicket() {
@@ -842,9 +924,8 @@ function printTicket() {
     setTimeout(() => { iframe.contentWindow.focus(); iframe.contentWindow.print(); setTimeout(() => document.body.removeChild(iframe), 1000); }, 500);
 }
 
-/* ================= MY TICKETS ================= */
 async function myTicketsPage() {
-    if (ME.role === 'admin') { document.getElementById('main').innerHTML = '<div class="card"><p class="muted">Admins — use Assign Tickets.</p></div>'; return; }
+    if (ME.role === 'admin' || ME.role === 'main_admin' || ME.role === 'branch') { document.getElementById('main').innerHTML = '<div class="card"><p class="muted">Admins — use Assign Tickets.</p></div>'; return; }
     let wheelMine = []; let nbMine = [];
     try { const res = await api('/wheel/my-tickets'); wheelMine = res.tickets || []; } catch (e) { wheelMine = TICKETS.filter(t => String(t.user_id) === String(ME.id)); }
     try { const res = await api('/nb/my-tickets'); nbMine = res.tickets || []; } catch (e) {}
@@ -852,7 +933,7 @@ async function myTicketsPage() {
         const groups = {};
         list.forEach(t => {
             const num = t.ticket_number; const rawKey = t.batch_id || 'batch-' + num + '-' + t.round_number;
-            if (!groups[rawKey]) groups[rawKey] = { unique_id: t.batch_id || ('TICKET-' + num), round: t.round_number || 1, numbers: [], sold_date: t.sold_date || t.created_at || new Date().toISOString() };
+            if (!groups[rawKey]) groups[rawKey] = { unique_id: t.batch_id || ('TICKET-' + num), round: t.round_number || 1, numbers: [], sold_date: t.sold_date || t.created_at || new Date().toISOString(), branch_name: t.branch_name, branch_code: t.branch_code, branch_telegram: t.branch_telegram };
             groups[rawKey].numbers.push(num);
         });
         return Object.values(groups);
@@ -861,7 +942,7 @@ async function myTicketsPage() {
         const groups = {};
         list.forEach(t => {
             const num = t.number; const rawKey = t.batch_id || ('fallback-' + t.round_number + '-' + (t.created_at || t.sold_date));
-            if (!groups[rawKey]) groups[rawKey] = { unique_id: t.batch_id || ('NB-R' + t.round_number), round: t.round_number || 1, numbers: [], sold_date: t.created_at || t.sold_date || new Date().toISOString() };
+            if (!groups[rawKey]) groups[rawKey] = { unique_id: t.batch_id || ('NB-R' + t.round_number), round: t.round_number || 1, numbers: [], sold_date: t.created_at || t.sold_date || new Date().toISOString(), branch_name: t.branch_name, branch_code: t.branch_code, branch_telegram: t.branch_telegram };
             groups[rawKey].numbers.push(num);
         });
         return Object.values(groups);
@@ -869,9 +950,9 @@ async function myTicketsPage() {
     function buildHtml(groups, gameName, price) {
         if (!groups.length) return '<p class="muted">No tickets yet.</p>';
         return groups.map(g => {
-            const dataObj = { game: gameName, round: g.round, ref: g.unique_id, date: g.sold_date, owner: { name: ME.name, phone: ME.phone, public_code: ME.public_code }, unique_id: g.unique_id, tickets: g.numbers.map(n => ({ number: n, printer_code: g.unique_id })), price: price };
+            const dataObj = { game: gameName, round: g.round, ref: g.unique_id, date: g.sold_date, owner: { name: ME.name, phone: ME.phone, public_code: ME.public_code }, unique_id: g.unique_id, tickets: g.numbers.map(n => ({ number: n, printer_code: g.unique_id })), price: price, branch_name: g.branch_name, branch_code: g.branch_code, branch_telegram: g.branch_telegram };
             const safeJson = JSON.stringify(dataObj).replace(/'/g, "&#39;");
-            return `<div class="req-card" style="margin-bottom:8px"><div class="row"><b>Numbers</b><span class="gold">${g.numbers.slice().sort((a,b)=>a-b).map(n=>'#'+n).join(' ')}</span></div><div class="row"><b>Round</b><span>#${g.round}</span></div><div class="row"><b>Ticket ID</b><span style="font-family:monospace;color:#0ea5e9">${escapeHTML(g.unique_id)}</span></div><button class="small-button gold-button" style="margin-top:10px; width:100%; padding:10px; border-radius:8px; border:none; font-weight:bold; cursor:pointer;" onclick='showReceipt(${safeJson})'>🖨️ View / Download Receipt</button></div>`;
+            return `<div class="req-card" style="margin-bottom:8px"><div class="row"><b>Numbers</b><span class="gold">${g.numbers.slice().sort((a,b)=>a-b).map(n=>'#'+n).join(' ')}</span></div><div class="row"><b>Round</b><span>#${g.round}</span></div><div class="row"><b>Ticket ID</b><span style="font-family:monospace;color:#0ea5e9">${escapeHTML(g.unique_id)}</span></div>${g.branch_name ? `<div class="row"><b>Branch</b><span>${escapeHTML(g.branch_name)}</span></div>` : ''}<button class="small-button gold-button" style="margin-top:10px; width:100%; padding:10px; border-radius:8px; border:none; font-weight:bold; cursor:pointer;" onclick='showReceipt(${safeJson})'>🖨️ View / Download Receipt</button></div>`;
         }).join('');
     }
     const wheelGroups = groupWheelTickets(wheelMine); const nbGroups = groupNbTickets(nbMine);
@@ -879,20 +960,27 @@ async function myTicketsPage() {
     document.getElementById('main').innerHTML = `<img src="${IMG.buy}" class="banner-img" onerror="this.style.display='none'"><h1 class="title">🎟️ My Tickets</h1><div class="card"><h2>🎡 Lucky Wheel — Round #${SETTINGS.round_number}</h2><p class="muted" style="margin-bottom:8px">${wheelMine.length} ticket(s) found</p><br>${wheelHtml}</div><div class="card"><h2>🎰 Number Betting (All Rounds)</h2><p class="muted" style="margin-bottom:8px">${nbMine.length} ticket(s) found</p><br>${nbHtml}</div>`;
 }
 
-/* ================= VERIFY PAGE ================= */
 function verifySwitchGame(g) { if (verifyGame === g) return; verifyGame = g; verifyPage(); }
 function verifySwitchMethod(m) { if (verifyMethod === m) return; verifyMethod = m; verifyPage(); }
 async function verifyPage() {
+    const myBranch = getMyBranch();
+    let branchNotice = '';
+    if (myBranch) {
+        branchNotice = `<div class="req-card" style="border-color:#0ea5e9;background:#0c2a3a;margin-bottom:12px;padding:12px">
+            🏢 You are verifying as <b>${escapeHTML(myBranch.name)}</b>${myBranch.code ? ' (' + escapeHTML(myBranch.code) + ')' : ''}.
+            Only this branch's tickets can be verified.
+        </div>`;
+    }
     let tabs = `<div class="game-tabs"><button class="game-tab ${verifyMethod==='manual'?'active':''}" onclick="verifySwitchMethod('manual')">⌨️ Manual ID</button><button class="game-tab ${verifyMethod==='scan'?'active':''}" onclick="verifySwitchMethod('scan')">📷 Scan Code</button><button class="game-tab ${verifyMethod==='upload'?'active':''}" onclick="verifySwitchMethod('upload')">🖼️ Upload Photo</button></div>`;
     let content = '';
     if (verifyMethod === 'manual') {
-        content = `<p class="muted" style="margin-bottom:12px">Enter the Ticket ID or Number manually (e.g. 5, TICKET-5, LW-A1B2C3).</p><label>Ticket Number / Unique ID</label><input id="verifyInput" placeholder="Enter ID here..." style="font-family:monospace"><button class="main-button" onclick="doVerify(document.getElementById('verifyInput').value.trim())">🔍 VERIFY TICKET</button>`;
+        content = `<p class="muted" style="margin-bottom:12px">Enter the Ticket ID or Number manually (e.g. 5, TICKET-5, LW-A1B2C3). Works for current and past rounds.</p><label>Ticket Number / Unique ID</label><input id="verifyInput" placeholder="Enter ID here..." style="font-family:monospace"><button class="main-button" onclick="doVerify(document.getElementById('verifyInput').value.trim())">🔍 VERIFY TICKET</button>`;
     } else if (verifyMethod === 'scan') {
         content = `<p class="muted" style="margin-bottom:12px">Point your camera at the QR code on the ticket.</p><div id="qr-reader" style="width:100%; max-width:400px; margin:0 auto; border-radius:12px; overflow:hidden;"></div><div id="scan-result-actions" style="margin-top:15px; text-align:center;"></div>`;
     } else if (verifyMethod === 'upload') {
         content = `<p class="muted" style="margin-bottom:12px">Select a screenshot or photo of the ticket QR code from your device.</p><input type="file" id="qr-file-input" accept="image/*" style="padding:10px; background:#0b1220; border:1px solid #475569; border-radius:8px;" onchange="handleFileUpload(event)"><div id="qr-file-result" style="margin-top:20px"></div>`;
     }
-    document.getElementById('main').innerHTML = `<img src="${IMG.verify}" class="banner-img" onerror="this.style.display='none'"><h1 class="title">🔍 Verify Ticket</h1><div class="game-tabs"><button class="game-tab ${verifyGame==='wheel'?'active':''}" onclick="verifySwitchGame('wheel')">🎡 Wheel</button><button class="game-tab ${verifyGame==='nb'?'active':''}" onclick="verifySwitchGame('nb')">🎰 NB</button></div><div class="card"><h2>Scan Method</h2><br>${tabs}${content}<div id="verifyResult" style="margin-top:20px"></div></div>`;
+    document.getElementById('main').innerHTML = `<img src="${IMG.verify}" class="banner-img" onerror="this.style.display='none'"><h1 class="title">🔍 Verify Ticket</h1>${branchNotice}<div class="game-tabs"><button class="game-tab ${verifyGame==='wheel'?'active':''}" onclick="verifySwitchGame('wheel')">🎡 Wheel</button><button class="game-tab ${verifyGame==='nb'?'active':''}" onclick="verifySwitchGame('nb')">🎰 NB</button></div><div class="card"><h2>Scan Method</h2><br>${tabs}${content}<div id="verifyResult" style="margin-top:20px"></div></div>`;
     if (verifyMethod === 'scan') {
         setTimeout(() => {
             html5QrCode = new Html5Qrcode("qr-reader");
@@ -928,47 +1016,239 @@ async function handleFileUpload(event) {
         img.src = URL.createObjectURL(file);
     } finally { try { await scanner.clear(); } catch(e) {} }
 }
+
 async function doVerify(input) {
     if (!input) { toast('Enter a ticket number or ID', true); return; }
     const btn = document.querySelector('#main .main-button'); if (btn) { btn.textContent = 'Verifying...'; btn.disabled = true; }
     const resultDiv = document.getElementById('verifyResult'); if (resultDiv) resultDiv.innerHTML = '<p class="muted">🔍 Checking database...</p>';
+    
     try {
-        const res = await api('/verify-ticket', { method: 'POST', body: { ticketNumber: input, unique_id: input } });
-        let html = '<div class="req-card" style="border-color:#4ade80; background:#0f172a"><h3 style="color:#4ade80; margin-bottom:10px">✅ Ticket Matched (Valid)</h3>';
+        const res = await api('/verify-ticket', {
+            method: 'POST',
+            body: { ticketNumber: input, unique_id: input, includePastRounds: true }
+        });
+
+        /* -------- BRANCH ISOLATION -------- */
+        const myBranch = getMyBranch();
+        if (myBranch) {
+            const ticketBranchId = res.branch_id != null ? String(res.branch_id) : null;
+            if (ticketBranchId !== null && ticketBranchId !== String(myBranch.id)) {
+                if (resultDiv) resultDiv.innerHTML = `
+                    <div class="req-card" style="border-color:#ef4444; background:#7f1d1d">
+                        <div style="font-size:44px;text-align:center">🚫</div>
+                        <h3 style="color:#fca5a5;text-align:center;margin-bottom:8px">NOT THIS BRANCH'S TICKET</h3>
+                        <p style="text-align:center">This ticket belongs to <b>${escapeHTML(res.branch_name || 'another branch')}</b>, not <b>${escapeHTML(myBranch.name)}</b>.</p>
+                        <p class="muted" style="text-align:center;margin-top:6px;font-size:12px">Please verify only tickets issued by your branch.</p>
+                    </div>`;
+                return;
+            }
+        }
+
+        let html = '<div class="req-card" style="border-color:#4ade80; background:#0f172a">';
+        html += '<h3 style="color:#4ade80; margin-bottom:10px">✅ Ticket Matched (Valid)</h3>';
+        if (res.branch_name) {
+            html += '<div class="row"><b>Branch:</b> <span>' + escapeHTML(res.branch_name) + '</span></div>';
+        }
         html += '<div class="row"><b>Game:</b> <span>' + escapeHTML(res.game) + '</span></div>';
         html += '<div class="row"><b>Ticket ID (Ref):</b> <span style="font-family:monospace; color:#0ea5e9">' + escapeHTML(res.unique_id) + '</span></div>';
-        html += '<div class="row"><b>Numbers:</b> <span class="gold">' + res.numbers.map(n => '#'+n).join(' ') + '</span></div>';
-        html += '<div class="row"><b>Round:</b> <span>#' + res.round + '</span></div>';
+        html += '<div class="row"><b>Numbers:</b> <span class="gold">' + (res.numbers || []).map(n => '#'+n).join(' ') + '</span></div>';
+        html += '<div class="row"><b>Round:</b> <span>#' + res.round + (res.round_is_past ? ' <small class="muted">(past round)</small>' : '') + '</span></div>';
         html += '<div class="row"><b>Owner:</b> <span>' + escapeHTML(res.owner_name || '—') + '</span></div>';
-        html += '<div class="row"><b>Phone:</b> <span style="font-family:monospace">' + escapeHTML(res.owner_phone || '—') + '</span></div>';
         html += '<div class="row"><b>Date:</b> <span>' + formatDate(res.sold_date) + '</span></div>';
-        
-        if (res.status === 'progress') html += '<div style="margin-top:15px; padding:12px; background:#0369a1; border-radius:8px; text-align:center; border: 1px solid #0ea5e9;">⏳ <b>Round In Progress</b><br><span style="font-size:12px; opacity:0.8">Wait for the draw to see if you won.</span></div>';
-        else if (res.status === 'winner') html += '<div style="margin-top:15px; padding:12px; background:#166534; border-radius:8px; text-align:center; border: 1px solid #4ade80;">🏆 <b>WINNER!</b><br>Prize: <b class="gold" style="font-size:18px">' + money(res.prize) + '</b></div>';
-        else if (res.status === 'not_winner') html += '<div style="margin-top:15px; padding:12px; background:#7f1d1d; border-radius:8px; text-align:center; border: 1px solid #ef4444;">😔 <b>Not a winner this round.</b><br><span style="font-size:12px; opacity:0.8">Better luck next time!</span></div>';
-        else if (res.status === 'past_round') html += '<div style="margin-top:15px; padding:12px; background:#334155; border-radius:8px; text-align:center; border: 1px solid #64748b;">📜 This ticket is from a <b>Past Round</b> (#' + res.round + ').</div>';
-        
-        html += '</div>'; if (resultDiv) resultDiv.innerHTML = html;
-    } catch (e) { if (resultDiv) resultDiv.innerHTML = '<div class="req-card" style="border-color:#ef4444; background:#7f1d1d"><h3 style="color:#fca5a5">❌ Ticket Not Found</h3><p>The ID or number you entered does not exist in our system.</p></div>'; }
+
+        if (res.status === 'winner') {
+            html += `<div class="verify-status winner" style="animation: bounceIn 0.6s ease;">
+                <div class="congrats-burst">🎉</div>
+                <h3>CONGRATULATIONS!</h3>
+                <div class="prize">${money(res.prize)}</div>
+                <p style="font-size:15px; margin-bottom:5px;">You are a <b>WINNER</b> in Round #${res.round}!</p>
+                ${res.match_count > 0 ? `<p style="font-size:13px; opacity:0.9">Matched <b>${res.match_count}</b> winning number(s).</p>` : ''}
+                <small>Prize has been credited. ${res.round_is_past ? 'This was a past round.' : ''}</small>
+            </div>`;
+        } else if (res.status === 'not_winner') {
+            html += `<div class="verify-status not_winner" style="animation: shake 0.5s ease;">
+                <div style="font-size: 50px; margin-bottom: 5px;">😔</div>
+                <h3>SORRY, NOT A WINNER</h3>
+                <p style="font-size:15px; margin-bottom:5px;">Round #${res.round} ${res.round_is_past ? 'has ended' : 'is finished'}.</p>
+                ${res.match_count > 0 ? `<p style="font-size:13px; color:#fca5a5;">Matched <b>${res.match_count}</b> number(s), not enough this time.</p>` : ''}
+                <small>Try again in the next round — good luck! 🍀</small>
+            </div>`;
+        } else if (res.status === 'progress') {
+            html += `<div class="verify-status progress" style="animation: pulse 2s infinite;">
+                <div style="font-size: 50px; margin-bottom: 5px;">⏳</div>
+                <h3>ROUND IN PROGRESS</h3>
+                <p style="font-size:15px; margin-bottom:5px;">Draw for Round #${res.round} has not finished yet.</p>
+                <small>Please wait for the draw to complete.</small>
+            </div>`;
+        } else if (res.status === 'pending') {
+            html += `<div class="verify-status progress" style="animation: pulse 2s infinite;">
+                <div style="font-size: 50px; margin-bottom: 5px;">⏳</div>
+                <h3>TICKET NOT YET PLAYED</h3>
+                <p style="font-size:15px;">Round #${res.round} has not started drawing yet.</p>
+            </div>`;
+        }
+
+        html += '</div>';
+        if (resultDiv) resultDiv.innerHTML = html;
+    } catch (e) {
+        if (resultDiv) resultDiv.innerHTML = '<div class="req-card" style="border-color:#ef4444; background:#7f1d1d"><h3 style="color:#fca5a5">❌ Ticket Not Found</h3><p>The ID or number you entered does not exist in our system.</p></div>';
+    }
     finally { if (btn) { btn.textContent = '🔍 VERIFY TICKET'; btn.disabled = false; } }
 }
 
-/* ================= PAGE FUNCTIONS ================= */
+async function branchesPage() {
+    if (ME.role !== 'main_admin' && ME.role !== 'admin') { document.getElementById('main').innerHTML = '<div class="card"><p class="muted">Access Denied.</p></div>'; return; }
+    const data = await api('/admin/branches'); 
+    let rows = '';
+    for (const b of data.branches) {
+        const link = window.location.origin + '/?branch=' + b.code;
+        rows += `<tr>
+            <td>${escapeHTML(b.name)}</td>
+            <td style="font-family:monospace;color:#0ea5e9">${escapeHTML(b.code)}</td>
+            <td>${escapeHTML(b.admin_phone)}</td>
+            <td>${escapeHTML(b.holder_name || '—')}</td>
+            <td>${b.telegram_link ? `<a href="${escapeHTML(b.telegram_link)}" target="_blank" style="color:#4dd0e1">💬 Link</a>` : '<span class="muted">—</span>'}</td>
+            <td><a href="${link}" target="_blank" style="color:#fbbf24">${link}</a></td>
+            <td style="white-space:nowrap">
+                <button class="small-button gold-button" onclick="editBranch('${b.id}')">✏️ Edit</button>
+                <button class="small-button red-button" onclick="deleteBranch('${b.id}')">🗑️ Del</button>
+            </td>
+        </tr>`;
+    }
+    document.getElementById('main').innerHTML = `
+        <img src="${IMG.branches}" class="banner-img" onerror="this.style.display='none'">
+        <h1 class="title">🏢 Branch Management</h1>
+        <div class="card">
+            <button class="main-button" style="width:auto;padding:10px 20px;margin-bottom:15px" onclick="createBranchModal()">➕ Create New Branch</button>
+            <div class="table-box">
+                <table>
+                    <thead><tr><th>Name</th><th>Code</th><th>Admin Phone</th><th>Holder</th><th>Support</th><th>Login Link</th><th>Actions</th></tr></thead>
+                    <tbody>${rows || '<tr><td colspan="7" class="muted">No branches found.</td></tr>'}</tbody>
+                </table>
+            </div>
+        </div>`;
+}
+
+function createBranchModal(existingBranch = null) {
+    const isEdit = !!existingBranch;
+    const area = document.getElementById('modalArea');
+    area.innerHTML = `
+        <div class="custom-modal" onclick="if(event.target===this){this.remove();}">
+            <div class="custom-modal-box" style="max-width:500px; max-height: 90vh; overflow-y: auto;">
+                <h3>${isEdit ? 'Edit' : 'Create'} Branch</h3>
+                <label>Branch Name</label>
+                <input id="bName" placeholder="e.g. Addis Ababa Branch" value="${existingBranch ? escapeHTML(existingBranch.name) : ''}">
+                <label>Branch Code (for URL)</label>
+                <input id="bCode" placeholder="e.g. ADDIS" value="${existingBranch ? escapeHTML(existingBranch.code) : ''}" ${isEdit ? 'disabled' : ''}>
+                <label>Admin Phone (Login)</label>
+                <input id="bPhone" placeholder="0911223344" value="${existingBranch ? escapeHTML(existingBranch.admin_phone) : ''}">
+                <label>Admin Password</label>
+                <input id="bPassword" type="password" placeholder="Leave blank to keep current (if editing)">
+                <label>Account Holder Name (Deposit)</label>
+                <input id="bHolder" placeholder="e.g. Teshome Ayenew" value="${existingBranch ? escapeHTML(existingBranch.holder_name || '') : ''}">
+                <label>Customer Service / Telegram Support Link</label>
+                <input id="bTelegram" placeholder="https://t.me/..." value="${existingBranch ? escapeHTML(existingBranch.telegram_link || '') : ''}">
+                <label>CBE Account Number</label>
+                <input id="bCbe" placeholder="1000..." value="${existingBranch ? escapeHTML(existingBranch.cbe_account || '') : ''}">
+                <label>BOA Account Number</label>
+                <input id="bBoa" placeholder="1890..." value="${existingBranch ? escapeHTML(existingBranch.boa_account || '') : ''}">
+                <div class="btn-row">
+                    <button class="main-button" onclick="saveBranch(${existingBranch ? `'${existingBranch.id}'` : 'null'})">Save</button>
+                    <button class="main-button" style="background:#64748b;color:white" onclick="closeCustomModal()">Cancel</button>
+                </div>
+            </div>
+        </div>`;
+}
+
+async function saveBranch(id) {
+    const name = document.getElementById('bName').value.trim();
+    const code = document.getElementById('bCode').value.trim().toUpperCase();
+    const admin_phone = document.getElementById('bPhone').value.trim();
+    const password = document.getElementById('bPassword').value;
+    const holder_name = document.getElementById('bHolder').value.trim();
+    const telegram_link = document.getElementById('bTelegram').value.trim();
+    const cbe_account = document.getElementById('bCbe').value.trim();
+    const boa_account = document.getElementById('bBoa').value.trim();
+    
+    if (!name || !admin_phone || (!id && !code)) { toast('Please fill required fields', true); return; }
+    
+    try {
+        let res;
+        if (id) {
+            res = await api('/admin/branches/' + id, { method: 'PUT', body: { name, admin_phone, password, cbe_account, boa_account, holder_name, telegram_link } });
+            toast('✅ Branch updated');
+        } else {
+            res = await api('/admin/branches', { method: 'POST', body: { name, code, admin_phone, password, cbe_account, boa_account, holder_name, telegram_link } });
+            toast('✅ Branch created');
+        }
+        
+        closeCustomModal();
+        
+        if (!id && res.branch && res.branch.code) {
+            const link = window.location.origin + '/?branch=' + res.branch.code;
+            setTimeout(() => {
+                alert(`✅ Branch Created Successfully!\n\nAdmin Login Link:\n${link}\n\nShare this link with new users to register under this branch.`);
+            }, 100);
+        }
+        
+        branchesPage();
+    } catch (e) { toast('❌ ' + e.message, true); }
+}
+
+async function editBranch(id) {
+    const data = await api('/admin/branches');
+    const branch = data.branches.find(b => b.id === id);
+    if (branch) createBranchModal(branch);
+}
+
+async function deleteBranch(id) {
+    if (!(await confirmToast('Delete this branch? All users under it will be orphaned.', { title: 'Delete Branch', okText: 'Delete' }))) return;
+    try { await api('/admin/branches/' + id, { method: 'DELETE' }); toast('🗑️ Branch deleted'); branchesPage(); } catch (e) { toast('❌ ' + e.message, true); }
+}
+
 function dashboard() {
-    if (ME.role === 'admin') {
+    const isBranch = ME.role === 'branch' || (ME.branch_id != null && ME.branch_id !== '');
+    const isAdmin = ME.role === 'admin' || ME.role === 'main_admin' || ME.role === 'branch';
+    
+    if (isAdmin) {
         const wheelSold = SETTINGS.wheel_sold || 0;
-        document.getElementById('main').innerHTML = `<div class="wheel-hero-img"><img src="image2.jpg" onerror="this.src='https://images.unsplash.com/photo-1542751371-adc38448a05e?w=1600&h=500&fit=crop'"></div><h1 class="title">Admin Dashboard</h1><div class="stats"><div class="stat"><small>Users</small><h2 id="statUsers">—</h2></div><div class="stat"><small>Wheel Sold</small><h2>${wheelSold}/${SETTINGS.ticket_count}</h2></div><div class="stat"><small>Sales</small><h2>${SETTINGS.sales_state === 'open' ? '🟢 OPEN' : '⚪ ' + (SETTINGS.sales_state || 'idle').toUpperCase()}</h2></div><div class="stat"><small>Round</small><h2>${SETTINGS.round_state}</h2></div></div><div class="card"><h2>Admin Actions</h2><div class="action-buttons"><button class="action-btn green" onclick="startSales()">🟢 OPEN SALES</button><button class="action-btn red" onclick="closeSales()">🔴 CLOSE SALES</button><button class="action-btn" onclick="openPage('tickets')">🎟️ Assign</button><button class="action-btn blue" onclick="openPage('requests')">📥 Requests</button><button class="action-btn green" onclick="openPage('wheel')">🎡 Wheel</button><button class="action-btn purple" onclick="openPage('nb')">🎰 NB</button><button class="action-btn purple" onclick="openPage('settings')">⚙️ Settings</button></div></div>`;
-        api('/admin/users').then(l => { const e = document.getElementById('statUsers'); if (e) e.textContent = l.users.length; }).catch(() => {});
+        const branchName = isBranch ? (ME.branch_name || ME.name) : '';
+        
+        document.getElementById('main').innerHTML = `
+            <div class="wheel-hero-img"><img src="image2.jpg" onerror="this.src='https://images.unsplash.com/photo-1542751371-adc38448a05e?w=1600&h=500&fit=crop'"></div>
+            <h1 class="title">${isBranch ? '🏢 ' + escapeHTML(branchName) : 'Admin Dashboard'}</h1>
+            <div class="stats"><div class="stat"><small>Users</small><h2 id="statUsers">—</h2></div><div class="stat"><small>Wheel Sold</small><h2>${wheelSold}/${SETTINGS.ticket_count}</h2></div><div class="stat"><small>Sales</small><h2>${SETTINGS.sales_state === 'open' ? '🟢 OPEN' : '⚪ ' + (SETTINGS.sales_state || 'idle').toUpperCase()}</h2></div><div class="stat"><small>Round</small><h2>${SETTINGS.round_state}</h2></div></div>
+            <div class="card"><h2>Admin Actions</h2><div class="action-buttons"><button class="action-btn green" onclick="startSales()">🟢 OPEN SALES</button><button class="action-btn red" onclick="closeSales()">🔴 CLOSE SALES</button><button class="action-btn" onclick="openPage('tickets')">🎟️ Assign</button><button class="action-btn blue" onclick="openPage('requests')">📥 Requests</button><button class="action-btn green" onclick="openPage('wheel')">🎡 Wheel</button><button class="action-btn purple" onclick="openPage('nb')">🎰 NB</button>${!isBranch ? '<button class="action-btn purple" onclick="openPage(\'settings\')">⚙️ Settings</button>' : ''}</div></div>
+        `;
+        api('/admin/users/full').then(l => { const e = document.getElementById('statUsers'); if (e) e.textContent = l.users.length; }).catch(() => {});
         return;
     }
+
+    // Regular User Dashboard
     const mine = TICKETS.filter(t => String(t.user_id) === String(ME.id));
-    document.getElementById('main').innerHTML = `<div class="wheel-hero-img"><img src="image2.jpg" onerror="this.src='https://images.unsplash.com/photo-1542751371-adc38448a05e?w=1600&h=500&fit=crop'"></div><h1 class="title">Welcome, ${escapeHTML(ME.name)}</h1><div class="stats"><div class="stat"><small>Balance</small><h2>${money(ME.balance)}</h2></div><div class="stat"><small>My Tickets</small><h2>${mine.length}</h2></div><div class="stat"><small>Referrals</small><h2>${ME.active_referrals || 0}</h2></div><div class="stat"><small>Free</small><h2>${ME.free_tickets || 0}</h2></div></div><div class="card"><h2>Quick Actions</h2><div class="action-buttons"><button class="action-btn" onclick="openPage('deposit')">💰 Deposit</button><button class="action-btn green" onclick="openPage('buy')">🛒 Buy</button><button class="action-btn blue" onclick="openPage('withdraw')">💸 Withdraw</button><button class="action-btn purple" onclick="openPage('nb')">🎰 NB</button></div></div><div class="referral-card"><h2 style="color:#fbbf24">🎁 Referral Code</h2><div class="referral-code-box"><div class="referral-code">${ME.referral_code || '—'}</div><button class="copy-btn" onclick="copyReferral()">📋 Copy</button><button class="copy-btn" onclick="copyInviteLink()">🔗 Link</button></div></div><div class="card"><h2>🎟️ My Tickets</h2><br>${mine.length ? mine.map(t => '<button class="small-button gold-button">Ticket #' + t.ticket_number + '</button>').join(' ') : '<p class="muted">No tickets yet.</p>'}</div>`;
+
+    document.getElementById('main').innerHTML = `
+        <div class="wheel-hero-img"><img src="image2.jpg" onerror="this.src='https://images.unsplash.com/photo-1542751371-adc38448a05e?w=1600&h=500&fit=crop'"></div>
+        <h1 class="title">Welcome, ${escapeHTML(ME.name)}</h1>
+        <div class="support-banner">
+            <div class="icon">💬</div>
+            <div class="text">
+                <h3>Need help? Contact support</h3>
+                <p>Our team is here to help with deposits, withdrawals and tickets.</p>
+            </div>
+            <a href="${(ME.branch_id && ME.telegram_link) ? ME.telegram_link : SUPPORT_LINK}" target="_blank" rel="noopener" class="join-btn">Contact</a>
+        </div>
+        <div class="stats"><div class="stat"><small>Balance</small><h2>${money(ME.balance)}</h2></div><div class="stat"><small>My Tickets</small><h2>${mine.length}</h2></div><div class="stat"><small>Referrals</small><h2>${ME.active_referrals || 0}</h2></div><div class="stat"><small>Free</small><h2>${ME.free_tickets || 0}</h2></div></div>
+        <div class="card"><h2>Quick Actions</h2><div class="action-buttons"><button class="action-btn" onclick="openPage('deposit')">💰 Deposit</button><button class="action-btn green" onclick="openPage('buy')">🛒 Buy</button><button class="action-btn blue" onclick="openPage('withdraw')">💸 Withdraw</button><button class="action-btn purple" onclick="openPage('nb')">🎰 NB</button><a class="action-btn blue" href="${(ME.branch_id && ME.telegram_link) ? ME.telegram_link : SUPPORT_LINK}" target="_blank" rel="noopener" style="text-decoration:none">💬 Contact</a></div></div>
+        <div class="referral-card"><h2 style="color:#fbbf24">🎁 Referral Code</h2><div class="referral-code-box"><div class="referral-code">${ME.referral_code || '—'}</div><button class="copy-btn" onclick="copyReferral()">📋 Copy</button><button class="copy-btn" onclick="copyInviteLink()">🔗 Link</button></div></div>
+        <div class="card"><h2>🎟️ My Tickets</h2><br>${mine.length ? mine.map(t => '<button class="small-button gold-button">Ticket #' + t.ticket_number + '</button>').join(' ') : '<p class="muted">No tickets yet.</p>'}</div>
+    `;
 }
 function copyReferral() { if (!ME.referral_code) return; navigator.clipboard.writeText(ME.referral_code); toast('📋 Copied!'); }
 function copyInviteLink() { if (!ME.referral_code) return; navigator.clipboard.writeText(window.location.origin + '/?ref=' + ME.referral_code); toast('🔗 Copied!'); }
 
 async function buyPage() {
-    if (ME.role === 'admin') { document.getElementById('main').innerHTML = '<div class="card"><p class="muted">Admin — use Assign.</p></div>'; return; }
+    if (ME.role === 'admin' || ME.role === 'main_admin' || ME.role === 'branch') { document.getElementById('main').innerHTML = '<div class="card"><p class="muted">Admin — use Assign.</p></div>'; return; }
     buySelected = []; nbBuyPicked = []; let nbSettings = null; try { nbSettings = await api('/nb/config'); } catch (e) {}
     document.getElementById('main').innerHTML = `<img src="${IMG.buy}" class="banner-img" onerror="this.style.display='none'"><h1 class="title">🛒 Buy Tickets</h1><div class="game-tabs"><button class="game-tab ${buyGame === 'wheel' ? 'active' : ''}" onclick="buySwitchGame('wheel')">🎡 Wheel</button><button class="game-tab ${buyGame === 'nb' ? 'active' : ''}" onclick="buySwitchGame('nb')">🎰 NB</button></div><div id="buyContent"></div>`;
     if (buyGame === 'wheel') buyRenderWheel(); else buyRenderNB(nbSettings);
@@ -1076,7 +1356,7 @@ async function assignTicketsNB() {
 
 async function nbPage() {
     try { nbState = await api('/nb/state'); } catch (e) { document.getElementById('main').innerHTML = '<div class="card"><p>❌ ' + escapeHTML(e.message) + '</p></div>'; return; }
-    const s = nbState.settings; const isAdmin = ME.role === 'admin'; const drawing = s.round_state === 'drawing'; const open = s.sales_state === 'open';
+    const s = nbState.settings; const isAdmin = ME.role === 'admin' || ME.role === 'main_admin' || ME.role === 'branch'; const drawing = s.round_state === 'drawing'; const open = s.sales_state === 'open';
     const mineSet = new Set((nbState.my_tickets||[]).map(t => t.number)); const userNums = new Set((nbState.tickets||[]).filter(t => t.user_id || t.owner_name || t.phone).map(t => t.number));
     const uniqueSoldNumbers = nbState.sold_count || 0;
     const drawnSoFar = nbDrawnSoFar(s); const drawnSet = new Set((s.winning_numbers || []).slice(0, drawnSoFar)); const drawingOrDone = s.round_state === 'drawing' || s.round_state === 'finished'; let grid = '';
@@ -1101,13 +1381,12 @@ function nbStartPolls(s) {
     nbTickTimer();
     nbPollId = setInterval(() => { nbTickTimer(); nbRevealTick(); }, 200);
     
-    // Auto-restart after 10 seconds if finished
     nbSettleId = setInterval(async () => {
         if (nbState && nbState.settings.round_state === 'drawing') {
             try { await api('/nb/settle', { method: 'POST' }); const s2 = await api('/nb/state'); nbState = s2; if (s2.settings.round_state === 'finished') nbPage(); } catch (e) {}
         } else if (nbState && nbState.settings.round_state === 'finished') {
             if (!window._nbFinishedAt) window._nbFinishedAt = Date.now();
-            if (Date.now() - window._nbFinishedAt > 10000) { // 10 seconds
+            if (Date.now() - window._nbFinishedAt > 10000) {
                 window._nbFinishedAt = null;
                 clearInterval(nbSettleId);
                 await nbNewRound();
@@ -1135,10 +1414,10 @@ function nbTickTimer() {
 async function nbStartSales() { try { await api('/admin/nb/start-sales', { method: 'POST' }); toast('🟢 Sales opened'); await nbPage(); } catch (e) { toast('❌ ' + e.message, true); } }
 async function nbCloseSales() { try { await api('/admin/nb/close-sales', { method: 'POST' }); toast('🔴 Sales closed'); await nbPage(); } catch (e) { toast('❌ ' + e.message, true); } }
 async function nbDraw() { if (!(await confirmToast('Start the draw now?', { title: 'Draw', okText: 'Draw' }))) return; try { await api('/admin/nb/draw', { method: 'POST' }); _drawStartClient = Date.now(); _drawRoundKey = null; toast('🎬 Draw started'); await nbPage(); } catch (e) { toast('❌ ' + e.message, true); } }
-async function nbNewRound() { if (!(await confirmToast('Start a new round?', { title: 'New Round', okText: 'Start' }))) return; try { await api('/admin/nb/new-round', { method: 'POST' }); toast('🔄 New round started'); await nbPage(); } catch (e) { toast('❌ ' + e.message, true); } }
+async function nbNewRound() { try { await api('/admin/nb/new-round', { method: 'POST' }); toast('🔄 New round started'); await nbPage(); } catch (e) { toast('❌ ' + e.message, true); } }
 
 async function wheelPage() {
-    const isAdmin = ME.role === 'admin'; const spinning = SETTINGS.round_state === 'spinning'; const open = SETTINGS.sales_state === 'open';
+    const isAdmin = ME.role === 'admin' || ME.role === 'main_admin' || ME.role === 'branch'; const spinning = SETTINGS.round_state === 'spinning'; const open = SETTINGS.sales_state === 'open';
     document.getElementById('main').innerHTML = `<div class="wheel-hero-img"><img src="image2.jpg" onerror="this.src='https://images.unsplash.com/photo-1511512578047-dfb367046420?w=1600&h=400&fit=crop'"></div><div class="wheel-page-head"><h1 class="title" style="margin:0">🎡 Lucky Wheel</h1><button class="small-button gold-button" onclick="enterPublicViewWheel()">🖥️ Public View</button></div><div class="card"><div class="wheel-layout"><div class="wheel-container"><div id="wheel" class="wheel"><div class="wheel-labels" id="wheelLabels"></div></div><div id="topPointer" class="pointer"></div><div class="center" id="wheelCenter">SPIN</div></div><div><div id="timer" class="timer">${formatTime(SETTINGS.duration_seconds)}</div><p id="status" class="status">${spinning ? '🎡 Spinning...' : SETTINGS.round_state === 'finished' ? 'Done.' : isAdmin ? 'Ready' : 'Waiting'}</p>${isAdmin ? '<div class="action-buttons">' + '<button class="action-btn green" onclick="startSales()" ' + (open?'disabled':'') + '>🟢 START SALES</button>' + '<button class="action-btn red" onclick="closeSales()" ' + (!open?'disabled':'') + '>🔴 CLOSE</button>' + '<button id="spinBtn" class="action-btn" onclick="startSpin()" ' + (spinning?'disabled':'') + '>🎡 SPIN</button>' + '<button class="action-btn red" onclick="newRound()" ' + (spinning?'disabled':'') + '>🔄 NEW ROUND</button>' + '</div>' : ''}<div id="winnerArea"></div></div></div></div>`;
     buildWheel(); applyWheelState();
 }
@@ -1159,7 +1438,7 @@ function buildWheel() {
 function applyWheelState() {
     const wheel = document.getElementById('wheel'); if (!wheel) return; const s = SETTINGS; const target = Number(s.target_rotation || 0); const timerEl = document.getElementById('timer'); if (!timerEl) return;
     if (s.round_state === 'spinning') {
-        const startedAt = new Date(s.spin_started_at).getTime(); const duration = 8; // 8 SECONDS FAST SPIN
+        const startedAt = new Date(s.spin_started_at).getTime(); const duration = 8;
         const spinKey = s.round_number + ':' + s.spin_started_at;
         if (wheel._spinKey !== spinKey) {
             wheel._spinKey = spinKey; wheel.style.transition = 'none'; wheel.style.transform = 'rotate(0deg)'; wheel.getBoundingClientRect();
@@ -1172,7 +1451,6 @@ function applyWheelState() {
     if (s.round_state === 'idle' && s.sales_state !== 'open') { stopCountdown(); wheel._spinKey = null; wheel.style.transition = 'none'; wheel.style.transform = 'rotate(0deg)'; const pointer = document.getElementById('topPointer'); if (pointer) pointer.classList.remove('winner'); const center = document.getElementById('wheelCenter'); if (center) center.textContent = 'SPIN'; const area = document.getElementById('winnerArea'); if (area) area.innerHTML = ''; timerEl.classList.remove('spinning', 'sales'); timerEl.textContent = formatTime(s.duration_seconds); return; }
     if (s.round_state === 'finished') {
         stopCountdown(); timerEl.classList.remove('spinning', 'sales'); wheel._spinKey = null; wheel.style.transition = 'none'; wheel.style.transform = 'rotate(' + target + 'deg)'; const pointer = document.getElementById('topPointer'); if (pointer) pointer.classList.add('winner'); const winners = s.winner_numbers || []; const center = document.getElementById('wheelCenter'); if (center) center.innerHTML = winners.length ? '🏆<br>#' + winners[0] : 'DONE'; timerEl.textContent = '00:00'; const statusEl = document.getElementById('status'); if (statusEl) statusEl.textContent = 'Round completed.'; showWinners(s.winners || []);
-        // Auto-restart after 10 seconds
         if (!window._wheelFinishedAt) window._wheelFinishedAt = Date.now();
         if (Date.now() - window._wheelFinishedAt > 10000) { window._wheelFinishedAt = null; newRound(); }
         else { setTimeout(() => { if (SETTINGS.round_state === 'finished') newRound(); }, 10000 - (Date.now() - window._wheelFinishedAt)); }
@@ -1183,7 +1461,7 @@ function startSalesCountdown(at, min) { if (countdownId) clearInterval(countdown
 function startCountdown(at, dur) { if (countdownId) clearInterval(countdownId); const tick = () => { const rem = Math.max(0, Math.ceil(dur - (Date.now() - at) / 1000)); const el = document.getElementById('timer'); if (el) el.textContent = formatTime(rem); if (rem <= 0) { clearInterval(countdownId); countdownId = null; api('/spin/settle', { method: 'POST' }).catch(() => {}); } }; tick(); countdownId = setInterval(tick, 250); }
 function stopCountdown() { if (countdownId) { clearInterval(countdownId); countdownId = null; } }
 async function startSpin() { try { await api('/admin/spin/start', { method: 'POST' }); await refreshState(); renderPage(); } catch (e) { toast('❌ ' + e.message, true); } }
-async function newRound() { if (!(await confirmToast('Start a new round?', { title: 'New Round', okText: 'Start' }))) return; try { await api('/admin/round/reset', { method: 'POST' }); await refreshState(); renderPage(); } catch (e) { toast('❌ ' + e.message, true); } }
+async function newRound() { try { await api('/admin/round/reset', { method: 'POST' }); await refreshState(); renderPage(); } catch (e) { toast('❌ ' + e.message, true); } }
 function showWinners(winners) {
     const area = document.getElementById('winnerArea'); if (!area) return; if (!winners || !winners.length) { area.innerHTML = ''; return; }
     let html = '<div class="winners">'; html += '<h2>🏆 WINNERS — Round #' + SETTINGS.round_number + '</h2>';
@@ -1199,22 +1477,45 @@ async function startSales() { try { await api('/admin/start-sales', { method: 'P
 async function closeSales() { try { await api('/admin/close-sales', { method: 'POST' }); toast('🔴 Sales closed'); await refreshState(); renderPage(); } catch (e) { toast('❌ ' + e.message, true); } }
 
 async function depositPage() {
-    if (ME.role === 'admin') { document.getElementById('main').innerHTML = '<div class="card"><p class="muted">Users only.</p></div>'; return; }
+    if (ME.role === 'admin' || ME.role === 'main_admin' || ME.role === 'branch') { document.getElementById('main').innerHTML = '<div class="card"><p class="muted">Users only.</p></div>'; return; }
+    
+    let branchData = null;
+    try { branchData = await api('/user/branch-details'); } catch (e) {}
+    
     let dep = { deposits: [] }; try { dep = await api('/user/deposits'); } catch (e) {}
-    document.getElementById('main').innerHTML = `<img src="${IMG.deposit}" class="banner-img" onerror="this.style.display='none'"><h1 class="title">💰 Deposit</h1><div class="card"><h2>Send to</h2><div class="method-box"><h3>🏦 CBE</h3><div class="acct">1000676405058</div><div class="name">Teshome Ayenew</div></div><div class="method-box"><h3>🏦 BOA</h3><div class="acct">189018436</div><div class="name">Teshome Ayenew</div></div></div><div class="card"><h2>Submit</h2><br><label>Method</label><select id="depMethod"><option value="cbe">CBE</option><option value="boa">BOA</option></select><label>Amount (ETB)</label><input id="depAmount" type="number" min="1"><label>Transaction ID</label><input id="depTxn" placeholder="e.g. FT23XXXXXX"><label>Transaction Screenshot (optional)</label><input id="depScreenshot" type="file" accept="image/*" onchange="previewDepScreenshot(this)"><div id="depScreenshotPreview" style="margin:10px 0"></div><button class="main-button" onclick="submitDeposit()">📤 SUBMIT</button></div><div class="card"><h2>My Deposits</h2><br>${!dep.deposits.length ? '<p class="muted">None</p>' : dep.deposits.map(d => '<div class="req-card"><div class="row"><b>Amount:</b> <span class="gold">' + money(d.amount) + '</span></div>' + (d.transaction_id ? '<div class="row"><b>Txn ID:</b> <span style="font-family:monospace;color:#0ea5e9">' + escapeHTML(d.transaction_id) + '</span></div>' : '') + '<div class="row"><b>Status:</b> <span class="status-badge ' + d.status + '">' + d.status.toUpperCase() + '</span></div>' + (d.screenshot ? '<div class="row"><b>Screenshot:</b> <img src="' + d.screenshot + '" class="dep-shot-thumb" onclick="viewImg(\'' + d.screenshot + '\')"></div>' : '') + '</div>').join('')}</div>`;
+    
+    const cbe = branchData?.cbe_account || '1000676405058';
+    const boa = branchData?.boa_account || '189018436';
+    const holder = branchData?.holder_name || 'Teshome Ayenew';
+
+    document.getElementById('main').innerHTML = `<img src="${IMG.deposit}" class="banner-img" onerror="this.style.display='none'"><h1 class="title">💰 Deposit</h1><div class="card"><h2>Send to</h2><div class="method-box"><h3>🏦 CBE</h3><div class="acct">${cbe}</div><div class="name">${holder}</div></div><div class="method-box"><h3>🏦 BOA</h3><div class="acct">${boa}</div><div class="name">${holder}</div></div></div><div class="card"><h2>Submit</h2><br><label>Method</label><select id="depMethod"><option value="cbe">CBE</option><option value="boa">BOA</option></select><label>Amount (ETB)</label><input id="depAmount" type="number" min="1"><label>Transaction ID (Optional if Screenshot)</label><input id="depTxn" placeholder="e.g. FT23XXXXXX"><label>Transaction Screenshot (Optional if Tx ID)</label><input id="depScreenshot" type="file" accept="image/*" onchange="previewDepScreenshot(this)"><div id="depScreenshotPreview" style="margin:10px 0"></div><button class="main-button" onclick="submitDeposit()">📤 SUBMIT</button></div><div class="card"><h2>My Deposits</h2><br>${!dep.deposits.length ? '<p class="muted">None</p>' : dep.deposits.map(d => '<div class="req-card"><div class="row"><b>Amount:</b> <span class="gold">' + money(d.amount) + '</span></div>' + (d.transaction_id && d.transaction_id !== 'SCREENSHOT_ONLY' ? '<div class="row"><b>Txn ID:</b> <span style="font-family:monospace;color:#0ea5e9">' + escapeHTML(d.transaction_id) + '</span></div>' : '') + '<div class="row"><b>Status:</b> <span class="status-badge ' + d.status + '">' + d.status.toUpperCase() + '</span></div>' + (d.screenshot ? '<div class="row"><b>Screenshot:</b> <img src="' + d.screenshot + '" class="dep-shot-thumb" onclick="viewImg(\'' + d.screenshot + '\')"></div>' : '') + '</div>').join('')}</div>`;
 }
 function previewDepScreenshot(input) { const box = document.getElementById('depScreenshotPreview'); _depScreenshotData = null; box.innerHTML = ''; const file = input.files && input.files[0]; if (!file) return; if (file.size > 3 * 1024 * 1024) { toast('Image too large (max 3MB)', true); input.value = ''; return; } const reader = new FileReader(); reader.onload = e => { _depScreenshotData = e.target.result; box.innerHTML = '<img src="' + e.target.result + '" style="max-width:100%;max-height:220px;border-radius:8px;border:1px solid #334155">'; }; reader.readAsDataURL(file); }
-async function submitDeposit() { const method = document.getElementById('depMethod').value; const amount = Number(document.getElementById('depAmount').value); const transactionId = document.getElementById('depTxn').value.trim(); if (!amount || amount <= 0) { toast('Enter a valid amount', true); return; } if (!transactionId) { toast('Enter the transaction ID', true); return; } try { await api('/user/deposits', { method: 'POST', body: { method, amount, transactionId, screenshot: _depScreenshotData || null }}); _depScreenshotData = null; toast('✅ Deposit request submitted'); depositPage(); } catch (e) { toast('❌ ' + e.message, true); } }
+async function submitDeposit() { 
+    const method = document.getElementById('depMethod').value; 
+    const amount = Number(document.getElementById('depAmount').value); 
+    const transactionId = document.getElementById('depTxn').value.trim(); 
+    if (!amount || amount <= 0) { toast('Enter a valid amount', true); return; } 
+    if (!transactionId && !_depScreenshotData) { toast('Enter a Transaction ID or upload a screenshot', true); return; } 
+    try { 
+        // Send fallback string so backend doesn't reject null on a NOT NULL column
+        const finalTxnId = transactionId || 'SCREENSHOT_ONLY';
+        await api('/user/deposits', { method: 'POST', body: { method, amount, transactionId: finalTxnId, screenshot: _depScreenshotData || null }}); 
+        _depScreenshotData = null; 
+        toast('✅ Deposit request submitted'); 
+        depositPage(); 
+    } catch (e) { toast('❌ ' + e.message, true); } 
+}
 
 async function withdrawPage() {
-    if (ME.role === 'admin') { document.getElementById('main').innerHTML = '<div class="card"><p class="muted">Users only.</p></div>'; return; }
+    if (ME.role === 'admin' || ME.role === 'main_admin' || ME.role === 'branch') { document.getElementById('main').innerHTML = '<div class="card"><p class="muted">Users only.</p></div>'; return; }
     let w = { withdrawals: [] }; try { w = await api('/user/withdrawals'); } catch (e) {}
     document.getElementById('main').innerHTML = `<img src="${IMG.withdraw}" class="banner-img" onerror="this.style.display='none'"><h1 class="title">💸 Withdraw</h1><div class="stats"><div class="stat"><small>Balance</small><h2>${money(ME.balance)}</h2></div></div><div class="card"><h2>Request</h2><br><label>Method</label><select id="wdMethod"><option value="cbe">CBE</option><option value="boa">BOA</option></select><label>Amount</label><input id="wdAmount" type="number" min="1"><label>Account Number</label><input id="wdAccount"><button class="main-button" onclick="submitWithdraw()">📤 SUBMIT</button></div><div class="card"><h2>My Withdrawals</h2><br>${!w.withdrawals.length ? '<p class="muted">None</p>' : w.withdrawals.map(x => '<div class="req-card"><div class="row"><b>Amount:</b> <span class="gold">' + money(x.amount) + '</span></div><div class="row"><b>Status:</b> <span class="status-badge ' + x.status + '">' + x.status.toUpperCase() + '</span></div></div>').join('')}</div>`;
 }
 async function submitWithdraw() { const method = document.getElementById('wdMethod').value; const amount = Number(document.getElementById('wdAmount').value); const accountNumber = document.getElementById('wdAccount').value.trim(); if (!amount || amount <= 0) { toast('Enter a valid amount', true); return; } if (!accountNumber) { toast('Enter your account number', true); return; } if (amount > Number(ME.balance)) { toast('Insufficient balance', true); return; } const ok = await confirmToast(`Withdraw ${money(amount)}?`, { title: 'Confirm Withdrawal', okText: 'Withdraw' }); if (!ok) return; try { await api('/user/withdrawals', { method: 'POST', body: { method, amount, accountNumber } }); toast('✅ Withdrawal request submitted'); await refreshState(); withdrawPage(); } catch (e) { toast('❌ ' + e.message, true); } }
 
 async function referralsPage() {
-    if (ME.role === 'admin') { document.getElementById('main').innerHTML = '<div class="card"><p class="muted">Users only.</p></div>'; return; }
+    if (ME.role === 'admin' || ME.role === 'main_admin' || ME.role === 'branch') { document.getElementById('main').innerHTML = '<div class="card"><p class="muted">Users only.</p></div>'; return; }
     const data = await api('/referrals'); const goal = SETTINGS.referral_goal || 8;
     document.getElementById('main').innerHTML = `<img src="${IMG.referrals}" class="banner-img" onerror="this.style.display='none'"><h1 class="title">🎁 Referrals</h1><div class="referral-card"><h2 style="color:#fbbf24">Your Code</h2><div class="referral-code-box"><div class="referral-code">${ME.referral_code || '—'}</div><button class="copy-btn" onclick="copyReferral()">📋 Copy</button><button class="copy-btn" onclick="copyInviteLink()">🔗 Link</button></div><p class="muted" style="margin-top:12px">Every <b class="gold">${goal}</b> friends = 1 FREE ticket</p></div><div class="card"><h2>Friends (${data.referrals.length})</h2><br>${data.referrals.length ? data.referrals.map(r => '<div class="ref-row"><div><b>' + escapeHTML(r.name) + '</b><br><span class="muted" style="font-size:12px">' + escapeHTML(r.phone) + '</span></div><div>' + (r.has_bought_ticket ? '<span class="ref-badge active">✓ ACTIVE</span>' : '<span class="ref-badge pending">⏳ PENDING</span>') + '</div></div>').join('') : '<p class="muted">No referrals yet.</p>'}</div>`;
 }
@@ -1232,10 +1533,8 @@ async function resetPassword(userId, userName) { const newPw = await promptModal
 async function banUser(id, banned) { if (!(await confirmToast(banned ? 'Ban this user?' : 'Restore this user?', { title: banned ? 'Ban User' : 'Restore User', okText: banned ? 'Ban' : 'Restore' }))) return; try { await api('/admin/users/ban', { method: 'POST', body: { userId: id, banned } }); usersPage(); } catch (e) { toast('❌ ' + e.message, true); } }
 async function adjustBalance(id) { const a = await promptModal('Amount (+/-)', { placeholder: 'e.g. 500 or -200', type: 'number', okText: 'Apply' }); if (a === null) return; const v = Number(a); if (!Number.isFinite(v)) { toast('Invalid amount', true); return; } try { await api('/admin/users/balance', { method: 'POST', body: { userId: id, amount: v } }); await refreshState(); usersPage(); } catch (e) { toast('❌ ' + e.message, true); } }
 
-// ✅ FIXED: Requests Page shows Pending on top, History on bottom
 async function requestsPage() {
     const [dep, wd] = await Promise.all([api('/admin/deposits'), api('/admin/withdrawals')]);
-
     const pendingDep = dep.deposits.filter(d => d.status === 'pending');
     const histDep = dep.deposits.filter(d => d.status !== 'pending');
     const pendingWd = wd.withdrawals.filter(x => x.status === 'pending');
@@ -1264,7 +1563,6 @@ async function requestsPage() {
     document.getElementById('main').innerHTML = `
         <img src="${IMG.requests}" class="banner-img" onerror="this.style.display='none'">
         <h1 class="title">📥 Requests</h1>
-        
         <div class="card" style="border-color:#fbbf24">
             <h2 style="color:#fbbf24">⏳ Pending Requests</h2><br>
             <h3>💰 Pending Deposits</h3>
@@ -1273,7 +1571,6 @@ async function requestsPage() {
             <h3>💸 Pending Withdrawals</h3>
             ${!pendingWd.length ? '<p class="muted">No pending withdrawals</p>' : pendingWd.map(x => buildCard(x, 'withdraw')).join('')}
         </div>
-
         <div class="card">
             <h2 class="muted">📜 Request History</h2><br>
             <h3>💰 Deposit History</h3>
@@ -1297,15 +1594,55 @@ function submitModal() { const val = document.getElementById('modalInput').value
 
 async function historyPage() {
     const [w, nb] = await Promise.all([api('/rounds').catch(() => ({rounds:[]})), api('/nb/rounds').catch(() => ({rounds:[]}))]);
-    document.getElementById('main').innerHTML = `<img src="${IMG.history}" class="banner-img" onerror="this.style.display='none'"><h1 class="title">📜 History</h1><div class="game-tabs"><button class="game-tab ${historyGame==='wheel'?'active':''}" onclick="historySwitchGame('wheel')">🎡 Wheel</button><button class="game-tab ${historyGame==='nb'?'active':''}" onclick="historySwitchGame('nb')">🎰 NB</button></div><div id="historyContent"></div>`;
+    const isMainAdmin = ME.role === 'main_admin' || ME.role === 'admin';
+    
+    document.getElementById('main').innerHTML = `
+        <img src="${IMG.history}" class="banner-img" onerror="this.style.display='none'">
+        <h1 class="title">📜 History</h1>
+        <div class="game-tabs">
+            <button class="game-tab ${historyGame==='wheel'?'active':''}" onclick="historySwitchGame('wheel')">🎡 Wheel</button>
+            <button class="game-tab ${historyGame==='nb'?'active':''}" onclick="historySwitchGame('nb')">🎰 NB</button>
+        </div>
+        <div id="historyContent"></div>
+    `;
     const c = document.getElementById('historyContent');
+    
+    const renderHistoryCard = (r, gameIcon) => {
+        let html = `<div class="history"><h3>${gameIcon} Round #${r.round_number}</h3><p class="muted">${formatDate(r.created_at)}</p>`;
+        if (r.winners && r.winners.length) {
+            html += r.winners.map(x => `
+                <div class="req-card" style="border-color:#4ade80; background:#0b1220; margin-top:10px;">
+                    <div class="row"><b>Winner #${x.place}:</b> <span>${escapeHTML(x.name)}</span></div>
+                    <div class="row"><b>Phone:</b> <span>${escapeHTML(x.phone_masked || x.phone || '—')}</span></div>
+                    <div class="row"><b>Numbers:</b> <span class="gold">${x.shown_numbers ? x.shown_numbers.map(n=>'#'+n).join(', ') : '#'+x.ticket}</span></div>
+                    <div class="row"><b>Prize:</b> <span class="gold">${money(x.prize)}</span></div>
+                    ${isMainAdmin || ME.role === 'branch' ? `<button class="small-button red-button" style="margin-top:8px; width:100%" onclick="deleteHistoryRecord('${gameIcon === '🎡' ? 'wheel' : 'nb'}', ${r.id})">🗑️ Delete Record</button>` : ''}
+                </div>
+            `).join('');
+        } else {
+            html += '<p class="muted">No winners recorded.</p>';
+        }
+        html += '</div>';
+        return html;
+    };
+
     if (historyGame === 'wheel') {
-        c.innerHTML = !w.rounds.length ? '<div class="card"><p class="muted">No history yet. Finish a round to see results.</p></div>' : w.rounds.map(r => '<div class="history"><h3>🎡 Round #' + r.round_number + '</h3><p class="muted">' + formatDate(r.created_at) + '</p>' + (r.winners||[]).map(x => '<div class="winner">🏆 ' + x.place + '. ' + escapeHTML(x.name) + ' — <span class="gold">' + money(x.prize) + '</span></div>').join('') + '</div>').join('');
+        c.innerHTML = !w.rounds.length ? '<div class="card"><p class="muted">No history yet. Finish a round to see results.</p></div>' : w.rounds.map(r => renderHistoryCard(r, '🎡')).join('');
     } else {
-        c.innerHTML = !nb.rounds.length ? '<div class="card"><p class="muted">No history yet. Finish a round to see results.</p></div>' : nb.rounds.map(r => '<div class="history"><h3>🎰 Round #' + r.round_number + '</h3><p class="muted">' + formatDate(r.created_at) + '</p>' + (r.winners||[]).map(x => '<div class="winner">🏆 ' + x.place + '. ' + escapeHTML(x.name) + ' — ' + money(x.prize) + '</div>').join('') + '</div>').join('');
+        c.innerHTML = !nb.rounds.length ? '<div class="card"><p class="muted">No history yet. Finish a round to see results.</p></div>' : nb.rounds.map(r => renderHistoryCard(r, '🎰')).join('');
     }
 }
 function historySwitchGame(g) { if (historyGame === g) return; historyGame = g; historyPage(); }
+
+async function deleteHistoryRecord(game, roundId) {
+    if (!(await confirmToast('Are you sure you want to delete this round history?', { title: 'Delete History', okText: 'Delete' }))) return;
+    try {
+        const endpoint = game === 'wheel' ? `/admin/rounds/${roundId}` : `/admin/nb/rounds/${roundId}`;
+        await api(endpoint, { method: 'DELETE' });
+        toast('✅ Record deleted');
+        historyPage();
+    } catch (e) { toast('❌ ' + e.message, true); }
+}
 
 async function settingsPage() {
     let nbs = null; try { nbs = await api('/nb/config'); } catch (e) {}
