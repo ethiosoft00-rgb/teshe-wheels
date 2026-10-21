@@ -63,18 +63,15 @@ async function resolveBranchId(req) {
   const { data } = await sb.from('users').select('branch_id').eq('id', req.user.id).maybeSingle();
   return data?.branch_id || null;
 }
-
 function adminBranchScope(req) {
   if (req.user.role === 'branch') return req.user.id;
   if (req.user.role === 'main_admin' || req.user.role === 'admin') return null;
   throw new Error('Not admin');
 }
-
 function scopeQuery(q, branchId, col = 'branch_id') {
   if (branchId) return q.eq(col, branchId);
   return q.is(col, null);
 }
-
 function asArray(v) {
   if (Array.isArray(v)) return v;
   if (typeof v === 'string') { try { return JSON.parse(v); } catch { return []; } }
@@ -83,16 +80,13 @@ function asArray(v) {
 }
 
 /* ============================================================
-   SETTINGS / TICKETS HELPERS (BRANCH-SCOPED)
+   SETTINGS / TICKETS HELPERS
    ============================================================ */
 async function getSettings(branchId = null) {
   let q = sb.from('app_settings').select('*');
   q = branchId ? q.eq('branch_id', branchId) : q.is('branch_id', null).eq('id', 1);
   const { data, error } = await q.maybeSingle();
-  
   if (error) throw error;
-  
-  // AUTO-FIX: If settings don't exist, create them!
   if (!data && branchId) {
     const { data: newSettings, error: createErr } = await sb.from('app_settings').insert({
       branch_id: branchId, round_number: 1, ticket_count: 20, ticket_price: 50,
@@ -101,9 +95,8 @@ async function getSettings(branchId = null) {
       winner_numbers: [], winners: [], target_rotation: 0
     }).select().single();
     if (createErr) throw createErr;
-    return getSettings(branchId); // Retry
+    return getSettings(branchId);
   }
-  
   if (!data) throw new Error('Global settings not found.');
 
   data.prize_percents = asArray(data.prize_percents);
@@ -117,10 +110,11 @@ async function getSettings(branchId = null) {
   data.wheel_sold = count || 0;
   return data;
 }
-
 async function getTickets(branchId = null) {
   const s = await getSettings(branchId);
-  let q = sb.from('tickets').select('*').eq('round_number', s.round_number);
+  let q = sb.from('tickets')
+    .select('id,ticket_number,user_id,user_name,phone,sold_date,round_number,batch_id,branch_id')
+    .eq('round_number', s.round_number);
   q = scopeQuery(q, branchId);
   const { data, error } = await q.order('ticket_number');
   if (error) throw error;
@@ -132,25 +126,40 @@ async function getNbSettings(branchId = null) {
   q = branchId ? q.eq('branch_id', branchId) : q.is('branch_id', null).eq('id', 1);
   const { data, error } = await q.maybeSingle();
   
-  if (error) throw error;
-  
-  // AUTO-FIX for NB
-  if (!data && branchId) {
-    const { data: newSettings, error: createErr } = await sb.from('nb_settings').insert({
+  if (error) {
+    console.error('🔥 Supabase Error fetching NB settings:', error);
+    throw error;
+  }
+
+  if (!data) {
+    console.log(`Creating default NB settings for branchId: ${branchId || 'GLOBAL'}`);
+    const insertData = {
       branch_id: branchId, round_number: 1, total_numbers: 80, drawn_count: 20,
       tickets_per_purchase: 2, price_per_purchase: 30, draw_delay_seconds: 2,
       round_duration_minutes: 120, winner_count: 3, prize_percents: [50, 30, 20],
       sales_state: 'idle', round_state: 'idle', winning_numbers: [], winners: []
-    }).select().single();
-    if (createErr) throw createErr;
-    return getNbSettings(branchId); // Retry
+    };
+    const { data: newSettings, error: createErr } = await sb.from('nb_settings').insert(insertData).select().single();
+    
+    if (createErr) {
+        console.error('🔥 Failed to create NB settings:', createErr);
+        throw createErr;
+    }
+    return getNbSettings(branchId); 
   }
-  
-  if (!data) throw new Error('Global NB settings not found.');
 
   data.prize_percents  = asArray(data.prize_percents);
   data.winning_numbers = asArray(data.winning_numbers);
   data.winners         = asArray(data.winners);
+  
+  data.winning_numbers = data.winning_numbers || [];
+  data.winners = data.winners || [];
+  data.total_numbers = Number(data.total_numbers) || 80;
+  data.drawn_count = Number(data.drawn_count) || 20;
+  data.draw_delay_seconds = Number(data.draw_delay_seconds) || 2;
+  data.tickets_per_purchase = Number(data.tickets_per_purchase) || 1;
+  data.price_per_purchase = Number(data.price_per_purchase) || 0;
+
   return data;
 }
 
@@ -161,7 +170,6 @@ async function getNbTickets(branchId, roundNumber) {
   if (error) throw error;
   return data || [];
 }
-
 async function updateSettings(branchId, patch, table = 'app_settings') {
   let q = sb.from(table).update(patch);
   q = branchId ? q.eq('branch_id', branchId) : q.eq('id', 1).is('branch_id', null);
@@ -217,7 +225,6 @@ app.post('/api/auth/register', async (req, res) => {
       const { data: refUser } = await sb.from('users').select('id').eq('referral_code', cleanRef).maybeSingle();
       if (refUser) referredBy = refUser.id;
     }
-    
     if (branchCode && String(branchCode).trim()) {
       const cleanBranch = String(branchCode).trim().toUpperCase();
       const { data: refBranch } = await sb.from('branches').select('id').eq('code', cleanBranch).maybeSingle();
@@ -243,7 +250,6 @@ app.post('/api/auth/login', async (req, res) => {
     const cleanPhone = String(phone).trim();
     const cleanPassword = String(password).trim();
 
-    // Branch admin login
     const { data: branch } = await sb.from('branches').select('*').eq('admin_phone', cleanPhone).maybeSingle();
     if (branch) {
       const ok = await bcrypt.compare(cleanPassword, branch.password_hash);
@@ -252,7 +258,6 @@ app.post('/api/auth/login', async (req, res) => {
       return res.json({ token, role: 'branch', name: branch.name });
     }
 
-    // Normal user / main admin
     const { data: user, error } = await sb.from('users').select('*').eq('phone', cleanPhone).maybeSingle();
     if (error) return res.status(500).json({ error: 'DB error' });
     if (!user) return res.status(401).json({ error: 'Invalid phone number or password' });
@@ -409,6 +414,209 @@ app.get('/api/user/branch-details', auth, async (req, res) => {
 });
 
 /* ============================================================
+   ADMIN FINANCE, MESSAGES & AUDIT
+   ============================================================ */
+app.get('/api/admin/stats', auth, adminOnly, async (req, res) => {
+  try {
+    const branchId = adminBranchScope(req);
+    
+    let depQuery = sb.from('deposits').select('amount, created_at').eq('status', 'approved');
+    let wdQuery = sb.from('withdrawals').select('amount, created_at').eq('status', 'approved');
+    let ticketQuery = sb.from('tickets').select('ticket_price, sold_date, user_id').not('user_id', 'is', null);
+    let nbQuery = sb.from('nb_tickets').select('price_per_purchase, sold_date, user_id').not('user_id', 'is', null);
+
+    if (branchId) {
+      depQuery = depQuery.eq('branch_id', branchId);
+      wdQuery = wdQuery.eq('branch_id', branchId);
+      ticketQuery = ticketQuery.eq('branch_id', branchId);
+      nbQuery = nbQuery.eq('branch_id', branchId);
+    }
+
+    const [{ data: deps }, { data: wds }, { data: tickets }, { data: nbTickets }] = await Promise.all([depQuery, wdQuery, ticketQuery, nbQuery]);
+
+    const totalDeposit = (deps || []).reduce((sum, d) => sum + Number(d.amount), 0);
+    const totalWithdraw = (wds || []).reduce((sum, w) => sum + Number(w.amount), 0);
+    const totalSales = (tickets || []).reduce((sum, t) => sum + Number(t.ticket_price), 0) + 
+                       (nbTickets || []).reduce((sum, t) => sum + Number(t.price_per_purchase), 0);
+    const totalProfit = totalSales - totalWithdraw;
+
+    const today = new Date().toISOString().split('T')[0];
+    
+    let historyQuery = sb.from('round_history').select('winners, created_at');
+    if (branchId) historyQuery = historyQuery.eq('branch_id', branchId);
+    const { data: history } = await historyQuery;
+    
+    let todayWinnerPayouts = 0;
+    (history || []).forEach(h => {
+      if (h.created_at.startsWith(today) && h.winners) {
+        todayWinnerPayouts += h.winners.reduce((sum, w) => sum + Number(w.prize || 0), 0);
+      }
+    });
+
+    const todaySales = (tickets || []).filter(t => t.sold_date.startsWith(today)).reduce((sum, t) => sum + Number(t.ticket_price), 0) +
+                       (nbTickets || []).filter(t => t.sold_date.startsWith(today)).reduce((sum, t) => sum + Number(t.price_per_purchase), 0);
+    const todayWithdraw = (wds || []).filter(w => w.created_at.startsWith(today)).reduce((sum, w) => sum + Number(w.amount), 0);
+    const todayProfit = todaySales - todayWithdraw - todayWinnerPayouts;
+
+    res.json({ totalDeposit, totalWithdraw, totalProfit, todayProfit, todayWinnerPayouts });
+
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.post('/api/admin/messages', auth, adminOnly, async (req, res) => {
+  try {
+    const { receiver_id, message, amount_requested, account_number, holder_name, screenshot, transaction_id, request_id, status } = req.body;
+    const sender_role = req.user.role === 'branch' ? 'branch' : 'main_admin';
+    
+    const payload = {
+      sender_role,
+      sender_id: req.user.id,
+      receiver_role: sender_role === 'main_admin' ? 'branch' : 'main_admin',
+      receiver_id: sender_role === 'main_admin' ? receiver_id : null,
+      message,
+      amount_requested: amount_requested || 0,
+      account_number: account_number || null,
+      holder_name: holder_name || null,
+      screenshot: screenshot || null,
+      transaction_id: transaction_id || null,
+      request_id: request_id || null
+    };
+    if (status) payload.status = status;
+
+    const { error } = await sb.from('admin_messages').insert(payload);
+    
+    if (error) throw error;
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.get('/api/admin/messages', auth, adminOnly, async (req, res) => {
+  try {
+    const branchId = adminBranchScope(req);
+    let query = sb.from('admin_messages').select('*').order('created_at', { ascending: false });
+
+    if (branchId) {
+      query = query.or(`receiver_id.eq.${branchId},sender_id.eq.${branchId}`);
+    } else {
+      query = query.or(`receiver_role.eq.main_admin,sender_role.eq.main_admin`);
+    }
+
+    const { data, error } = await query;
+    if (error) throw error;
+    res.json({ messages: data || [] });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.post('/api/admin/messages/decide', auth, mainAdminOnly, async (req, res) => {
+  try {
+    const { id, status } = req.body;
+    
+    const { error } = await sb.from('admin_messages').update({ status }).eq('id', id);
+    if (error) {
+      console.error("Decide Error:", error);
+      return res.status(500).json({ error: error.message });
+    }
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+/* NEW: Daily financial breakdown for Main Admin finance page */
+app.get('/api/admin/daily-records', auth, mainAdminOnly, async (req, res) => {
+  try {
+    const branches = (await sb.from('branches').select('id, name')).data || [];
+    
+    const [deposits, tickets, nbTickets, history] = await Promise.all([
+      sb.from('deposits').select('branch_id, amount').eq('status', 'approved'),
+      sb.from('tickets').select('branch_id, ticket_price').not('user_id', 'is', null),
+      sb.from('nb_tickets').select('branch_id, price_per_purchase').not('user_id', 'is', null),
+      sb.from('round_history').select('branch_id, winners, created_at')
+    ]);
+
+    const records = [];
+    for (const branch of branches) {
+      const bDeposits = (deposits.data || []).filter(d => d.branch_id === branch.id).reduce((s, d) => s + Number(d.amount), 0);
+      const bTickets = (tickets.data || []).filter(t => t.branch_id === branch.id).reduce((s, t) => s + Number(t.ticket_price), 0);
+      const bNbTickets = (nbTickets.data || []).filter(t => t.branch_id === branch.id).reduce((s, t) => s + Number(t.price_per_purchase), 0);
+      const bSales = bTickets + bNbTickets;
+      
+      let bPayouts = 0;
+      (history.data || []).filter(h => h.branch_id === branch.id).forEach(h => {
+        bPayouts += (h.winners || []).reduce((sum, w) => sum + Number(w.prize || 0), 0);
+      });
+
+      records.push({
+        branch_id: branch.id,
+        branch_name: branch.name,
+        daily_collected: bSales,
+        daily_payouts: bPayouts,
+        daily_net_profit: bSales - bPayouts,
+        daily_deposits: bDeposits
+      });
+    }
+
+    res.json({ records });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+/* UPDATED: Audit now shows daily Sales, Payouts, and Net Profit per branch */
+app.get('/api/admin/audit', auth, mainAdminOnly, async (req, res) => {
+  try {
+    const { data: branches } = await sb.from('branches').select('id, name');
+    
+    const { data: deposits } = await sb.from('deposits').select('*, users!inner(branch_id)').eq('status', 'approved');
+    const { data: tickets } = await sb.from('tickets').select('branch_id, ticket_price, sold_date').not('user_id', 'is', null);
+    const { data: nbTickets } = await sb.from('nb_tickets').select('branch_id, price_per_purchase, sold_date').not('user_id', 'is', null);
+    const { data: history } = await sb.from('round_history').select('branch_id, winners, created_at');
+    
+    const auditLog = {};
+
+    // Process deposits
+    (deposits || []).forEach(d => {
+        let dateStr = 'Unknown';
+        if (d.created_at) {
+            try { dateStr = new Date(d.created_at).toISOString().split('T')[0]; } catch(e) {}
+        }
+        
+        const branchId = d.users?.branch_id;
+        if (!branchId) return;
+
+        if (!auditLog[dateStr]) auditLog[dateStr] = {};
+        if (!auditLog[dateStr][branchId]) auditLog[dateStr][branchId] = { deposit_amt: 0, sales_amt: 0, payout_amt: 0 };
+        
+        auditLog[dateStr][branchId].deposit_amt += Number(d.amount || 0);
+    });
+
+    // Process sales
+    (tickets || []).forEach(t => {
+        const dateStr = t.sold_date ? t.sold_date.split('T')[0] : 'Unknown';
+        if (!t.branch_id || dateStr === 'Unknown') return;
+        if (!auditLog[dateStr]) auditLog[dateStr] = {};
+        if (!auditLog[dateStr][t.branch_id]) auditLog[dateStr][t.branch_id] = { deposit_amt: 0, sales_amt: 0, payout_amt: 0 };
+        auditLog[dateStr][t.branch_id].sales_amt += Number(t.ticket_price || 0);
+    });
+    (nbTickets || []).forEach(t => {
+        const dateStr = t.sold_date ? t.sold_date.split('T')[0] : 'Unknown';
+        if (!t.branch_id || dateStr === 'Unknown') return;
+        if (!auditLog[dateStr]) auditLog[dateStr] = {};
+        if (!auditLog[dateStr][t.branch_id]) auditLog[dateStr][t.branch_id] = { deposit_amt: 0, sales_amt: 0, payout_amt: 0 };
+        auditLog[dateStr][t.branch_id].sales_amt += Number(t.price_per_purchase || 0);
+    });
+
+    // Process payouts
+    (history || []).forEach(h => {
+        const dateStr = h.created_at ? h.created_at.split('T')[0] : 'Unknown';
+        if (!h.branch_id || dateStr === 'Unknown') return;
+        if (!auditLog[dateStr]) auditLog[dateStr] = {};
+        if (!auditLog[dateStr][h.branch_id]) auditLog[dateStr][h.branch_id] = { deposit_amt: 0, sales_amt: 0, payout_amt: 0 };
+        const wSum = (h.winners || []).reduce((sum, w) => sum + Number(w.prize || 0), 0);
+        auditLog[dateStr][h.branch_id].payout_amt += wSum;
+    });
+
+    res.json({ branches: branches || [], auditLog });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+/* ============================================================
    TICKET RECEIPT
    ============================================================ */
 app.post('/api/ticket-receipt', auth, async (req, res) => {
@@ -466,191 +674,105 @@ app.post('/api/ticket-receipt', auth, async (req, res) => {
 });
 
 /* ============================================================
-   VERIFY TICKET
+   VERIFY TICKET & ASSIGN LOGIC
    ============================================================ */
 app.post('/api/verify-ticket', auth, async (req, res) => {
   try {
     let { printerCode, ticketNumber, unique_id } = req.body;
-    let searchNum = String(ticketNumber || unique_id || printerCode || '').trim();
-    const originalInput = searchNum;
+    const originalInput = String(ticketNumber || unique_id || printerCode || '').trim();
+    if (!originalInput) return res.status(400).json({ error: 'Ticket ID required' });
 
-    if (searchNum.startsWith('TICKET-')) searchNum = searchNum.replace('TICKET-', '');
-    if (searchNum.startsWith('NB-')) searchNum = searchNum.replace('NB-', '');
-    if (searchNum.startsWith('LW-')) searchNum = searchNum.replace('LW-', '');
-
-    let ticket = null; let isNb = false;
-
-    let { data: t1 } = await sb.from('tickets').select('*').eq('batch_id', originalInput).limit(1);
-    let { data: t2 } = await sb.from('nb_tickets').select('*').eq('batch_id', originalInput).limit(1);
-
-    if (!t1 || t1.length === 0) {
-      const { data: t1b } = await sb.from('tickets').select('*').eq('ticket_number', searchNum).limit(1);
-      if (t1b && t1b.length > 0) t1 = t1b;
+    let cleanInput = originalInput.toUpperCase();
+    for (const p of ['TICKET-', 'NB-', 'LW-']) {
+      if (cleanInput.startsWith(p)) cleanInput = cleanInput.slice(p.length);
     }
-    if (!t2 || t2.length === 0) {
-      const { data: t2b } = await sb.from('nb_tickets').select('*').eq('number', searchNum).limit(1);
-      if (t2b && t2b.length > 0) t2 = t2b;
-    }
+
+    let ticket = null;
+    let isNb = false;
+
+    const { data: t1 } = await sb.from('tickets').select('*')
+        .or(`batch_id.ilike.%${originalInput}%,batch_id.ilike.%${cleanInput}%,ticket_number.eq.${Number(cleanInput) || -1}`)
+        .order('round_number', { ascending: false }).limit(1);
+    
+    const { data: t2 } = await sb.from('nb_tickets').select('*')
+        .or(`batch_id.ilike.%${originalInput}%,batch_id.ilike.%${cleanInput}%,number.eq.${Number(cleanInput) || -1}`)
+        .order('round_number', { ascending: false }).limit(1);
 
     if (t1 && t1.length > 0) { ticket = t1[0]; isNb = false; }
     else if (t2 && t2.length > 0) { ticket = t2[0]; isNb = true; }
 
-    if (!ticket) return res.status(404).json({ error: 'Ticket not found in the system.' });
+    if (!ticket) return res.status(404).json({ error: 'Ticket not found in any round.' });
 
-    if (req.user.role === 'branch' && ticket.branch_id !== req.user.id) {
+    const ticketBranchId = ticket.branch_id || null;
+
+    if (req.user.role === 'branch' && ticketBranchId !== req.user.id) {
       return res.status(403).json({ error: 'This ticket does not belong to your branch.' });
     }
 
-    const ticketBranchId = ticket.branch_id || null;
-    let roundSettings;
-    if (isNb) roundSettings = await getNbSettings(ticketBranchId);
-    else       roundSettings = await getSettings(ticketBranchId);
+    let history = null;
+    const { data: histData } = await sb.from('round_history')
+        .select('*')
+        .eq('round_number', ticket.round_number)
+        .eq('game_type', isNb ? 'nb' : 'wheel')
+        .order('created_at', { ascending: false })
+        .limit(1);
+    
+    if (histData && histData.length) history = histData[0];
 
-    let status = 'progress', prize = 0, isWinner = false, match_count = 0;
-    const isCurrentRound = (ticket.round_number === roundSettings.round_number);
+    let status = 'pending';
+    let prize = 0;
+    let match_count = 0;
+    let winning_numbers = [];
 
-    if (ticket.round_number <= roundSettings.round_number) {
-      let q = sb.from('round_history').select('*').eq('round_number', ticket.round_number).eq('game_type', isNb ? 'nb' : 'wheel');
-      q = scopeQuery(q, ticketBranchId);
-      const { data: history } = await q.maybeSingle();
+    const ticketNum = isNb ? Number(ticket.number) : Number(ticket.ticket_number);
 
-      if (history && history.winners) {
-        const winnersArr = asArray(history.winners);
-        const ticketNum = isNb ? ticket.number : ticket.ticket_number;
-        const winnerObj = winnersArr.find(w =>
-          (w.ticket && Number(w.ticket) === Number(ticketNum)) ||
-          (w.shown_numbers && w.shown_numbers.map(Number).includes(Number(ticketNum)))
-        );
-        if (winnerObj) { isWinner = true; prize = winnerObj.prize; status = 'winner'; match_count = winnerObj.matches || 1; }
-        else { status = 'not_winner'; }
-      } else if (isCurrentRound) { status = 'progress'; }
-      else { status = 'past_round'; }
+    if (history && history.winners) {
+      const winnersArr = asArray(history.winners);
+      const winnerObj = winnersArr.find(w =>
+        (w.ticket != null && Number(w.ticket) === ticketNum) ||
+        (w.shown_numbers && w.shown_numbers.map(Number).includes(ticketNum))
+      );
+
+      winning_numbers = asArray(history.winning_numbers || history.winner_numbers || []);
+
+      if (winnerObj) {
+        status = 'winner';
+        prize = Number(winnerObj.prize || 0);
+        match_count = Number(winnerObj.matches || (winnerObj.shown_numbers?.length || 1));
+      } else {
+        status = 'not_winner';
+        if (isNb && winning_numbers.length) {
+          const winSet = new Set(winning_numbers.map(Number));
+          match_count = winSet.has(ticketNum) ? 1 : 0;
+        }
+      }
+    } else {
+      const isCurrentRound = (ticket.round_number === (await getSettings(ticketBranchId)).round_number);
+      if (isCurrentRound) status = 'progress';
+      else status = 'past_round'; 
     }
 
     res.json({
-      ok: true, game: isNb ? 'Number Betting' : 'Lucky Wheel',
-      numbers: [isNb ? ticket.number : ticket.ticket_number],
-      unique_id: ticket.batch_id || 'TICKET-' + (isNb ? ticket.number : ticket.ticket_number),
-      round: ticket.round_number, owner_name: ticket.user_name, owner_phone: ticket.phone,
-      sold_date: ticket.sold_date, is_current_round: isCurrentRound,
-      round_finished: status === 'winner' || status === 'not_winner',
-      is_winner: isWinner, prize, match_count, status, branch_id: ticket.branch_id
+      ok: true,
+      game: isNb ? 'Number Betting' : 'Lucky Wheel',
+      numbers: [ticketNum],
+      unique_id: ticket.batch_id || ('TICKET-' + ticketNum),
+      round: ticket.round_number,
+      owner_name: ticket.user_name,
+      owner_phone: ticket.phone,
+      sold_date: ticket.sold_date,
+      round_is_past: true,
+      round_finished: ['winner','not_winner','past_round'].includes(status),
+      is_winner: status === 'winner',
+      prize,
+      match_count,
+      winning_numbers,
+      status,
+      branch_id: ticketBranchId
     });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-/* ============================================================
-   NB / WHEEL CONFIG & STATE
-   ============================================================ */
-app.get('/api/nb/config', auth, async (req, res) => {
-  try {
-    const branchId = await resolveBranchId(req);
-    res.json(await getNbSettings(branchId));
-  } catch (e) { res.status(500).json({ error: e.message }); }
-});
-
-app.get('/api/nb/state', auth, async (req, res) => {
-  try {
-    const branchId = await resolveBranchId(req);
-    const s = await getNbSettings(branchId);
-    const tickets = await getNbTickets(branchId, s.round_number);
-    const my = tickets.filter(t => String(t.user_id) === String(req.user.id));
-    res.json({ settings: s, tickets, my_tickets: my, sold_count: tickets.filter(t => t.user_id).length });
-  } catch (e) { res.status(500).json({ error: e.message }); }
-});
-
-app.get('/api/nb/my-tickets', auth, async (req, res) => {
-  try { const { data, error } = await sb.from('nb_tickets').select('*').eq('user_id', req.user.id); if (error) return res.status(500).json({ error: error.message }); res.json({ tickets: data || [] }); }
-  catch (e) { res.status(500).json({ error: e.message }); }
-});
-app.get('/api/wheel/my-tickets', auth, async (req, res) => {
-  try { const { data, error } = await sb.from('tickets').select('*').eq('user_id', req.user.id).order('sold_date', { ascending: false }); if (error) return res.status(500).json({ error: error.message }); res.json({ tickets: data || [] }); }
-  catch (e) { res.status(500).json({ error: e.message }); }
-});
-
-/* ============================================================
-   BUY TICKETS
-   ============================================================ */
-app.post('/api/user/tickets/buy', auth, async (req, res) => {
-  try {
-    if (['admin', 'main_admin', 'branch'].includes(req.user.role)) return res.status(403).json({ error: 'Admins cannot buy' });
-    const { numbers, useFreeTicket } = req.body;
-    const branchId = await resolveBranchId(req);
-    const s = await getSettings(branchId);
-    if (s.sales_state !== 'open') return res.status(400).json({ error: 'Sales are closed' });
-    if (!Array.isArray(numbers) || !numbers.length) return res.status(400).json({ error: 'Select at least one ticket' });
-    
-    const { data: me } = await sb.from('users').select('*').eq('id', req.user.id).maybeSingle();
-    if (!me || me.banned) return res.status(403).json({ error: 'Account not allowed' });
-
-    let q = sb.from('tickets').select('ticket_number,user_id').eq('round_number', s.round_number).in('ticket_number', numbers);
-    q = scopeQuery(q, branchId);
-    const { data: existing } = await q;
-    const taken = (existing || []).filter(t => t.user_id);
-    if (taken.length) return res.status(400).json({ error: 'Some tickets are already sold: ' + taken.map(t => '#' + t.ticket_number).join(', ') });
-
-    let usedFree = false;
-    if (useFreeTicket) {
-      if ((me.free_tickets || 0) <= 0) return res.status(400).json({ error: 'No free tickets left' });
-      if (numbers.length !== 1) return res.status(400).json({ error: 'Free ticket allows only 1 number' });
-      usedFree = true;
-    }
-    const cost = usedFree ? 0 : numbers.length * Number(s.ticket_price);
-    if (!usedFree && Number(me.balance) < cost) return res.status(400).json({ error: 'Insufficient balance' });
-
-    const batchId = generateUniqueId('LW');
-    const now = new Date().toISOString();
-
-    let delQ = sb.from('tickets').delete().eq('round_number', s.round_number).in('ticket_number', numbers).is('user_id', null);
-    delQ = scopeQuery(delQ, branchId);
-    await delQ;
-
-    const insertRows = numbers.map(n => ({
-      ticket_number: n, user_id: me.id, user_name: me.name, phone: me.phone,
-      sold_date: now, round_number: s.round_number, used_free_ticket: usedFree,
-      batch_id: batchId, branch_id: me.branch_id
-    }));
-    const { error: insErr } = await sb.from('tickets').insert(insertRows);
-    if (insErr) return res.status(500).json({ error: insErr.message });
-
-    const update = { balance: Number(me.balance) - cost, has_bought_ticket: true };
-    if (usedFree) update.free_tickets = (me.free_tickets || 0) - 1;
-    await sb.from('users').update(update).eq('id', me.id);
-    res.json({ ok: true, batch_id: batchId });
-  } catch (e) { res.status(500).json({ error: e.message }); }
-});
-
-app.post('/api/nb/buy', auth, async (req, res) => {
-  try {
-    if (['admin', 'main_admin', 'branch'].includes(req.user.role)) return res.status(403).json({ error: 'Admins cannot buy' });
-    const { numbers } = req.body;
-    const branchId = await resolveBranchId(req);
-    const s = await getNbSettings(branchId);
-    if (s.sales_state !== 'open') return res.status(400).json({ error: 'NB sales are closed' });
-    if (!Array.isArray(numbers) || numbers.length !== s.tickets_per_purchase) {
-      return res.status(400).json({ error: 'Pick exactly ' + s.tickets_per_purchase + ' numbers' });
-    }
-    const { data: me } = await sb.from('users').select('*').eq('id', req.user.id).maybeSingle();
-    if (!me || me.banned) return res.status(403).json({ error: 'Account not allowed' });
-    if (Number(me.balance) < Number(s.price_per_purchase)) return res.status(400).json({ error: 'Insufficient balance' });
-
-    const batchId = generateUniqueId('NB');
-    const now = new Date().toISOString();
-    const insertRows = numbers.map(n => ({
-      number: n, user_id: me.id, user_name: me.name, phone: me.phone,
-      round_number: s.round_number, sold_date: now, batch_id: batchId,
-      is_free: false, branch_id: me.branch_id
-    }));
-    const { error: insertErr } = await sb.from('nb_tickets').insert(insertRows);
-    if (insertErr) return res.status(500).json({ error: insertErr.message });
-    await sb.from('users').update({ balance: Number(me.balance) - Number(s.price_per_purchase) }).eq('id', me.id);
-    res.json({ ok: true, batch_id: batchId });
-  } catch (e) { res.status(500).json({ error: e.message }); }
-});
-
-/* ============================================================
-   ADMIN ASSIGN TICKETS
-   ============================================================ */
 app.post('/api/admin/tickets/assign', auth, adminOnly, async (req, res) => {
   try {
     const { name, phone, password, balance, numbers, useFreeTicket } = req.body;
@@ -686,17 +808,28 @@ app.post('/api/admin/tickets/assign', auth, adminOnly, async (req, res) => {
     const batchId = generateUniqueId('LW');
     const now = new Date().toISOString();
 
-    let delQ = sb.from('tickets').delete().eq('round_number', settings.round_number).in('ticket_number', numbers).is('user_id', null);
-    delQ = scopeQuery(delQ, branchId);
-    await delQ;
+    for (const n of numbers) {
+      let updQ = sb.from('tickets')
+        .update({
+          user_id: user.id, user_name: cleanName, phone: cleanPhone,
+          sold_date: now, batch_id: batchId, used_free_ticket: usedFree
+        })
+        .eq('round_number', settings.round_number)
+        .eq('ticket_number', n)
+        .is('user_id', null); 
 
-    const insertRows = numbers.map(n => ({
-      ticket_number: n, user_id: user.id, user_name: cleanName, phone: cleanPhone,
-      sold_date: now, round_number: settings.round_number, used_free_ticket: usedFree,
-      batch_id: batchId, branch_id: branchId
-    }));
-    const { error } = await sb.from('tickets').insert(insertRows);
-    if (error) return res.status(500).json({ error: error.message });
+      updQ = scopeQuery(updQ, branchId);
+      const { data: updated } = await updQ.select('id');
+
+      if (!updated || updated.length === 0) {
+        await sb.from('tickets').insert({
+          ticket_number: n, user_id: user.id, user_name: cleanName, phone: cleanPhone,
+          sold_date: now, round_number: settings.round_number, used_free_ticket: usedFree,
+          batch_id: batchId, branch_id: branchId
+        });
+      }
+    }
+
     res.json({ ok: true, batch_id: batchId });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
@@ -828,6 +961,24 @@ app.post('/api/admin/withdrawals/:id/decide', auth, adminOnly, async (req, res) 
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+app.post('/api/admin/deposits/:id/decide', auth, adminOnly, async (req, res) => {
+  try {
+    const { action } = req.body;
+    const { data: d } = await sb.from('deposits').select('*').eq('id', req.params.id).maybeSingle();
+    if (!d) return res.status(404).json({ error: 'Not found' });
+    if (d.status !== 'pending') return res.status(400).json({ error: 'Already processed' });
+    
+    if (action === 'approve') {
+      const { data: user } = await sb.from('users').select('balance').eq('id', d.user_id).maybeSingle();
+      await sb.from('users').update({ balance: Number(user.balance) + Number(d.amount) }).eq('id', d.user_id);
+      await sb.from('deposits').update({ status: 'approved' }).eq('id', d.id);
+    } else {
+      await sb.from('deposits').update({ status: 'rejected' }).eq('id', d.id);
+    }
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 /* ============================================================
    HISTORY
    ============================================================ */
@@ -903,7 +1054,7 @@ app.post('/api/admin/spin/start', auth, adminOnly, async (req, res) => {
     const branchId = adminBranchScope(req);
     const s = await getSettings(branchId);
     const tickets = await getTickets(branchId);
-    const sold = tickets.filter(t => t.user_id || t.owner_name || t.phone);
+    const sold = tickets.filter(t => t.user_id || t.user_name || t.phone);
     if (!sold.length) return res.status(400).json({ error: 'No tickets sold yet' });
 
     const winnersCount = s.winner_count || 1;
@@ -971,8 +1122,37 @@ app.post('/api/admin/round/reset', auth, adminOnly, async (req, res) => {
 });
 
 /* ============================================================
-   NB ADMIN
+   NB ADMIN & STATE (ADDED MISSING ROUTE)
    ============================================================ */
+app.get('/api/nb/state', auth, async (req, res) => {
+  try {
+    const branchId = await resolveBranchId(req);
+    const settings = await getNbSettings(branchId);
+    const tickets = await getNbTickets(branchId, settings.round_number);
+
+    let sold_count = 0;
+    if (tickets.length > 0) {
+      const uniqueNumbers = new Set(tickets.map(t => t.number));
+      sold_count = uniqueNumbers.size;
+    }
+    
+    let my_tickets = [];
+    if (req.user.role === 'user') {
+       my_tickets = tickets.filter(t => String(t.user_id) === String(req.user.id));
+    }
+
+    res.json({ 
+      settings, 
+      tickets: tickets, 
+      my_tickets: my_tickets,
+      sold_count: sold_count
+    });
+  } catch (e) { 
+    console.error("🔥 NB STATE ERROR:", e); 
+    res.status(500).json({ error: e.message }); 
+  }
+});
+
 app.post('/api/admin/nb/start-sales', auth, adminOnly, async (req, res) => {
   try {
     const branchId = adminBranchScope(req);
@@ -1057,7 +1237,8 @@ app.post('/api/nb/settle', auth, async (req, res) => {
       }
       await updateSettings(branchId, { round_state: 'finished', winners: winnersList }, 'nb_settings');
       await sb.from('round_history').insert({
-        game_type: 'nb', round_number: s.round_number, branch_id: branchId, winners: winnersList
+        game_type: 'nb', round_number: s.round_number, branch_id: branchId,
+        winners: winnersList, winning_numbers: s.winning_numbers
       });
     }
     res.json({ ok: true });

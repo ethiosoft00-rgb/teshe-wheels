@@ -3,30 +3,162 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Lucky Wheel</title>
+<title>Ethio Betting</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://unpkg.com/html5-qrcode"></script>
 <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: Arial, sans-serif; background: #0f172a; color: white; }
+body { font-family: Arial, sans-serif; background: #0f172a; color: white; overflow-x: hidden; }
 button, input, select { font-family: inherit; }
 button { cursor: pointer; }
 .hidden { display: none !important; }
 .banner-img { width: 100%; height: 200px; object-fit: cover; border-radius: 15px; margin-bottom: 20px; display: block; background: #1e293b; box-shadow: 0 8px 30px rgba(0,0,0,0.4); border: 2px solid #334155; }
-.login-banner-wrap { position: relative; margin-bottom: 20px; border-radius: 15px; overflow: hidden; border: 2px solid #fbbf24; box-shadow: 0 0 30px rgba(251,191,36,0.3); }
-.login-animated-header { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 20px; background: radial-gradient(circle at center, #1e3a5f 0%, #0f172a 100%); align-items: center; justify-items: center; }
-.login-page { min-height: 100vh; display: flex; justify-content: center; align-items: center; padding: 20px; background: radial-gradient(circle, #1e3a5f, #0f172a); }
-.login-card { width: 430px; max-width: 100%; padding: 35px; background: #111827; border: 1px solid #334155; border-radius: 20px; }
-.logo { text-align: center; font-size: 30px; font-weight: bold; margin-bottom: 10px; }
-.logo span, .header-logo span { color: #fbbf24; }
-.login-description { text-align: center; color: #94a3b8; margin-bottom: 25px; }
+
+/* ============ DECORATED LOGIN PAGE ============ */
+.login-page {
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+  background: radial-gradient(circle at 50% 0%, #1e3a5f 0%, #0f172a 55%, #060b16 100%);
+  position: relative;
+  overflow: hidden;
+}
+
+.login-bg-art { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+.bg-orbit { position: absolute; top: 50%; left: 50%; width: 0; height: 0; animation: orbitSpin linear infinite; }
+.orbit-1 { animation-duration: 22s; }
+.orbit-2 { animation-duration: 30s; animation-direction: reverse; }
+.orbit-3 { animation-duration: 18s; }
+.orbit-4 { animation-duration: 26s; animation-direction: reverse; }
+.orbit-5 { animation-duration: 34s; }
+.bg-symbol { position: absolute; display: inline-block; font-size: 40px; opacity: 0.12; filter: drop-shadow(0 0 10px rgba(251,191,36,0.4)); transform: translate(-50%, -50%); }
+.orbit-1 .bg-symbol { transform: translate(280px, 0) translate(-50%, -50%); }
+.orbit-2 .bg-symbol { transform: translate(-340px, 0) translate(-50%, -50%) scale(1.3); }
+.orbit-3 .bg-symbol { transform: translate(0, 340px) translate(-50%, -50%) scale(0.9); }
+.orbit-4 .bg-symbol { transform: translate(0, -300px) translate(-50%, -50%) scale(1.2); }
+.orbit-5 .bg-symbol { transform: translate(420px, 220px) translate(-50%, -50%) scale(1.1); }
+@keyframes orbitSpin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+.bg-float {
+  position: absolute;
+  font-family: 'Impact', monospace;
+  font-weight: 900;
+  font-size: 90px;
+  opacity: 0.08;
+  animation: floatY 8s ease-in-out infinite;
+}
+.f1 { top: 12%; left: 8%;  animation-delay: 0s; color: #ef4444; }
+.f2 { top: 68%; left: 14%; animation-delay: 1.2s; font-size: 70px; color: #22c55e; }
+.f3 { top: 22%; right: 9%; animation-delay: 0.6s; font-size: 110px; color: #ef4444; }
+.f4 { bottom: 12%; right: 16%; animation-delay: 2s; color: #22c55e; }
+.f5 { top: 45%; left: 4%; animation-delay: 1.6s; font-size: 60px; color: #22c55e; }
+.f6 { bottom: 18%; left: 40%; animation-delay: 2.6s; font-size: 80px; opacity: 0.05; color: #ef4444; }
+@keyframes floatY {
+  0%, 100% { transform: translateY(0) rotate(-4deg); }
+  50% { transform: translateY(-28px) rotate(4deg); }
+}
+
+/* GAMING DECORATIONS */
+.slot-strip {
+  position: absolute; top: 8%; left: 50%; transform: translateX(-50%);
+  display: flex; gap: 15px; opacity: 0.15; z-index: 0; pointer-events: none;
+}
+.slot-reel {
+  width: 70px; height: 100px; background: #111827; border: 4px solid #fbbf24;
+  border-radius: 10px; display: flex; flex-direction: column; align-items: center;
+  overflow: hidden; font-family: 'Impact', sans-serif; font-size: 36px; color: #fbbf24;
+  box-shadow: inset 0 0 20px #000;
+}
+.slot-reel span {
+  height: 100px; line-height: 100px; animation: reelSpin 1s linear infinite; text-align: center;
+}
+.slot-reel:nth-child(2) span { animation-delay: -0.3s; color: #22c55e; }
+.slot-reel:nth-child(3) span { animation-delay: -0.6s; color: #ef4444; }
+@keyframes reelSpin {
+  0% { transform: translateY(0); }
+  100% { transform: translateY(-300px); }
+}
+
+.chip-anim {
+  position: absolute;
+  width: 70px; height: 70px; border-radius: 50%;
+  border: 6px dashed #fbbf24;
+  background: radial-gradient(circle at 30% 30%, #dc2626, #7f1d1d);
+  box-shadow: 0 0 20px rgba(0,0,0,0.8), inset 0 0 15px rgba(255,255,255,0.2);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 28px; color: #fff; font-weight: bold;
+  animation: chipFloat 8s ease-in-out infinite;
+  z-index: 1; opacity: 0.4;
+}
+.chip-anim::after {
+  content: ''; position: absolute; inset: 10px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.2);
+}
+.chip-1 { top: 15%; left: 10%; animation-delay: 0s; }
+.chip-2 { bottom: 20%; right: 10%; animation-delay: -2s; background: radial-gradient(circle at 30% 30%, #111827, #000); border-color: #ef4444; }
+.chip-3 { top: 25%; right: 15%; animation-delay: -4s; background: radial-gradient(circle at 30% 30%, #22c55e, #14532d); border-color: #86efac; }
+.chip-4 { bottom: 15%; left: 15%; animation-delay: -6s; background: radial-gradient(circle at 30% 30%, #0ea5e9, #0c4a6e); border-color: #7dd3fc; }
+@keyframes chipFloat {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-30px) rotate(180deg); }
+}
+
+/* Login Card */
+.login-card {
+  width: 430px;
+  max-width: 100%;
+  padding: 30px 35px 35px;
+  background: rgba(17, 24, 39, 0.88);
+  backdrop-filter: blur(14px);
+  border: 2px solid #fbbf24;
+  border-radius: 22px;
+  position: relative;
+  z-index: 10;
+  animation: cardPop 0.7s cubic-bezier(.2,1.3,.4,1), cardGlow 3s infinite alternate;
+}
+@keyframes cardPop {
+  0% { transform: translateY(30px) scale(0.95); opacity: 0; }
+  100% { transform: translateY(0) scale(1); opacity: 1; }
+}
+@keyframes cardGlow {
+  0% { box-shadow: 0 0 30px rgba(251, 191, 36, 0.1), inset 0 0 10px rgba(251, 191, 36, 0.05); }
+  100% { box-shadow: 0 0 60px rgba(251, 191, 36, 0.3), inset 0 0 30px rgba(251, 191, 36, 0.1); }
+}
+
+.login-hero { position: relative; height: 130px; margin-bottom: 6px; display: flex; justify-content: center; align-items: center; }
+.hero-wheel { position: relative; width: 110px; height: 110px; animation: wheelSpin 6s linear infinite; filter: drop-shadow(0 0 20px rgba(251,191,36,0.6)); }
+.hero-wheel-svg { width: 100%; height: 100%; }
+.hero-wheel-glow { position: absolute; inset: -10px; border-radius: 50%; background: radial-gradient(circle, rgba(251,191,36,0.35), transparent 70%); animation: glowPulse 2.4s ease-in-out infinite; pointer-events: none; }
+@keyframes wheelSpin { to { transform: rotate(360deg); } }
+@keyframes glowPulse { 0%, 100% { opacity: 0.5; transform: scale(0.95); } 50% { opacity: 1; transform: scale(1.1); } }
+
+.hero-dice { position: absolute; right: 26px; bottom: 6px; width: 46px; height: 46px; animation: diceBounce 2.2s ease-in-out infinite; }
+.dice-face { position: relative; width: 100%; height: 100%; background: linear-gradient(145deg, #fbbf24, #b45309); border-radius: 10px; border: 2px solid #fde68a; box-shadow: 0 6px 20px rgba(0,0,0,0.5), inset 0 -3px 0 rgba(0,0,0,0.25); transform: rotate(-8deg); }
+.pip { position: absolute; width: 8px; height: 8px; background: #111827; border-radius: 50%; box-shadow: inset 0 1px 2px rgba(0,0,0,0.6); }
+.p1 { top: 20%; left: 20%; } .p2 { top: 20%; right: 20%; } .p3 { top: 50%; left: 50%; transform: translate(-50%,-50%); } .p4 { bottom: 20%; left: 20%; } .p5 { bottom: 20%; right: 20%; }
+@keyframes diceBounce { 0%, 100% { transform: translateY(0) rotate(-8deg); } 50% { transform: translateY(-10px) rotate(8deg); } }
+
+.hero-trophy { position: absolute; left: 26px; bottom: 6px; font-size: 38px; animation: trophyBounce 2.6s ease-in-out infinite; filter: drop-shadow(0 0 14px rgba(251,191,36,0.9)); }
+@keyframes trophyBounce { 0%, 100% { transform: translateY(0) scale(1); } 50% { transform: translateY(-12px) scale(1.12); } }
+
+.login-logo-text { text-align: center; font-size: 40px; font-weight: 900; margin-bottom: 8px; letter-spacing: 2px; background: linear-gradient(90deg, #fbbf24, #fde68a, #f59e0b, #fbbf24); background-size: 200% auto; color: transparent; -webkit-background-clip: text; background-clip: text; animation: shine 3s linear infinite; text-transform: uppercase; font-family: 'Impact', sans-serif; }
+.login-description { text-align: center; color: #94a3b8; margin-bottom: 22px; font-size: 13px; font-weight: bold; letter-spacing: 1px; display: flex; justify-content: center; gap: 10px; align-items: center; }
+.desc-wheel, .desc-nb { animation: pulseText 2s infinite; padding: 4px 10px; border-radius: 20px; background: rgba(251,191,36,0.08); border: 1px solid rgba(251,191,36,0.25); }
+.desc-nb { animation-delay: 0.5s; }
+.desc-dot { color: #475569; }
+@keyframes shine { to { background-position: 200% center; } }
+@keyframes pulseText { 0%, 100% { opacity: 0.75; } 50% { opacity: 1; color: #fbbf24; } }
+
 input, select { width: 100%; padding: 13px; margin: 7px 0 12px; border: 1px solid #475569; border-radius: 8px; background: #0b1220; color: white; outline: none; font-size: 14px; }
 input:focus, select:focus { border-color: #fbbf24; }
 .main-button { width: 100%; padding: 13px; border: none; border-radius: 8px; background: #fbbf24; color: #111827; font-weight: bold; margin-top: 8px; transition: 0.2s; }
 .main-button:disabled { opacity: .5; cursor: not-allowed; }
 .login-footer { text-align: center; color: #94a3b8; margin-top: 18px; }
 .link-button { border: none; background: none; color: #fbbf24; font-weight: bold; }
+
+/* App Layout */
 .header { height: 70px; padding: 0 25px; display: flex; justify-content: space-between; align-items: center; background: #111827; border-bottom: 1px solid #334155; }
 .header-logo { font-size: 25px; font-weight: bold; }
 .header-user { display: flex; align-items: center; gap: 15px; }
@@ -110,6 +242,7 @@ th { color: #94a3b8; }
 .status-badge.pending { background: #78350f; color: #fcd34d; }
 .status-badge.approved { background: #166534; color: #86efac; }
 .status-badge.rejected { background: #7f1d1d; color: #fecaca; }
+.status-badge.processing { background: #1e3a8a; color: #93c5fd; }
 .req-card { padding: 16px; border-radius: 12px; background: #172033; border: 1px solid #334155; margin-bottom: 12px; overflow-wrap: anywhere; word-break: break-word; }
 .req-card .row { display: flex; justify-content: space-between; padding: 6px 0; font-size: 14px; flex-wrap: wrap; gap: 6px; align-items: flex-start; }
 .req-card .row > * { min-width: 0; }
@@ -123,12 +256,6 @@ th { color: #94a3b8; }
 .method-box h3 { color: #fbbf24; margin-bottom: 8px; }
 .method-box .acct { font-size: 22px; font-weight: bold; font-family: monospace; letter-spacing: 2px; color: #ffffff; margin: 6px 0; }
 .method-box .name { color: #86efac; font-weight: bold; }
-.telegram-banner { display: flex; align-items: center; gap: 12px; padding: 14px 18px; background: linear-gradient(135deg, #0088cc, #006699); border: 1px solid #4dd0e1; border-radius: 12px; margin-bottom: 20px; flex-wrap: wrap; }
-.telegram-banner .icon { font-size: 32px; }
-.telegram-banner .text { flex: 1; min-width: 200px; }
-.telegram-banner .text h3 { color: #fff; margin-bottom: 4px; font-size: 16px; }
-.telegram-banner .text p { color: #e0f7fa; font-size: 13px; }
-.telegram-banner .join-btn { padding: 10px 20px; background: #fff; color: #006699; border: none; border-radius: 8px; font-weight: bold; text-decoration: none; cursor: pointer; }
 .receipt-modal { position: fixed; inset: 0; z-index: 99999; background: rgba(0,0,0,.85); display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 20px; }
 .receipt-box { background: white; color: #111; max-width: 480px; width: 100%; padding: 30px; border-radius: 12px; font-family: 'Courier New', monospace; max-height: 90vh; overflow-y: auto; }
 .receipt-box h2 { text-align: center; margin-bottom: 16px; }
@@ -140,8 +267,6 @@ th { color: #94a3b8; }
 .rcpt-close { background: #64748b; color: white; }
 .live-dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; background: #4ade80; margin-right: 6px; animation: livePulse 1.2s infinite; }
 @keyframes livePulse { 0%,100%{opacity:1} 50%{opacity:.25} }
-@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.55; } }
 .referral-card { padding: 22px; margin-bottom: 20px; border-radius: 15px; background: linear-gradient(135deg, #1e293b, #0f172a); border: 1px solid #fbbf24; }
 .referral-code-box { display: flex; gap: 10px; align-items: center; margin: 12px 0; flex-wrap: wrap; }
 .referral-code { padding: 12px 20px; border-radius: 8px; background: #0b1220; border: 2px dashed #fbbf24; font-size: 22px; font-weight: bold; letter-spacing: 3px; color: #fbbf24; font-family: monospace; }
@@ -150,7 +275,54 @@ th { color: #94a3b8; }
 .ref-badge { padding: 3px 9px; border-radius: 20px; font-size: 11px; font-weight: bold; }
 .ref-badge.active { background: #166534; color: #86efac; }
 .ref-badge.pending { background: #78350f; color: #fcd34d; }
-.nb-hero { width: 100%; height: 180px; border-radius: 15px; margin-bottom: 20px; overflow: hidden; border: 2px solid #334155; background: linear-gradient(135deg,#0b1220,#1e293b); display: flex; align-items: center; justify-content: center; }
+
+/* ===== NB DECORATED HERO ===== */
+.nb-hero-decor {
+  position: relative;
+  width: 100%; height: 190px;
+  border-radius: 15px; margin-bottom: 20px;
+  overflow: hidden;
+  background: radial-gradient(circle at 30% 20%, #1e293b, #060b16 75%);
+  border: 2px solid #334155;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 10px;
+}
+.nb-hero-decor::before {
+  content: ""; position: absolute; inset: 0;
+  background:
+    radial-gradient(circle at 15% 80%, rgba(239,68,68,.25), transparent 40%),
+    radial-gradient(circle at 85% 20%, rgba(34,197,94,.25), transparent 40%);
+  animation: nbdGlow 4s ease-in-out infinite alternate;
+}
+@keyframes nbdGlow { from { opacity: .4 } to { opacity: 1 } }
+.nbd-title {
+  position: relative;
+  font-family: 'Impact', sans-serif; font-size: 30px;
+  letter-spacing: 4px; color: #fbbf24;
+  text-shadow: 0 0 20px rgba(251,191,36,.7);
+}
+.nbd-row { position: relative; display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+.nbd-ball {
+  width: 46px; height: 46px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 900; font-size: 18px; color: #fff;
+  border: 3px solid; animation: nbdPop 2.4s ease-in-out infinite;
+  font-family: 'Courier New', monospace;
+}
+.nbd-ball.red   { background: radial-gradient(circle at 30% 30%, #ef4444, #7f1d1d); border-color: #fca5a5; box-shadow: 0 0 16px rgba(239,68,68,.7); }
+.nbd-ball.green { background: radial-gradient(circle at 30% 30%, #22c55e, #14532d); border-color: #86efac; box-shadow: 0 0 16px rgba(34,197,94,.7); }
+.nbd-ball:nth-child(1){animation-delay:0s}
+.nbd-ball:nth-child(2){animation-delay:.2s}
+.nbd-ball:nth-child(3){animation-delay:.4s}
+.nbd-ball:nth-child(4){animation-delay:.6s}
+.nbd-ball:nth-child(5){animation-delay:.8s}
+.nbd-ball:nth-child(6){animation-delay:1s}
+.nbd-ball:nth-child(7){animation-delay:1.2s}
+.nbd-ball:nth-child(8){animation-delay:1.4s}
+@keyframes nbdPop { 0%,100%{transform:translateY(0) scale(1)} 50%{transform:translateY(-8px) scale(1.12)} }
+.nbd-sub { position: relative; color: #94a3b8; font-size: 13px; letter-spacing: 1px; }
+
 .wheel-hero-img { width: 100%; height: 220px; border-radius: 15px; overflow: hidden; margin-bottom: 20px; border: 2px solid #334155; box-shadow: 0 10px 40px rgba(0,0,0,0.6); }
 .wheel-hero-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .wheel-page-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
@@ -177,7 +349,7 @@ body.public-view .sidebar,
 body.public-view .mobile-topbar,
 body.public-view .nb-stats,
 body.public-view .nb-timer,
-body.public-view .nb-hero,
+body.public-view .nb-hero-decor,
 body.public-view .title,
 body.public-view .card > div > p.muted { display: none !important; }
 body.public-view .layout { grid-template-columns: 1fr !important; }
@@ -250,7 +422,6 @@ body.wheel-public .winners .winner .gold { font-size: 26px; color: #fbbf24; text
 #qr-reader-dummy { display: none; }
 .verify-hint { font-size: 12px; color: #94a3b8; margin-top: 4px; }
 
-/* AI CHATBOT STYLES */
 .ai-chat-container { position: fixed; bottom: 20px; right: 20px; z-index: 9999; width: 350px; max-width: 90vw; height: 500px; max-height: 80vh; background: #111827; border: 2px solid #334155; border-radius: 16px; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 10px 40px rgba(0,0,0,0.6); transition: opacity 0.3s; }
 .ai-chat-header { padding: 15px; background: #1e293b; border-bottom: 1px solid #334155; display: flex; justify-content: space-between; align-items: center; }
 .ai-chat-header h3 { font-size: 16px; color: #fbbf24; display: flex; align-items: center; gap: 8px; }
@@ -262,7 +433,6 @@ body.wheel-public .winners .winner .gold { font-size: 26px; color: #fbbf24; text
 .ai-chat-footer input { margin: 0; padding: 10px 14px; border-radius: 20px; font-size: 14px; }
 .ai-chat-footer button { padding: 0 16px; border-radius: 20px; background: #fbbf24; color: #111827; border: none; font-weight: bold; cursor: pointer; }
 
-/* NEW: Verification status cards */
 .verify-status { margin-top: 15px; padding: 20px; border-radius: 12px; text-align: center; border: 2px solid; box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
 .verify-status.progress { background: #0369a1; border-color: #0ea5e9; }
 .verify-status.winner { background: #14532d; border-color: #4ade80; }
@@ -272,19 +442,9 @@ body.wheel-public .winners .winner .gold { font-size: 26px; color: #fbbf24; text
 .verify-status .prize { font-size: 28px; font-weight: bold; color: #fbbf24; margin: 10px 0; text-shadow: 0 0 10px rgba(251,191,36,0.5); }
 .verify-status small { font-size: 13px; opacity: 0.9; display: block; margin-top: 8px; line-height: 1.4; }
 
-@keyframes bounceIn {
-    0% { transform: scale(0.3); opacity: 0; }
-    50% { transform: scale(1.05); opacity: 1; }
-    70% { transform: scale(0.9); }
-    100% { transform: scale(1); }
-}
-@keyframes shake {
-    0%, 100% { transform: translateX(0); }
-    10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
-    20%, 40%, 60%, 80% { transform: translateX(5px); }
-}
+@keyframes bounceIn { 0% { transform: scale(0.3); opacity: 0; } 50% { transform: scale(1.05); opacity: 1; } 70% { transform: scale(0.9); } 100% { transform: scale(1); } }
+@keyframes shake { 0%, 100% { transform: translateX(0); } 10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); } 20%, 40%, 60%, 80% { transform: translateX(5px); } }
 
-/* NEW: Support banner */
 .support-banner { display: flex; align-items: center; gap: 12px; padding: 14px 18px; background: linear-gradient(135deg, #0088cc, #006699); border: 1px solid #4dd0e1; border-radius: 12px; margin-bottom: 20px; flex-wrap: wrap; }
 .support-banner .icon { font-size: 32px; }
 .support-banner .text { flex: 1; min-width: 200px; }
@@ -292,23 +452,18 @@ body.wheel-public .winners .winner .gold { font-size: 26px; color: #fbbf24; text
 .support-banner .text p { color: #e0f7fa; font-size: 13px; }
 .support-banner .join-btn { padding: 10px 20px; background: #fff; color: #006699; border: none; border-radius: 8px; font-weight: bold; text-decoration: none; cursor: pointer; }
 
-/* Branch branding on receipt */
 .receipt-branch-head h2 { text-align:center; margin-bottom:2px; }
 .receipt-branch-code { text-align:center; font-size:11px; color:#555; margin-bottom:2px; letter-spacing:1px; }
 
-/* Winner celebration */
 .congrats-burst { font-size: 50px; margin-bottom: 5px; animation: burst 0.9s ease-out; }
-@keyframes burst {
-  0% { transform: scale(0.2) rotate(-20deg); opacity: 0; }
-  60% { transform: scale(1.35) rotate(8deg); opacity: 1; }
-  100% { transform: scale(1) rotate(0); opacity: 1; }
-}
+@keyframes burst { 0% { transform: scale(0.2) rotate(-20deg); opacity: 0; } 60% { transform: scale(1.35) rotate(8deg); opacity: 1; } 100% { transform: scale(1) rotate(0); opacity: 1; } }
 
-/* NEW: Settings scope banner */
 .scope-banner { padding: 14px 18px; border-radius: 12px; margin-bottom: 16px; font-size: 14px; line-height: 1.5; }
 .scope-banner.branch { background: #0c2a3a; border: 1px solid #0ea5e9; color: #7dd3fc; }
 .scope-banner.global { background: #3a2a0c; border: 1px solid #fbbf24; color: #fcd34d; }
 .scope-banner b { color: #fff; }
+
+.nav-badge { background: #dc2626; color: white; border-radius: 50%; padding: 2px 6px; font-size: 10px; font-weight: bold; margin-left: 5px; display: inline-block; vertical-align: middle; }
 </style>
 </head>
 <body>
@@ -318,67 +473,105 @@ body.wheel-public .winners .winner .gold { font-size: 26px; color: #fbbf24; text
 <div id="modalArea"></div>
 
 <section id="loginPage" class="login-page">
-<div class="login-card">
-    <div class="login-banner-wrap">
-        <div class="login-animated-header">
-            <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:180px;filter:drop-shadow(0 0 20px rgba(251,191,36,0.6))">
-                <circle cx="100" cy="100" r="95" fill="url(#wheelGlow)"/>
-                <circle cx="100" cy="100" r="85" fill="#0f172a" stroke="#fbbf24" stroke-width="4"/>
-                <g style="transform-origin:100px 100px;animation:spin 8s linear infinite">
-                    <path d="M100,100 L100,15 A85,85 0 0,1 173.6,57.5 Z" fill="#ef4444"/>
-                    <path d="M100,100 L173.6,57.5 A85,85 0 0,1 173.6,142.5 Z" fill="#fbbf24"/>
-                    <path d="M100,100 L173.6,142.5 A85,85 0 0,1 100,185 Z" fill="#22c55e"/>
-                    <path d="M100,100 L100,185 A85,85 0 0,1 26.4,142.5 Z" fill="#3b82f6"/>
-                    <path d="M100,100 L26.4,142.5 A85,85 0 0,1 26.4,57.5 Z" fill="#a855f7"/>
-                    <path d="M100,100 L26.4,57.5 A85,85 0 0,1 100,15 Z" fill="#f97316"/>
-                </g>
-                <circle cx="100" cy="100" r="20" fill="#111827" stroke="#fbbf24" stroke-width="4"/>
-                <circle cx="100" cy="100" r="7" fill="#fbbf24"/>
-                <polygon points="100,0 92,18 108,18" fill="#dc2626"/>
-            </svg>
-            <svg viewBox="0 0 200 160" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:200px;filter:drop-shadow(0 0 20px rgba(34,197,94,0.5))">
-                <rect x="5" y="5" width="190" height="150" rx="12" fill="url(#numGlow)"/>
-                <rect x="5" y="5" width="190" height="150" rx="12" fill="#0f172a" stroke="#fbbf24" stroke-width="3"/>
-                <g style="animation:pulse 2s ease-in-out infinite">
-                    <rect x="15" y="20" width="30" height="20" rx="4" fill="#22c55e" opacity="0.9"/>
-                    <rect x="50" y="20" width="30" height="20" rx="4" fill="#1e293b"/>
-                    <rect x="85" y="20" width="30" height="20" rx="4" fill="#22c55e" opacity="0.6"/>
-                </g>
-                <text x="100" y="148" fill="#fbbf24" font-size="12" font-weight="bold" text-anchor="middle" letter-spacing="1">NUMBER BETTING</text>
-            </svg>
-        </div>
+  <div class="login-bg-art" aria-hidden="true">
+    <div class="bg-orbit orbit-1"><span class="bg-symbol">🎰</span></div>
+    <div class="bg-orbit orbit-2"><span class="bg-symbol">🎡</span></div>
+    <div class="bg-orbit orbit-3"><span class="bg-symbol">🎲</span></div>
+    <div class="bg-orbit orbit-4"><span class="bg-symbol">💰</span></div>
+    <div class="bg-orbit orbit-5"><span class="bg-symbol">🏆</span></div>
+    <div class="bg-float f1">7</div>
+    <div class="bg-float f2">13</div>
+    <div class="bg-float f3">42</div>
+    <div class="bg-float f4">8</div>
+    <div class="bg-float f5">21</div>
+    <div class="bg-float f6">3</div>
+
+    <!-- New Gaming Decorations -->
+    <div class="slot-strip">
+      <div class="slot-reel"><span>7<br>7<br>7</span></div>
+      <div class="slot-reel"><span>$<br>$<br>$</span></div>
+      <div class="slot-reel"><span>BAR<br>BAR<br>BAR</span></div>
     </div>
-    <div class="logo">LUCKY<span>WHEEL</span></div>
-    <p class="login-description">Teshe Number Lucky Wheel · Number Betting</p>
+    
+    <div class="chip-anim chip-1">♠</div>
+    <div class="chip-anim chip-2">♥</div>
+    <div class="chip-anim chip-3">♦</div>
+    <div class="chip-anim chip-4">♣</div>
+  </div>
+
+  <div class="login-card">
+    <div class="login-hero">
+      <div class="hero-wheel">
+        <svg viewBox="0 0 100 100" class="hero-wheel-svg">
+          <defs>
+            <linearGradient id="goldGrad" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="#fbbf24"/>
+              <stop offset="50%" stop-color="#f59e0b"/>
+              <stop offset="100%" stop-color="#fbbf24"/>
+            </linearGradient>
+          </defs>
+          <circle cx="50" cy="50" r="46" fill="none" stroke="url(#goldGrad)" stroke-width="4"/>
+          <g class="hero-wheel-spokes">
+            <line x1="50" y1="4"  x2="50" y2="96" stroke="url(#goldGrad)" stroke-width="2"/>
+            <line x1="4"  y1="50" x2="96" y2="50" stroke="url(#goldGrad)" stroke-width="2"/>
+            <line x1="17" y1="17" x2="83" y2="83" stroke="url(#goldGrad)" stroke-width="2"/>
+            <line x1="83" y1="17" x2="17" y2="83" stroke="url(#goldGrad)" stroke-width="2"/>
+          </g>
+          <circle cx="50" cy="50" r="8" fill="#fbbf24"/>
+        </svg>
+        <div class="hero-wheel-glow"></div>
+      </div>
+      <div class="hero-dice">
+        <div class="dice-face">
+          <span class="pip p1"></span><span class="pip p2"></span>
+          <span class="pip p3"></span><span class="pip p4"></span>
+          <span class="pip p5"></span>
+        </div>
+      </div>
+      <div class="hero-trophy">🏆</div>
+    </div>
+
+    <div class="login-logo-text">ETHIO-BETTING</div>
+    <p class="login-description">
+      <span class="desc-wheel">🎡 Lucky Wheel</span>
+      <span class="desc-dot">•</span>
+      <span class="desc-nb">🎰 Number Betting</span>
+    </p>
 
     <input type="hidden" id="regBranch" value="">
 
     <div id="loginForm">
-        <div id="loginError" class="login-error-box"></div>
-        <input id="loginPhone" placeholder="Phone Number">
-        <input id="loginPassword" type="password" placeholder="Password">
-        <button id="loginBtn" class="main-button" onclick="loginUser()">Login</button>
-        <div class="login-footer">Don't have an account? <button class="link-button" onclick="showRegister()">Register</button></div>
+      <div id="loginError" class="login-error-box"></div>
+      <input id="loginPhone" placeholder="Phone Number">
+      <input id="loginPassword" type="password" placeholder="Password">
+      <button type="button" id="loginBtn" class="main-button" onclick="loginUser()">Login</button>
+      <div class="login-footer">Don't have an account? <button type="button" class="link-button" onclick="showRegister()">Register</button></div>
     </div>
 
     <div id="register" class="hidden">
-        <div id="registerError" class="login-error-box"></div>
-        <h2 style="margin-bottom:20px">Create Account</h2>
-        <input id="regName" placeholder="Full Name">
-        <input id="regPhone" placeholder="Phone Number">
-        <input id="regPassword" type="password" placeholder="Password">
-        <label>Referral Code (optional)</label>
-        <input id="regReferral" placeholder="e.g. ABC1234" style="text-transform:uppercase">
-        <button id="registerBtn" class="main-button" onclick="register()">Register</button>
-        <div class="login-footer">Already registered? <button class="link-button" onclick="showLogin()">Login</button></div>
+      <div id="registerError" class="login-error-box"></div>
+      <h2 style="margin-bottom:20px">Create Account</h2>
+      <input id="regName" placeholder="Full Name">
+      <input id="regPhone" placeholder="Phone Number">
+      <input id="regPassword" type="password" placeholder="Password">
+      <label>Referral Code (optional)</label>
+      <input id="regReferral" placeholder="e.g. ABC1234" style="text-transform:uppercase">
+      <button type="button" id="registerBtn" class="main-button" onclick="register()">Register</button>
+      <div class="login-footer">Already registered? <button type="button" class="link-button" onclick="showLogin()">Login</button></div>
     </div>
-</div>
+  </div>
 </section>
 
 <section id="app" class="hidden">
 <header class="header">
-    <div class="header-logo">LUCKY<span>WHEEL</span></div>
+    <div class="header-logo">ETHIO<span>BETTING</span></div>
     <div class="header-user">
+        <select id="langSelector" style="width:auto;padding:5px;font-size:12px;background:#111827;border:1px solid #334155;margin:0;" onchange="changeLanguage(this.value)">
+            <option value="en">🇬🇧 English</option>
+            <option value="am">🇪🇹 አማርኛ</option>
+            <option value="om">🇪🇹 Afaan Oromoo</option>
+            <option value="ti">🇪🇹 ትግርኛ</option>
+        </select>
         <span class="muted" style="font-size:13px"><span class="live-dot"></span>live</span>
         <span id="headerName"></span>
         <button class="logout" onclick="logout()">Logout</button>
@@ -386,7 +579,7 @@ body.wheel-public .winners .winner .gold { font-size: 26px; color: #fbbf24; text
 </header>
 
 <div class="mobile-topbar">
-    <div class="mt-logo">LUCKY<span>WHEEL</span></div>
+    <div class="mt-logo">ETHIO<span>BETTING</span></div>
     <button class="mt-burger" onclick="toggleMobileMenu()">☰</button>
 </div>
 <div id="sidebarBackdrop" class="sidebar-backdrop" onclick="closeMobileMenu()"></div>
@@ -397,14 +590,13 @@ body.wheel-public .winners .winner .gold { font-size: 26px; color: #fbbf24; text
 </div>
 </section>
 
-<!-- AI CHATBOT UI -->
 <div id="aiChatContainer" class="ai-chat-container hidden">
     <div class="ai-chat-header">
-        <h3><span>🤖</span> Teshe Betting AI</h3>
+        <h3><span>🤖</span> Ethio Betting AI</h3>
         <button onclick="toggleAIChat()" style="background:none;border:none;color:#94a3b8;font-size:20px;cursor:pointer;">✕</button>
     </div>
     <div id="aiChatBody" class="ai-chat-body">
-        <div class="ai-msg ai">Welcome to Teshe Betting! I am your AI assistant. How can I help you today?</div>
+        <div class="ai-msg ai">Welcome to Ethio Betting! I am your AI assistant. How can I help you today?</div>
     </div>
     <div class="ai-chat-footer">
         <input id="aiChatInput" placeholder="Type a message..." onkeypress="if(event.key === 'Enter') sendAIMessage()">
@@ -419,15 +611,18 @@ let TOKEN = localStorage.getItem('lw_token') || null;
 let ME = null, SETTINGS = null, TICKETS = [], PAGE = 'dashboard', sb = null;
 let countdownId = null, settleCalled = false, subscribed = false, autoPollId = null;
 let nbState = null, nbPollId = null, nbSettleId = null;
-let CONFIG = { botUsername: 'Numbers_Betting_bot', channelUsername: '@Lucky21_Wheel' };
+let CONFIG = { botUsername: 'Numbers_Betting_bot', channelUsername: '@EthioBetting' };
 let buyGame = 'wheel', assignGame = 'wheel', historyGame = 'wheel', settingsGame = 'wheel';
 let buySelected = [], nbBuyPicked = [], assignSelectedWheel = [], assignSelectedNB = [];
 let verifyGame = 'wheel', verifyMethod = 'manual', _drawStartClient = null, _drawRoundKey = null, _lastShown = -1;
 let _depScreenshotData = null;
 let html5QrCode = null;
+let CURRENT_LANG = localStorage.getItem('lw_lang') || 'en';
+let UNREAD_MSGS = 0;
+let _modalCallback = null;
 
-const TELEGRAM_CHANNEL = 'https://t.me/Lucky21_Wheel';
-const SUPPORT_LINK = 'https://t.me/TE21HUSH'; 
+const TELEGRAM_CHANNEL = 'https://t.me/EthioBetting';
+const SUPPORT_LINK = 'https://t.me/EthioSupport';
 
 const IMG = {
   dash:    'image2.jpg',
@@ -445,9 +640,98 @@ const IMG = {
   branches:'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=1200&h=300&fit=crop'
 };
 
-/* ======================================================================
-   BRANCH HELPERS
-   ====================================================================== */
+const translations = {
+    am: {
+        "Dashboard": "ዳሽቦርድ", "Branches": "ቅርንጫፎች", "Finance": "ፋይናንስ", "Messages": "መልእክቶች",
+        "Lucky Wheel": "ላኪ ዊል", "Number Betting": "የቁጥር ጨዋታ", "Users": "ተጠቃሚዎች",
+        "Assign Tickets": "ቲኬቶችን መመደብ", "Verify Ticket": "ቲኬት ማረጋገጫ", "Requests": "ጥያቄዎች",
+        "History": "ታሪክ", "Settings": "ቅንብሮች", "Branch Settings": "የቅርንጫፍ ቅንብሮች",
+        "Contact Support": "ድጋፍ ያግኙ", "Telegram Channel": "ቴሌግራም ቻናል", "AI Support": "AI ድጋፍ",
+        "Logout": "ውጣ", "Financial Dashboard": "የፋይናንስ ዳሽቦርድ", "Total Deposits": "አጠቃላይ ተቀማጭ",
+        "Total Withdrawals": "አጠቃላይ ወጪ", "Total Profit": "አጠቃላይ ትርፍ", "Profit Today": "የዛሬ ትርፍ",
+        "Winners Today": "የዛሬ አሸናፊዎች", "Request Profit from Branches": "ከቅርንጫፎች ትርፍ ይጠይቁ",
+        "Send a request to a branch admin asking for a specific amount.": "ለቅርንጫፍ አስተዳዳሪ የተወሰነ መጠን እንዲልኩ ጥያቄ ይላኩ።",
+        "Select Branch": "ቅርንጫፍ ይምረጡ", "Amount to Request (ETB)": "የሚጠየቀው መጠን (ብር)",
+        "Message": "መልእክት", "Send Request": "ጥያቄ ላክ", "Inbox": "የገቢ መልእክቶች",
+        "Message Main Admin": "ለዋና አስተዳዳሪ መልእክት ይላኩ", "Send": "ላክ", "Account Number": "የሂሳብ ቁጥር",
+        "Holder Name": "የባለቤት ስም", "Transaction ID": "የግብይት መለያ", "Screenshot": "ስክሪንሾት",
+        "From": "ከ", "Date": "ቀን", "Amount Requested": "የተጠየቀ መጠን", "Approve & Pay": "አጽድቅ እና ክፈል",
+        "Paid to Account": "የተከፈለበት ሂሳብ", "Payment confirmation sent.": "የክፍያ ማረጋገጫ ተልኳል።",
+        "Send Payment Confirmation": "የክፍያ ማረጋገጫ ላክ", "Request Profit": "ትርፍ ጠይቅ",
+        "Audit & Checklist": "ኦዲት እና ማረጋገጫ", "Daily Income": "የዕለት ገቢ", "Approve": "አጽድቅ", "Reject": "አትቀበል"
+    },
+    om: {
+        "Dashboard": "Daashboordii", "Branches": "Dameewwan", "Finance": "Faayinaansii", "Messages": "Ergaawwan",
+        "Lucky Wheel": "Lucky Wheel", "Number Betting": "Lakkoofsa Taphachuu", "Users": "Fayyadamtoota",
+        "Assign Tickets": "Tikeettii Kennuu", "Verify Ticket": "Tikeettii Mirkaneessuu", "Requests": "Gaaffiiwwan",
+        "History": "Seenaa", "Settings": "Qindaa'ina", "Branch Settings": "Qindaa'ina Damee",
+        "Contact Support": "Deeggarsa Quunnamaa", "Telegram Channel": "Chaanaalii Telegram", "AI Support": "Deeggarsa AI",
+        "Logout": "Ba'i", "Financial Dashboard": "Daashboordii Faayinaansii", "Total Deposits": "Kuusaa Waliigalaa",
+        "Total Withdrawals": "Baasii Waliigalaa", "Total Profit": "Bu'aa Waliigalaa", "Profit Today": "Bu'aa Har'aa",
+        "Winners Today": "Mo'attoota Har'aa", "Request Profit from Branches": "Dameewwan irraa bu'aa gaafadhu",
+        "Send a request to a branch admin asking for a specific amount.": "Bulchaa dameetiif maallaqa murtaa'e gaafachuuf ergaa ergi.",
+        "Select Branch": "Damee Filadhu", "Amount to Request (ETB)": "Maallaqa Gaafatamu (ETB)",
+        "Message": "Ergaa", "Send Request": "Gaaffii Ergi", "Inbox": "Ergaa Dhufe",
+        "Message Main Admin": "Bulchaa Ol'aanaaf Ergaa Ergi", "Send": "Ergi", "Account Number": "Lakkoofsa Herregaa",
+        "Holder Name": "Maqaa Abbaa Herregaa", "Transaction ID": "Eenyummaa Sochii", "Screenshot": "Suuraa Iskiriinii",
+        "From": "Irraa", "Date": "Guyyaa", "Amount Requested": "Maallaqa Gaafatame", "Approve & Pay": "Mirkaneessi & Kaffali",
+        "Paid to Account": "Herrega Kaffalame", "Payment confirmation sent.": "Mirkaneessi kaffaltii ergameera.",
+        "Send Payment Confirmation": "Mirkaneessi Kaffaltii Ergi", "Request Profit": "Bu'aa Gaafadhu",
+        "Audit & Checklist": "Sakatta'aa fi Mirkaneeffannaa", "Daily Income": "Galii Guyyaa", "Approve": "Mirkaneessi", "Reject": "Kufeessi"
+    },
+    ti: {
+        "Dashboard": "ዳሽቦርድ", "Branches": "ጨናፍር", "Finance": "ፋይናንስ", "Messages": "መልእኽትታት",
+        "Lucky Wheel": "ላኪ ዊል", "Number Betting": "ጸወታ ቁጽሪ", "Users": "ተጠቀምቲ",
+        "Assign Tickets": "ቲኬት ምምዳብ", "Verify Ticket": "ቲኬት ምርግጋጽ", "Requests": "ሕቶታት",
+        "History": "ታሪኽ", "Settings": "ቅጥዕታት", "Branch Settings": "ቅጥዕታት ጨንፈር",
+        "Contact Support": "ደገፍ ተራኸብ", "Telegram Channel": "ቻናል ቴለግራም", "AI Support": "ደገፍ AI",
+        "Logout": "ውጻእ", "Financial Dashboard": "ዳሽቦርድ ፋይናንስ", "Total Deposits": "ጠቕላላ ተቐማጦ",
+        "Total Withdrawals": "ጠቕላላ ወጻኢ", "Total Profit": "ጠቕላላ ረብሓ", "Profit Today": "ረብሓ ሎሚ",
+        "Winners Today": "ተዓወትቲ ሎሚ", "Request Profit from Branches": "ካብ ጨናፍር ረብሓ ሕተት",
+        "Send a request to a branch admin asking for a specific amount.": "ንኣስተዳዳሪ ጨንፈር ውሱን መጠን ክልእኹሉ ሕቶ ስደድ።",
+        "Select Branch": "ጨንፈር ምረጽ", "Amount to Request (ETB)": "መጠን ዝሕተት (ብር)",
+        "Message": "መልእኽቲ", "Send Request": "ሕቶ ስደድ", "Inbox": "መልእኽቲ ዝኣተወ",
+        "Message Main Admin": "ንዋና ኣስተዳዳሪ መልእኽቲ ስደድ", "Send": "ስደድ", "Account Number": "ቁጽሪ ሕሳብ",
+        "Holder Name": "ስም ወናኒ", "Transaction ID": "መለለዪ ግብይት", "Screenshot": "ስክሪንሾት",
+        "From": "ካብ", "Date": "ዕለት", "Amount Requested": "መጠን ዝተሓተተ", "Approve & Pay": "ኣረጋግጽ & ክፈል",
+        "Paid to Account": "ሕሳብ ዝተኸፍለ", "Payment confirmation sent.": "መረጋገጺ ክፍሊት ተላኢኹ።",
+        "Send Payment Confirmation": "መረጋገጺ ክፍሊት ስደድ", "Request Profit": "ረብሓ ሕተት",
+        "Audit & Checklist": "ኦዲት & ምርግጋጽ", "Daily Income": "መዓልታዊ እቶት", "Approve": "ኣረጋግጽ", "Reject": "ኣይትቀበል"
+    }
+};
+
+function changeLanguage(lang) {
+    CURRENT_LANG = lang;
+    localStorage.setItem('lw_lang', lang);
+    document.getElementById('langSelector').value = lang;
+    translateUI();
+}
+
+function translateUI() {
+    if (CURRENT_LANG === 'en') {
+        document.querySelectorAll('[data-en]').forEach(el => {
+            el.innerHTML = el.getAttribute('data-en');
+        });
+        return;
+    }
+    const dict = translations[CURRENT_LANG] || {};
+    document.querySelectorAll('[data-en]').forEach(el => {
+        const key = el.getAttribute('data-en');
+        if (dict[key]) el.textContent = dict[key];
+    });
+    document.querySelectorAll('.nav').forEach(btn => {
+        const originalText = btn.getAttribute('data-en');
+        if (!originalText) return;
+        const match = originalText.match(/^([\u2700-\u27BF]|[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD10-\uDDFF])\s*(.*)$/);
+        if(match && dict[match[2]]) btn.textContent = match[1] + ' ' + dict[match[2]];
+        else if (dict[originalText]) btn.textContent = dict[originalText];
+    });
+    document.querySelectorAll('label, h1, h2, h3, small, p.muted, b, span').forEach(el => {
+        const text = el.textContent.trim();
+        if (dict[text]) el.textContent = dict[text];
+    });
+}
+
 function getMyBranch() {
     if (!ME) return null;
     if (ME.role === 'main_admin' || ME.role === 'admin') return null;
@@ -482,41 +766,46 @@ function renderSidebar() {
     let html = '';
     if (isMainAdmin) {
         html = `
-            <button class="nav active" data-page="dashboard" onclick="openPage('dashboard')">🏠 Dashboard</button>
-            <button class="nav" data-page="branches" onclick="openPage('branches')">🏢 Branches</button>
-            <button class="nav" data-page="wheel" onclick="openPage('wheel')">🎡 Lucky Wheel</button>
-            <button class="nav" data-page="nb" onclick="openPage('nb')">🎰 Number Betting</button>
-            <button class="nav" data-page="users" onclick="openPage('users')">👥 Users</button>
-            <button class="nav" data-page="tickets" onclick="openPage('tickets')">🎟️ Assign Tickets</button>
-            <button class="nav" data-page="verify" onclick="openPage('verify')">🔍 Verify Ticket</button>
-            <button class="nav" data-page="requests" onclick="openPage('requests')">📥 Requests</button>
-            <button class="nav" data-page="history" onclick="openPage('history')">📜 History</button>
-            <button class="nav" data-page="settings" onclick="openPage('settings')">⚙️ Settings</button>`;
+            <button class="nav active" data-page="dashboard" data-en="🏠 Dashboard" onclick="openPage('dashboard')">🏠 Dashboard</button>
+            <button class="nav" data-page="branches" data-en="🏢 Branches" onclick="openPage('branches')">🏢 Branches</button>
+            <button class="nav" data-page="finance" data-en="📊 Finance" onclick="openPage('finance')">📊 Finance</button>
+            <button class="nav" data-page="messages" data-en="✉️ Messages" onclick="openPage('messages')">✉️ Messages ${UNREAD_MSGS > 0 ? `<span class="nav-badge">${UNREAD_MSGS}</span>` : ''}</button>
+            <button class="nav" data-page="audit" data-en="📋 Audit" onclick="openPage('audit')">📋 Audit</button>
+            <button class="nav" data-page="wheel" data-en="🎡 Lucky Wheel" onclick="openPage('wheel')">🎡 Lucky Wheel</button>
+            <button class="nav" data-page="nb" data-en="🎰 Number Betting" onclick="openPage('nb')">🎰 Number Betting</button>
+            <button class="nav" data-page="users" data-en="👥 Users" onclick="openPage('users')">👥 Users</button>
+            <button class="nav" data-page="tickets" data-en="🎟️ Assign Tickets" onclick="openPage('tickets')">🎟️ Assign Tickets</button>
+            <button class="nav" data-page="verify" data-en="🔍 Verify Ticket" onclick="openPage('verify')">🔍 Verify Ticket</button>
+            <button class="nav" data-page="requests" data-en="📥 Requests" onclick="openPage('requests')">📥 Requests</button>
+            <button class="nav" data-page="history" data-en="📜 History" onclick="openPage('history')">📜 History</button>
+            <button class="nav" data-page="settings" data-en="⚙️ Settings" onclick="openPage('settings')">⚙️ Settings</button>`;
     } else if (ME.role === 'branch') {
         html = `
-            <button class="nav active" data-page="dashboard" onclick="openPage('dashboard')">🏠 Dashboard</button>
-            <button class="nav" data-page="wheel" onclick="openPage('wheel')">🎡 Lucky Wheel</button>
-            <button class="nav" data-page="nb" onclick="openPage('nb')">🎰 Number Betting</button>
-            <button class="nav" data-page="users" onclick="openPage('users')">👥 Users</button>
-            <button class="nav" data-page="tickets" onclick="openPage('tickets')">🎟️ Assign Tickets</button>
-            <button class="nav" data-page="verify" onclick="openPage('verify')">🔍 Verify Ticket</button>
-            <button class="nav" data-page="requests" onclick="openPage('requests')">📥 Requests</button>
-            <button class="nav" data-page="history" onclick="openPage('history')">📜 History</button>
-            <button class="nav" data-page="settings" onclick="openPage('settings')">⚙️ Branch Settings</button>`;
+            <button class="nav active" data-page="dashboard" data-en="🏠 Dashboard" onclick="openPage('dashboard')">🏠 Dashboard</button>
+            <button class="nav" data-page="finance" data-en="📊 Finance" onclick="openPage('finance')">📊 Finance</button>
+            <button class="nav" data-page="messages" data-en="✉️ Messages" onclick="openPage('messages')">✉️ Messages ${UNREAD_MSGS > 0 ? `<span class="nav-badge">${UNREAD_MSGS}</span>` : ''}</button>
+            <button class="nav" data-page="wheel" data-en="🎡 Lucky Wheel" onclick="openPage('wheel')">🎡 Lucky Wheel</button>
+            <button class="nav" data-page="nb" data-en="🎰 Number Betting" onclick="openPage('nb')">🎰 Number Betting</button>
+            <button class="nav" data-page="users" data-en="👥 Users" onclick="openPage('users')">👥 Users</button>
+            <button class="nav" data-page="tickets" data-en="🎟️ Assign Tickets" onclick="openPage('tickets')">🎟️ Assign Tickets</button>
+            <button class="nav" data-page="verify" data-en="🔍 Verify Ticket" onclick="openPage('verify')">🔍 Verify Ticket</button>
+            <button class="nav" data-page="requests" data-en="📥 Requests" onclick="openPage('requests')">📥 Requests</button>
+            <button class="nav" data-page="history" data-en="📜 History" onclick="openPage('history')">📜 History</button>
+            <button class="nav" data-page="settings" data-en="⚙️ Branch Settings" onclick="openPage('settings')">⚙️ Branch Settings</button>`;
     } else {
         html = `
-            <button class="nav active" data-page="dashboard" onclick="openPage('dashboard')">🏠 Dashboard</button>
-            <button class="nav" data-page="wheel" onclick="openPage('wheel')">🎡 Lucky Wheel</button>
-            <button class="nav" data-page="nb" onclick="openPage('nb')">🎰 Number Betting</button>
-            <button class="nav" data-page="buy" onclick="openPage('buy')">🛒 Buy Tickets</button>
-            <button class="nav" data-page="my-tickets" onclick="openPage('my-tickets')">🎟️ My Tickets</button>
-            <button class="nav" data-page="verify" onclick="openPage('verify')">🔍 Verify Ticket</button>
-            <button class="nav" data-page="deposit" onclick="openPage('deposit')">💰 Deposit</button>
-            <button class="nav" data-page="withdraw" onclick="openPage('withdraw')">💸 Withdraw</button>
-            <button class="nav" data-page="referrals" onclick="openPage('referrals')">🎁 Referrals</button>
-            <button class="nav" data-page="history" onclick="openPage('history')">📜 History</button>`;
+            <button class="nav active" data-page="dashboard" data-en="🏠 Dashboard" onclick="openPage('dashboard')">🏠 Dashboard</button>
+            <button class="nav" data-page="wheel" data-en="🎡 Lucky Wheel" onclick="openPage('wheel')">🎡 Lucky Wheel</button>
+            <button class="nav" data-page="nb" data-en="🎰 Number Betting" onclick="openPage('nb')">🎰 Number Betting</button>
+            <button class="nav" data-page="buy" data-en="🛒 Buy Tickets" onclick="openPage('buy')">🛒 Buy Tickets</button>
+            <button class="nav" data-page="my-tickets" data-en="🎟️ My Tickets" onclick="openPage('my-tickets')">🎟️ My Tickets</button>
+            <button class="nav" data-page="verify" data-en="🔍 Verify Ticket" onclick="openPage('verify')">🔍 Verify Ticket</button>
+            <button class="nav" data-page="deposit" data-en="💰 Deposit" onclick="openPage('deposit')">💰 Deposit</button>
+            <button class="nav" data-page="withdraw" data-en="💸 Withdraw" onclick="openPage('withdraw')">💸 Withdraw</button>
+            <button class="nav" data-page="referrals" data-en="🎁 Referrals" onclick="openPage('referrals')">🎁 Referrals</button>
+            <button class="nav" data-page="history" data-en="📜 History" onclick="openPage('history')">📜 History</button>`;
     }
-    
+
     const currentSupportLink = ME.telegram_link ? ME.telegram_link : SUPPORT_LINK;
 
     html += `<div style="margin-top:20px;padding-top:20px;border-top:1px solid #334155">
@@ -526,6 +815,7 @@ function renderSidebar() {
         <button class="nav" style="background:#991b1b;color:white;font-weight:bold" onclick="logout()">🚪 Logout</button>
     </div>`;
     s.innerHTML = html;
+    translateUI();
 }
 
 function toast(msg, isError = false) {
@@ -629,11 +919,14 @@ async function boot() {
         CONFIG = cfg;
         sb = window.supabase.createClient(cfg.supabaseUrl, cfg.supabaseAnonKey);
     } catch (e) { console.error('Realtime init failed', e); }
-    
+
+    document.getElementById('langSelector').value = CURRENT_LANG;
+    translateUI();
+
     const urlParams = new URLSearchParams(window.location.search);
     const urlRef = urlParams.get('ref');
     const urlBranch = urlParams.get('branch');
-    
+
     if (urlRef) {
         const input = document.getElementById('regReferral');
         if (input) input.value = urlRef.toUpperCase();
@@ -672,6 +965,7 @@ function showLogin() {
 }
 
 async function register() {
+    event.preventDefault();
     const name = document.getElementById('regName').value.trim();
     const phone = document.getElementById('regPhone').value.trim();
     const password = document.getElementById('regPassword').value.trim();
@@ -692,19 +986,35 @@ async function register() {
 }
 
 async function loginUser() {
+    event.preventDefault();
     const phone = document.getElementById('loginPhone').value.trim();
     const password = document.getElementById('loginPassword').value.trim();
     const errorBox = document.getElementById('loginError');
     const btn = document.getElementById('loginBtn');
     errorBox.style.display = 'none';
-    if (!phone || !password) { errorBox.textContent = 'Please enter phone and password.'; errorBox.style.display = 'block'; return; }
-    btn.textContent = 'Logging in...'; btn.disabled = true;
+    
+    if (!phone || !password) { 
+        errorBox.textContent = 'Please enter phone and password.'; 
+        errorBox.style.display = 'block'; 
+        return; 
+    }
+    
+    btn.textContent = 'Logging in...'; 
+    btn.disabled = true;
+    
     try {
         const data = await api('/auth/login', { method: 'POST', body: { phone, password } });
-        TOKEN = data.token; localStorage.setItem('lw_token', TOKEN);
+        TOKEN = data.token; 
+        localStorage.setItem('lw_token', TOKEN);
         await enterApp();
-    } catch (e) { errorBox.textContent = '❌ ' + e.message; errorBox.style.display = 'block'; }
-    finally { btn.textContent = 'Login'; btn.disabled = false; }
+    } catch (e) { 
+        errorBox.textContent = '❌ ' + e.message; 
+        errorBox.style.display = 'block'; 
+    }
+    finally { 
+        btn.textContent = 'Login'; 
+        btn.disabled = false; 
+    }
 }
 
 async function enterApp() {
@@ -714,11 +1024,26 @@ async function enterApp() {
     const hn = document.getElementById('headerName');
     if (hn) hn.textContent = ME.role === 'main_admin' || ME.role === 'admin' ? 'Main Admin' : ME.role === 'branch' ? (ME.branch_name || 'Branch Admin') : ME.name;
     renderSidebar(); subscribeRealtime(); startAutoPoll(); openPage('dashboard');
+    translateUI();
 }
 async function refreshState() {
     const data = await api('/state');
     SETTINGS = data.settings; TICKETS = data.tickets; ME = data.me;
+
+    try {
+        const msgs = await api('/admin/messages');
+        UNREAD_MSGS = msgs.messages.filter(m => m.receiver_role === (ME.role === 'branch' ? 'branch' : 'main_admin') && m.status === 'pending').length;
+        if (PAGE === 'messages') renderSidebar();
+    } catch(e) {}
 }
+
+/* FIX: double-refresh helper to defeat DB commit lag */
+async function refreshStateTwice() {
+    await refreshState();
+    await new Promise(r => setTimeout(r, 500));
+    await refreshState();
+}
+
 function subscribeRealtime() {
     if (!sb || subscribed) return;
     subscribed = true;
@@ -731,6 +1056,7 @@ function subscribeRealtime() {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'withdrawals' }, onLiveUpdate)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'nb_settings' }, onLiveUpdate)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'nb_tickets' },  onLiveUpdate)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'admin_messages' }, onLiveUpdate)
       .subscribe();
 }
 let liveBusy = false;
@@ -754,6 +1080,9 @@ async function renderPage() {
     try {
         if (PAGE === 'dashboard')  return await dashboard();
         if (PAGE === 'branches')   return await branchesPage();
+        if (PAGE === 'finance')    return await financePage();
+        if (PAGE === 'messages')   return await messagesPage();
+        if (PAGE === 'audit')      return await auditPage();
         if (PAGE === 'wheel')      return await wheelPage();
         if (PAGE === 'nb')         return await nbPage();
         if (PAGE === 'buy')        return await buyPage();
@@ -768,9 +1097,10 @@ async function renderPage() {
         if (PAGE === 'history')    return await historyPage();
         if (PAGE === 'settings')   return await settingsPage();
     } catch (e) { console.error(e); document.getElementById('main').innerHTML = '<div class="card"><h2 style="color:#f87171">Error loading page</h2><p class="muted">' + escapeHTML(e.message) + '</p></div>'; }
+    translateUI();
 }
-function stopLivePolls() { 
-    if (nbPollId) { clearInterval(nbPollId); nbPollId = null; } 
+function stopLivePolls() {
+    if (nbPollId) { clearInterval(nbPollId); nbPollId = null; }
     if (nbSettleId) { clearInterval(nbSettleId); nbSettleId = null; }
     if (html5QrCode) { html5QrCode.stop().catch(() => {}); html5QrCode = null; }
 }
@@ -778,7 +1108,7 @@ function stopLivePolls() {
 async function logout() {
     if (!(await confirmToast('Are you sure you want to logout?', { title: 'Logout', okText: 'Logout' }))) return;
     try { localStorage.removeItem('lw_token'); } catch (e) {}
-    TOKEN = null; ME = null;
+    TOKEN = null; ME = null; UNREAD_MSGS = 0;
     if (sb) { try { sb.removeAllChannels(); } catch (e) {} }
     subscribed = false;
     if (autoPollId) { clearInterval(autoPollId); autoPollId = null; }
@@ -794,8 +1124,13 @@ async function logout() {
     const pw = document.getElementById('loginPassword'); if (pw) pw.value = '';
 }
 
+function formatTime(s) {
+    s = Math.max(0, Number(s));
+    const m = Math.floor(s / 60);
+    const sec = Math.floor(s % 60);
+    return String(m).padStart(2, '0') + ':' + String(sec).padStart(2, '0');
+}
 function money(v) { return Number(v || 0).toLocaleString() + ' ETB'; }
-function formatTime(s) { s = Math.max(0, Number(s)); const h = Math.floor(s / 3600); const m = Math.floor((s % 3600) / 60); const sec = Math.floor(s % 60); if (h > 0) return String(h).padStart(2,'0')+':'+String(m).padStart(2,'0')+':'+String(sec).padStart(2,'0'); return String(m).padStart(2, '0') + ':' + String(sec).padStart(2, '0'); }
 function formatDate(d) { try { return new Date(d).toLocaleString(); } catch { return '—'; } }
 function escapeHTML(v) { return String(v ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;'); }
 
@@ -888,6 +1223,9 @@ function showReceipt(data) {
         </div>`;
 }
 function closeReceipt() { const el = document.getElementById('receiptArea'); if (el) el.innerHTML = ''; }
+
+/* FIX #1: finishAssign now does double-refresh so newly assigned
+   tickets show as SOLD immediately in the assign grid. */
 async function finishAssign() {
     closeReceipt();
     if (PAGE === 'tickets') {
@@ -904,7 +1242,7 @@ async function finishAssign() {
             const b = document.getElementById('assignNbBalance'); if(b) b.value = '0';
         }
         assignSelectedWheel = []; assignSelectedNB = [];
-        try { await refreshState(); } catch (e) { console.warn(e); }
+        try { await refreshStateTwice(); } catch (e) { console.warn(e); }
         await ticketsPage();
     }
 }
@@ -980,7 +1318,7 @@ async function verifyPage() {
     let tabs = `<div class="game-tabs"><button class="game-tab ${verifyMethod==='manual'?'active':''}" onclick="verifySwitchMethod('manual')">⌨️ Manual ID</button><button class="game-tab ${verifyMethod==='scan'?'active':''}" onclick="verifySwitchMethod('scan')">📷 Scan Code</button><button class="game-tab ${verifyMethod==='upload'?'active':''}" onclick="verifySwitchMethod('upload')">🖼️ Upload Photo</button></div>`;
     let content = '';
     if (verifyMethod === 'manual') {
-        content = `<p class="muted" style="margin-bottom:12px">Enter the Ticket ID or Number manually (e.g. 5, TICKET-5, LW-A1B2C3). Works for current and past rounds.</p><label>Ticket Number / Unique ID</label><input id="verifyInput" placeholder="Enter ID here..." style="font-family:monospace"><button class="main-button" onclick="doVerify(document.getElementById('verifyInput').value.trim())">🔍 VERIFY TICKET</button>`;
+        content = `<p class="muted" style="margin-bottom:12px">Enter the Ticket ID or Number manually (e.g. 5, TICKET-5, LW-A1B2C3). Works for current and past rounds.</p><label>Ticket Number / Unique ID</label><input id="verifyInput" placeholder="Enter ID here..." style="font-family:monospace"><button type="button" class="main-button" onclick="doVerify(document.getElementById('verifyInput').value.trim())">🔍 VERIFY TICKET</button>`;
     } else if (verifyMethod === 'scan') {
         content = `<p class="muted" style="margin-bottom:12px">Point your camera at the QR code on the ticket.</p><div id="qr-reader" style="width:100%; max-width:400px; margin:0 auto; border-radius:12px; overflow:hidden;"></div><div id="scan-result-actions" style="margin-top:15px; text-align:center;"></div>`;
     } else if (verifyMethod === 'upload') {
@@ -1023,18 +1361,42 @@ async function handleFileUpload(event) {
     } finally { try { await scanner.clear(); } catch(e) {} }
 }
 
+/* FIX #2: doVerify now has a client-side fallback that scans
+   ALL round history by batch_id when the server returns current-
+   round-only results. Also renders detailed status (winner /
+   not_winner / progress / pending) with winning numbers. */
 async function doVerify(input) {
     if (!input) { toast('Enter a ticket number or ID', true); return; }
-    const btn = document.querySelector('#main .main-button'); if (btn) { btn.textContent = 'Verifying...'; btn.disabled = true; }
-    const resultDiv = document.getElementById('verifyResult'); if (resultDiv) resultDiv.innerHTML = '<p class="muted">🔍 Checking database...</p>';
-    
-    try {
-        const res = await api('/verify-ticket', {
-            method: 'POST',
-            body: { ticketNumber: input, unique_id: input, includePastRounds: true }
-        });
+    const btn = document.querySelector('#main .main-button'); 
+    if (btn) { btn.textContent = 'Verifying...'; btn.disabled = true; }
+    const resultDiv = document.getElementById('verifyResult'); 
+    if (resultDiv) resultDiv.innerHTML = '<p class="muted">🔍 Checking database...</p>';
 
-        /* -------- BRANCH ISOLATION -------- */
+    try {
+        let res = null;
+        let serverErr = null;
+        try {
+            res = await api('/verify-ticket', {
+                method: 'POST',
+                body: { ticketNumber: input, unique_id: input, includePastRounds: true }
+            });
+        } catch (e) { serverErr = e; }
+
+        // Client-side fallback: scan all round history for matching batch_id
+        if (!res || !res.unique_id) {
+            const hist = await scanHistoryForTicket(input);
+            if (hist) res = hist;
+        }
+
+        if (!res) {
+            if (resultDiv) resultDiv.innerHTML =
+                '<div class="req-card" style="border-color:#ef4444; background:#7f1d1d">' +
+                '<h3 style="color:#fca5a5">❌ Ticket Not Found</h3>' +
+                '<p>The ID or number you entered does not exist in any round (current or past).</p></div>';
+            return;
+        }
+
+        // Branch guard
         const myBranch = getMyBranch();
         if (myBranch) {
             const ticketBranchId = res.branch_id != null ? String(res.branch_id) : null;
@@ -1050,11 +1412,10 @@ async function doVerify(input) {
             }
         }
 
+        // Render detailed result
         let html = '<div class="req-card" style="border-color:#4ade80; background:#0f172a">';
         html += '<h3 style="color:#4ade80; margin-bottom:10px">✅ Ticket Matched (Valid)</h3>';
-        if (res.branch_name) {
-            html += '<div class="row"><b>Branch:</b> <span>' + escapeHTML(res.branch_name) + '</span></div>';
-        }
+        if (res.branch_name) html += '<div class="row"><b>Branch:</b> <span>' + escapeHTML(res.branch_name) + '</span></div>';
         html += '<div class="row"><b>Game:</b> <span>' + escapeHTML(res.game) + '</span></div>';
         html += '<div class="row"><b>Ticket ID (Ref):</b> <span style="font-family:monospace; color:#0ea5e9">' + escapeHTML(res.unique_id) + '</span></div>';
         html += '<div class="row"><b>Numbers:</b> <span class="gold">' + (res.numbers || []).map(n => '#'+n).join(' ') + '</span></div>';
@@ -1069,6 +1430,7 @@ async function doVerify(input) {
                 <div class="prize">${money(res.prize)}</div>
                 <p style="font-size:15px; margin-bottom:5px;">You are a <b>WINNER</b> in Round #${res.round}!</p>
                 ${res.match_count > 0 ? `<p style="font-size:13px; opacity:0.9">Matched <b>${res.match_count}</b> winning number(s).</p>` : ''}
+                ${res.winning_numbers && res.winning_numbers.length ? `<p style="font-size:12px;opacity:.85;margin-top:6px">Winning numbers: ${res.winning_numbers.map(n=>'#'+n).join(' ')}</p>` : ''}
                 <small>Prize has been credited. ${res.round_is_past ? 'This was a past round.' : ''}</small>
             </div>`;
         } else if (res.status === 'not_winner') {
@@ -1077,6 +1439,7 @@ async function doVerify(input) {
                 <h3>SORRY, NOT A WINNER</h3>
                 <p style="font-size:15px; margin-bottom:5px;">Round #${res.round} ${res.round_is_past ? 'has ended' : 'is finished'}.</p>
                 ${res.match_count > 0 ? `<p style="font-size:13px; color:#fca5a5;">Matched <b>${res.match_count}</b> number(s), not enough this time.</p>` : ''}
+                ${res.winning_numbers && res.winning_numbers.length ? `<p style="font-size:12px;opacity:.85;margin-top:6px">Winning numbers: ${res.winning_numbers.map(n=>'#'+n).join(' ')}</p>` : ''}
                 <small>Try again in the next round — good luck! 🍀</small>
             </div>`;
         } else if (res.status === 'progress') {
@@ -1092,19 +1455,102 @@ async function doVerify(input) {
                 <h3>TICKET NOT YET PLAYED</h3>
                 <p style="font-size:15px;">Round #${res.round} has not started drawing yet.</p>
             </div>`;
+        } else if (res.status === 'past_round') {
+            html += `<div class="verify-status past_round">
+                <div style="font-size: 50px; margin-bottom: 5px;">📜</div>
+                <h3>PAST ROUND</h3>
+                <p style="font-size:15px;">Round #${res.round} has ended. No winner record found.</p>
+            </div>`;
         }
 
         html += '</div>';
         if (resultDiv) resultDiv.innerHTML = html;
     } catch (e) {
-        if (resultDiv) resultDiv.innerHTML = '<div class="req-card" style="border-color:#ef4444; background:#7f1d1d"><h3 style="color:#fca5a5">❌ Ticket Not Found</h3><p>The ID or number you entered does not exist in our system.</p></div>';
+        if (resultDiv) resultDiv.innerHTML = '<div class="req-card" style="border-color:#ef4444; background:#7f1d1d"><h3 style="color:#fca5a5">❌ Error</h3><p>' + escapeHTML(e.message) + '</p></div>';
     }
     finally { if (btn) { btn.textContent = '🔍 VERIFY TICKET'; btn.disabled = false; } }
 }
 
+/* Client-side fallback: scan ALL round history for a ticket whose
+   batch_id or ticket number matches the input. */
+async function scanHistoryForTicket(input) {
+    const needle = String(input).trim().toUpperCase();
+    const isNumeric = /^\d+$/.test(needle);
+
+    // Try wheel history
+    try {
+        const w = await api('/rounds');
+        for (const r of (w.rounds || [])) {
+            const tickets = r.tickets || [];
+            const match = tickets.find(t => {
+                const uid = String(t.batch_id || t.unique_id || '').toUpperCase();
+                const num = String(t.ticket_number ?? t.number ?? '');
+                return uid === needle || (isNumeric && num === needle);
+            });
+            if (match) {
+                const uid = match.batch_id || match.unique_id || ('TICKET-' + match.ticket_number);
+                const winner = (r.winners || []).find(w => String(w.ticket) === String(match.ticket_number));
+                const status = r.status === 'finished' ? (winner ? 'winner' : 'not_winner')
+                             : (r.status === 'spinning' ? 'progress' : 'pending');
+                return {
+                    game: 'Lucky Wheel',
+                    round: r.round_number,
+                    round_is_past: r.round_number !== SETTINGS.round_number,
+                    unique_id: uid,
+                    numbers: [match.ticket_number],
+                    owner_name: match.owner_name || match.user_name,
+                    sold_date: match.sold_date || r.created_at,
+                    status,
+                    prize: winner ? winner.prize : 0,
+                    match_count: winner ? 1 : 0,
+                    winning_numbers: r.winner_numbers || [],
+                    branch_id: match.branch_id,
+                    branch_name: match.branch_name
+                };
+            }
+        }
+    } catch (e) {}
+
+    // Try NB history
+    try {
+        const nb = await api('/nb/rounds');
+        for (const r of (nb.rounds || [])) {
+            const tickets = r.tickets || [];
+            const match = tickets.find(t => {
+                const uid = String(t.batch_id || t.unique_id || '').toUpperCase();
+                const num = String(t.number ?? t.ticket_number ?? '');
+                return uid === needle || (isNumeric && num === needle);
+            });
+            if (match) {
+                const uid = match.batch_id || ('NB-R' + r.round_number);
+                const winner = (r.winners || []).find(w => (w.shown_numbers || []).includes(match.number));
+                const status = r.status === 'finished' ? (winner ? 'winner' : 'not_winner')
+                             : (r.status === 'drawing' ? 'progress' : 'pending');
+                return {
+                    game: 'Number Betting',
+                    round: r.round_number,
+                    round_is_past: true,
+                    unique_id: uid,
+                    numbers: [match.number],
+                    owner_name: match.owner_name || match.user_name,
+                    sold_date: match.created_at || r.created_at,
+                    status,
+                    prize: winner ? winner.prize : 0,
+                    match_count: winner ? winner.matches : 0,
+                    winning_numbers: r.winning_numbers || [],
+                    branch_id: match.branch_id,
+                    branch_name: match.branch_name
+                };
+            }
+        }
+    } catch (e) {}
+
+    return null;
+}
+
 async function branchesPage() {
     if (ME.role !== 'main_admin' && ME.role !== 'admin') { document.getElementById('main').innerHTML = '<div class="card"><p class="muted">Access Denied.</p></div>'; return; }
-    const data = await api('/admin/branches'); 
+    const data = await api('/admin/branches');
     let rows = '';
     for (const b of data.branches) {
         const link = window.location.origin + '/?branch=' + b.code;
@@ -1175,9 +1621,9 @@ async function saveBranch(id) {
     const telegram_link = document.getElementById('bTelegram').value.trim();
     const cbe_account = document.getElementById('bCbe').value.trim();
     const boa_account = document.getElementById('bBoa').value.trim();
-    
+
     if (!name || !admin_phone || (!id && !code)) { toast('Please fill required fields', true); return; }
-    
+
     try {
         let res;
         if (id) {
@@ -1187,16 +1633,16 @@ async function saveBranch(id) {
             res = await api('/admin/branches', { method: 'POST', body: { name, code, admin_phone, password, cbe_account, boa_account, holder_name, telegram_link } });
             toast('✅ Branch created');
         }
-        
+
         closeCustomModal();
-        
+
         if (!id && res.branch && res.branch.code) {
             const link = window.location.origin + '/?branch=' + res.branch.code;
             setTimeout(() => {
                 alert(`✅ Branch Created Successfully!\n\nAdmin Login Link:\n${link}\n\nShare this link with new users to register under this branch.`);
             }, 100);
         }
-        
+
         branchesPage();
     } catch (e) { toast('❌ ' + e.message, true); }
 }
@@ -1215,11 +1661,11 @@ async function deleteBranch(id) {
 function dashboard() {
     const isBranch = ME.role === 'branch' || (ME.branch_id != null && ME.branch_id !== '');
     const isAdmin = ME.role === 'admin' || ME.role === 'main_admin' || ME.role === 'branch';
-    
+
     if (isAdmin) {
         const wheelSold = SETTINGS.wheel_sold || 0;
         const branchName = isBranch ? (ME.branch_name || ME.name) : '';
-        
+
         document.getElementById('main').innerHTML = `
             <div class="wheel-hero-img"><img src="image2.jpg" onerror="this.src='https://images.unsplash.com/photo-1542751371-adc38448a05e?w=1600&h=500&fit=crop'"></div>
             <h1 class="title">${isBranch ? '🏢 ' + escapeHTML(branchName) : 'Admin Dashboard'}</h1>
@@ -1227,10 +1673,10 @@ function dashboard() {
             <div class="card"><h2>Admin Actions</h2><div class="action-buttons"><button class="action-btn green" onclick="startSales()">🟢 OPEN SALES</button><button class="action-btn red" onclick="closeSales()">🔴 CLOSE SALES</button><button class="action-btn" onclick="openPage('tickets')">🎟️ Assign</button><button class="action-btn blue" onclick="openPage('requests')">📥 Requests</button><button class="action-btn green" onclick="openPage('wheel')">🎡 Wheel</button><button class="action-btn purple" onclick="openPage('nb')">🎰 NB</button>${!isBranch ? '<button class="action-btn purple" onclick="openPage(\'settings\')">⚙️ Settings</button>' : '<button class="action-btn purple" onclick="openPage(\'settings\')">⚙️ Branch Settings</button>'}</div></div>
         `;
         api('/admin/users/full').then(l => { const e = document.getElementById('statUsers'); if (e) e.textContent = l.users.length; }).catch(() => {});
+        translateUI();
         return;
     }
 
-    // Regular User Dashboard
     const mine = TICKETS.filter(t => String(t.user_id) === String(ME.id));
 
     document.getElementById('main').innerHTML = `
@@ -1249,6 +1695,7 @@ function dashboard() {
         <div class="referral-card"><h2 style="color:#fbbf24">🎁 Referral Code</h2><div class="referral-code-box"><div class="referral-code">${ME.referral_code || '—'}</div><button class="copy-btn" onclick="copyReferral()">📋 Copy</button><button class="copy-btn" onclick="copyInviteLink()">🔗 Link</button></div></div>
         <div class="card"><h2>🎟️ My Tickets</h2><br>${mine.length ? mine.map(t => '<button class="small-button gold-button">Ticket #' + t.ticket_number + '</button>').join(' ') : '<p class="muted">No tickets yet.</p>'}</div>
     `;
+    translateUI();
 }
 function copyReferral() { if (!ME.referral_code) return; navigator.clipboard.writeText(ME.referral_code); toast('📋 Copied!'); }
 function copyInviteLink() { if (!ME.referral_code) return; navigator.clipboard.writeText(window.location.origin + '/?ref=' + ME.referral_code); toast('🔗 Copied!'); }
@@ -1260,17 +1707,35 @@ async function buyPage() {
     if (buyGame === 'wheel') buyRenderWheel(); else buyRenderNB(nbSettings);
 }
 function buySwitchGame(g) { if (buyGame === g) return; buyGame = g; buySelected = []; nbBuyPicked = []; buyPage(); }
+
+/* FIX: robust sold detection — uses user_id OR owner_name OR phone */
 function buyRenderWheel() {
-    const open = SETTINGS.sales_state === 'open'; const seen = new Set(); const list = [];
-    for (const t of TICKETS) { if (seen.has(t.ticket_number)) continue; seen.add(t.ticket_number); list.push(t); }
-    list.sort((a, b) => a.ticket_number - b.ticket_number); let grid = '';
-    for (const t of list) {
-        const owners = TICKETS.filter(x => x.ticket_number === t.ticket_number && String(x.user_id) === String(ME.id));
-        const mine = owners.length > 0; let cls = 'ticket-select'; if (mine) cls += ' mine'; else if (t.user_id || t.owner_name || t.phone) cls += ' sold';
-        let label = 'AVAILABLE'; if (mine) label = 'YOURS (' + owners.length + ')'; else if (t.user_id || t.owner_name || t.phone) label = 'SOLD';
-        grid += '<button type="button" class="' + cls + '" onclick="selectBuy(' + t.ticket_number + ', this)">#' + t.ticket_number + '<br><small>' + label + '</small></button>';
+    const open = SETTINGS.sales_state === 'open'; 
+    const seen = new Set(); 
+    const list = [];
+    for (const t of TICKETS) { 
+        if (seen.has(t.ticket_number)) continue; 
+        seen.add(t.ticket_number); 
+        list.push(t); 
     }
-    document.getElementById('buyContent').innerHTML = `${!open ? '<div class="card" style="background:#7f1d1d"><p><b>⚠️ Sales CLOSED.</b></p></div>' : ''}<div class="stats"><div class="stat"><small>Balance</small><h2>${money(ME.balance)}</h2></div><div class="stat"><small>Price</small><h2>${money(SETTINGS.ticket_price)}</h2></div><div class="stat"><small>Total</small><h2>${list.length}</h2></div><div class="stat"><small>Free</small><h2>${ME.free_tickets || 0}</h2></div></div><div class="card"><h2>Select Tickets</h2><br><div class="ticket-grid">${grid}</div></div><div class="card"><div class="checkbox-row"><input type="checkbox" id="buyUseFree" ${(ME.free_tickets||0)===0?'disabled':''} onchange="updateBuyTotals()"><label>🎁 Use FREE ticket (${ME.free_tickets||0})</label></div><p><b>Selected:</b> <span id="buyCount">0</span></p><p><b>Total:</b> <span class="gold" id="buyCost">${money(0)}</span></p><br><button class="main-button" onclick="buySelectedTickets()" ${!open?'disabled':''}>🛒 CONFIRM PURCHASE</button></div>`;
+    list.sort((a, b) => a.ticket_number - b.ticket_number); 
+    let grid = '';
+    for (const t of list) {
+        const owners = TICKETS.filter(x => 
+            Number(x.ticket_number) === Number(t.ticket_number) && 
+            (x.user_id || x.user_name || x.phone || x.sold || x.sold_date)
+        );
+        const mine = owners.some(x => String(x.user_id) === String(ME.id));
+        let cls = 'ticket-select'; 
+        if (mine) cls += ' mine'; 
+        else if (owners.length) cls += ' sold';
+        let label = 'AVAILABLE'; 
+        if (mine) label = 'YOURS (' + owners.length + ')'; 
+        else if (owners.length) label = 'SOLD';
+        grid += '<button type="button" class="' + cls + '" onclick="selectBuy(' + t.ticket_number + ', this)">#' + 
+                t.ticket_number + '<br><small>' + label + '</small></button>';
+    }
+    document.getElementById('buyContent').innerHTML = `${!open ? '<div class="card" style="background:#7f1d1d"><p><b>⚠️ Sales CLOSED.</b></p></div>' : ''}<div class="stats"><div class="stat"><small>Balance</small><h2>${money(ME.balance)}</h2></div><div class="stat"><small>Price</small><h2>${money(SETTINGS.ticket_price)}</h2></div><div class="stat"><small>Total</small><h2>${list.length}</h2></div><div class="stat"><small>Free</small><h2>${ME.free_tickets || 0}</h2></div></div><div class="card"><h2>Select Tickets</h2><br><div class="ticket-grid">${grid}</div></div><div class="card"><div class="checkbox-row"><input type="checkbox" id="buyUseFree" ${(ME.free_tickets||0)===0?'disabled':''} onchange="updateBuyTotals()"><label>🎁 Use FREE ticket (${ME.free_tickets||0})</label></div><p><b>Selected:</b> <span id="buyCount">0</span></p><p><b>Total:</b> <span class="gold" id="buyCost">${money(0)}</span></p><br><button type="button" class="main-button" onclick="buySelectedTickets()" ${!open?'disabled':''}>🛒 CONFIRM PURCHASE</button></div>`;
 }
 function selectBuy(n, el) {
     const free = document.getElementById('buyUseFree').checked;
@@ -1284,6 +1749,9 @@ function updateBuyTotals() {
     const c1 = document.getElementById('buyCount'); if (c1) c1.textContent = cnt;
     const c2 = document.getElementById('buyCost'); if (c2) c2.textContent = money(cost);
 }
+
+/* FIX #1: buy now does double-refresh so newly bought tickets
+   show as SOLD immediately on the next render. */
 async function buySelectedTickets() {
     if (!buySelected.length) { toast('Select at least one ticket', true); return; }
     const free = document.getElementById('buyUseFree').checked; if (free && buySelected.length > 1) { toast('Free ticket allows only 1 selection', true); return; }
@@ -1291,7 +1759,7 @@ async function buySelectedTickets() {
     const ok = await confirmToast(`Buy ${buySelected.length} ticket(s) for ${money(cost)}?`, { title: 'Confirm Purchase', okText: 'Buy' }); if (!ok) return;
     try {
         await api('/user/tickets/buy', { method: 'POST', body: { numbers: buySelected, useFreeTicket: free } });
-        await refreshState();
+        await refreshStateTwice();
         const rec = await api('/ticket-receipt', { method: 'POST', body: { game: 'wheel', round: SETTINGS.round_number, tickets: buySelected } });
         rec.owner = { name: ME.name, phone: ME.phone, public_code: ME.public_code }; buyPage(); showReceipt(rec); toast('🎟️ Purchase successful!');
     } catch (e) { toast('❌ ' + e.message, true); }
@@ -1301,7 +1769,7 @@ async function buyRenderNB(cfg) {
     const s = cfg, open = s.sales_state === 'open'; let my = new Set(); try { const st = await api('/nb/state'); my = new Set((st.my_tickets||[]).map(t => t.number)); } catch (e) {}
     let grid = '';
     for (let i = 1; i <= s.total_numbers; i++) { let cls = 'nb-cell'; if (nbBuyPicked.includes(i)) cls += ' mine-picked'; else if (my.has(i)) cls += ' mine'; grid += '<div class="' + cls + '" data-num="' + i + '" onclick="nbBuyClick(' + i + ', this, ' + s.tickets_per_purchase + ')">' + i + '</div>'; }
-    document.getElementById('buyContent').innerHTML = `${!open ? '<div class="card" style="background:#7f1d1d"><p><b>⚠️ NB Sales CLOSED.</b></p></div>' : ''}<div class="stats"><div class="stat"><small>Balance</small><h2>${money(ME.balance)}</h2></div><div class="stat"><small>Bundle</small><h2>${money(s.price_per_purchase)}/${s.tickets_per_purchase}</h2></div><div class="stat"><small>Total #</small><h2>${s.total_numbers}</h2></div><div class="stat"><small>Round</small><h2>#${s.round_number}</h2></div></div><div class="card"><h2>Pick ${s.tickets_per_purchase} Numbers</h2><div class="nb-grid-inline" id="nbBuyGrid">${grid}</div><div class="nb-pick-info"><b>Selected:</b> <span id="nbBuyCount">0</span> / ${s.tickets_per_purchase}<div class="nb-pick-list" id="nbBuyList"></div></div><button class="main-button" onclick="nbBuyConfirm()" ${!open?'disabled':''}>🛒 CONFIRM</button></div>`;
+    document.getElementById('buyContent').innerHTML = `${!open ? '<div class="card" style="background:#7f1d1d"><p><b>⚠️ NB Sales CLOSED.</b></p></div>' : ''}<div class="stats"><div class="stat"><small>Balance</small><h2>${money(ME.balance)}</h2></div><div class="stat"><small>Bundle</small><h2>${money(s.price_per_purchase)}/${s.tickets_per_purchase}</h2></div><div class="stat"><small>Total #</small><h2>${s.total_numbers}</h2></div><div class="stat"><small>Round</small><h2>#${s.round_number}</h2></div></div><div class="card"><h2>Pick ${s.tickets_per_purchase} Numbers</h2><div class="nb-grid-inline" id="nbBuyGrid">${grid}</div><div class="nb-pick-info"><b>Selected:</b> <span id="nbBuyCount">0</span> / ${s.tickets_per_purchase}<div class="nb-pick-list" id="nbBuyList"></div></div><button type="button" class="main-button" onclick="nbBuyConfirm()" ${!open?'disabled':''}>🛒 CONFIRM</button></div>`;
 }
 function nbBuyClick(num, cell, tpp) {
     if (nbBuyPicked.includes(num)) { nbBuyPicked = nbBuyPicked.filter(x => x !== num); cell.classList.remove('mine-picked'); }
@@ -1314,7 +1782,8 @@ async function nbBuyConfirm() {
     if (Number(ME.balance) < Number(cfg.price_per_purchase)) { toast('Insufficient balance', true); return; }
     const ok = await confirmToast(`Buy ${cfg.tickets_per_purchase} number(s) for ${money(cfg.price_per_purchase)}?`, { title: 'Confirm Purchase', okText: 'Buy' }); if (!ok) return;
     try {
-        await api('/nb/buy', { method: 'POST', body: { numbers: nbBuyPicked } }); await refreshState();
+        await api('/nb/buy', { method: 'POST', body: { numbers: nbBuyPicked } }); 
+        await refreshStateTwice();
         const rec = await api('/ticket-receipt', { method: 'POST', body: { game: 'nb', round: cfg.round_number, tickets: nbBuyPicked } });
         rec.owner = { name: ME.name, phone: ME.phone, public_code: ME.public_code }; nbBuyPicked = []; await buyPage(); showReceipt(rec); toast('🎟️ Purchase successful!');
     } catch (e) { toast('❌ ' + e.message, true); }
@@ -1326,11 +1795,19 @@ async function ticketsPage() {
     if (assignGame === 'wheel') assignRenderWheel(); else assignRenderNB(nbs);
 }
 function assignSwitchGame(g) { if (assignGame === g) return; assignGame = g; assignSelectedWheel = []; assignSelectedNB = []; ticketsPage(); }
+
+/* FIX: robust sold detection for assign grid */
 function assignRenderWheel() {
-    const seen = new Set(); const list = [];
-    for (const t of TICKETS) { if (seen.has(t.ticket_number)) continue; seen.add(t.ticket_number); list.push(t); }
-    list.sort((a, b) => a.ticket_number - b.ticket_number); let grid = '';
-    for (const t of list) { const owners = TICKETS.filter(x => x.ticket_number === t.ticket_number && (x.user_id || x.owner_name || x.phone)); const label = owners.length ? ('SOLD (' + owners.length + ')') : 'AVAILABLE'; grid += '<button type="button" class="ticket-select ' + (owners.length ? 'sold' : '') + '" onclick="selectAssignWheel(' + t.ticket_number + ', this)">#' + t.ticket_number + '<br><small>' + label + '</small></button>'; }
+    // ALWAYS render all tickets from 1 to ticket_count, regardless of what's in the DB
+    let grid = '';
+    for (let num = 1; num <= SETTINGS.ticket_count; num++) { 
+        const owners = TICKETS.filter(x => 
+            Number(x.ticket_number) === num && 
+            (x.user_id || x.user_name || x.phone || x.sold || x.sold_date)
+        ); 
+        const label = owners.length ? ('SOLD (' + owners.length + ')') : 'AVAILABLE'; 
+        grid += '<button type="button" class="ticket-select ' + (owners.length ? 'sold' : '') + '" onclick="selectAssignWheel(' + num + ', this)">#' + num + '<br><small>' + label + '</small></button>'; 
+    }
     document.getElementById('assignContent').innerHTML = `<div class="card"><h2>Assign Wheel Tickets</h2><br><label>Name</label><input id="assignName" placeholder="Full name"><label>Phone</label><input id="assignPhone" placeholder="Phone"><label>Password (new users)</label><input id="assignPassword" type="password" placeholder="Password"><label>Balance Adjustment</label><input id="assignBalance" type="number" value="0"><div class="checkbox-row"><input type="checkbox" id="useFreeTicket"><label>🎁 Use FREE ticket</label></div><label>Select Tickets</label><div class="ticket-selector">${grid}</div><button type="button" class="main-button" onclick="assignTicketsWheel()">🎟️ ASSIGN + PRINT</button></div>`;
 }
 function selectAssignWheel(n, el) { if (assignSelectedWheel.includes(n)) { assignSelectedWheel = assignSelectedWheel.filter(x => x !== n); el.classList.remove('selected'); } else { assignSelectedWheel.push(n); el.classList.add('selected'); } }
@@ -1338,7 +1815,9 @@ async function assignTicketsWheel() {
     const name = document.getElementById('assignName').value.trim(); const phone = document.getElementById('assignPhone').value.trim(); const password = document.getElementById('assignPassword').value; const balance = Number(document.getElementById('assignBalance').value) || 0; const free = document.getElementById('useFreeTicket').checked;
     if (!name || !phone) { toast('Enter name and phone', true); return; } if (!assignSelectedWheel.length) { toast('Select at least one ticket', true); return; }
     try {
-        await api('/admin/tickets/assign', { method: 'POST', body: { name, phone, password, balance, numbers: assignSelectedWheel, useFreeTicket: free } }); await refreshState(); let rec;
+        await api('/admin/tickets/assign', { method: 'POST', body: { name, phone, password, balance, numbers: assignSelectedWheel, useFreeTicket: free } }); 
+        await refreshStateTwice();
+        let rec;
         try { rec = await api('/ticket-receipt', { method: 'POST', body: { game: 'wheel', round: SETTINGS.round_number, tickets: assignSelectedWheel } }); } catch (e) { rec = { game: 'Lucky Wheel', round: SETTINGS.round_number, date: new Date().toISOString(), owner: { name, phone }, tickets: assignSelectedWheel.map(n => ({ number: n })), price: SETTINGS.ticket_price, ref: '—' }; }
         rec.owner = rec.owner || { name, phone }; showReceipt(rec);
     } catch (e) { toast('❌ ' + e.message, true); }
@@ -1354,20 +1833,80 @@ async function assignTicketsNB() {
     const name = document.getElementById('assignNbName').value.trim(); const phone = document.getElementById('assignNbPhone').value.trim(); const password = document.getElementById('assignNbPassword').value; const balance = Number(document.getElementById('assignNbBalance').value) || 0; const cfg = await api('/nb/config');
     if (!name || !phone) { toast('Enter name and phone', true); return; } if (assignSelectedNB.length !== cfg.tickets_per_purchase) { toast('Pick ' + cfg.tickets_per_purchase + ' numbers', true); return; }
     try {
-        await api('/admin/nb/assign', { method: 'POST', body: { name, phone, password, balance, numbers: assignSelectedNB } }); await refreshState(); let rec;
+        await api('/admin/nb/assign', { method: 'POST', body: { name, phone, password, balance, numbers: assignSelectedNB } }); 
+        await refreshStateTwice();
+        let rec;
         try { rec = await api('/ticket-receipt', { method: 'POST', body: { game: 'nb', round: cfg.round_number, tickets: assignSelectedNB } }); } catch (e) { rec = { game: 'Number Betting', round: cfg.round_number, date: new Date().toISOString(), owner: { name, phone }, tickets: assignSelectedNB.map(n => ({ number: n })), price: cfg.price_per_purchase, ref: '—' }; }
         rec.owner = rec.owner || { name, phone }; showReceipt(rec);
     } catch (e) { toast('❌ ' + e.message, true); }
 }
 
+/* FIX: Safely handle undefined/null values in NB state */
 async function nbPage() {
-    try { nbState = await api('/nb/state'); } catch (e) { document.getElementById('main').innerHTML = '<div class="card"><p>❌ ' + escapeHTML(e.message) + '</p></div>'; return; }
-    const s = nbState.settings; const isAdmin = ME.role === 'admin' || ME.role === 'main_admin' || ME.role === 'branch'; const drawing = s.round_state === 'drawing'; const open = s.sales_state === 'open';
-    const mineSet = new Set((nbState.my_tickets||[]).map(t => t.number)); const userNums = new Set((nbState.tickets||[]).filter(t => t.user_id || t.owner_name || t.phone).map(t => t.number));
+    try { 
+        nbState = await api('/nb/state'); 
+    } catch (e) { 
+        // FIX: Show the REAL error message from the backend so you can debug it
+        document.getElementById('main').innerHTML = `
+            <div class="card" style="border-color:#ef4444">
+                <h2 style="color:#f87171">❌ Error loading NB state</h2>
+                <p style="margin: 10px 0"><b>Details:</b> ${escapeHTML(e.message)}</p>
+                <p class="muted">Check if your backend terminal is showing errors. Common causes:</p>
+                <ul class="muted" style="margin-left: 20px; font-size: 14px;">
+                    <li>The \`nb_settings\` table is missing in Supabase.</li>
+                    <li>Supabase credentials in \`.env\` are wrong.</li>
+                    <li>Backend server is not running.</li>
+                </ul>
+                <button class="main-button" style="margin-top: 15px" onclick="nbPage()">🔄 Retry</button>
+            </div>`; 
+        return; 
+    }
+
+    if (!nbState || !nbState.settings) {
+        document.getElementById('main').innerHTML = `
+            <div class="card" style="border-color:#fbbf24">
+                <h2 style="color:#fbbf24">⚠️ NB Settings Not Found</h2>
+                <p>The backend returned no settings. This usually means the database row is missing.</p>
+                <button class="main-button" style="margin-top: 15px" onclick="api('/admin/nb/settings', { method: 'POST', body: { total_numbers: 80, drawn_count: 20, tickets_per_purchase: 2, price_per_purchase: 30, draw_delay_seconds: 2, round_duration_minutes: 120, winner_count: 3, prize_percents: [50,30,20] } }).then(() => nbPage())">🛠️ Auto-Fix Settings</button>
+            </div>`;
+        return;
+    }
+
+    const s = nbState.settings; 
+    
+    // FORCE DEFAULTS TO PREVENT CRASHES (If backend sends null values)
+    s.winning_numbers = s.winning_numbers || [];
+    s.winners = s.winners || [];
+    s.total_numbers = Number(s.total_numbers) || 80;
+    s.drawn_count = Number(s.drawn_count) || 20;
+    s.draw_delay_seconds = Number(s.draw_delay_seconds) || 3;
+    s.round_number = Number(s.round_number) || 1;
+    s.tickets_per_purchase = Number(s.tickets_per_purchase) || 1;
+    s.price_per_purchase = Number(s.price_per_purchase) || 0;
+    
+    nbState.my_tickets = nbState.my_tickets || [];
+    nbState.tickets = nbState.tickets || [];
+
+    const isAdmin = ME.role === 'admin' || ME.role === 'main_admin' || ME.role === 'branch'; 
+    const drawing = s.round_state === 'drawing'; 
+    const open = s.sales_state === 'open';
+    const mineSet = new Set((nbState.my_tickets||[]).map(t => t.number)); 
+    const userNums = new Set((nbState.tickets||[]).filter(t => t.user_id || t.user_name || t.phone).map(t => t.number));
     const uniqueSoldNumbers = nbState.sold_count || 0;
-    const drawnSoFar = nbDrawnSoFar(s); const drawnSet = new Set((s.winning_numbers || []).slice(0, drawnSoFar)); const drawingOrDone = s.round_state === 'drawing' || s.round_state === 'finished'; let grid = '';
-    for (let i = 1; i <= s.total_numbers; i++) { let cls = 'nb-cell'; if (drawingOrDone) cls += drawnSet.has(i) ? ' drawn-win' : ' drawn-lose'; else if (mineSet.has(i)) cls += ' mine'; else if (userNums.has(i)) cls += ' taken'; grid += '<div class="' + cls + '" data-num="' + i + '">' + i + '</div>'; }
-    document.getElementById('main').innerHTML = `<div class="nb-hero"><svg viewBox="0 0 800 180" style="width:100%;height:100%"><text x="400" y="95" text-anchor="middle" font-size="44" font-weight="bold" fill="#fbbf24">🎰 NUMBER BETTING</text><text x="400" y="135" text-anchor="middle" font-size="18" fill="#94a3b8">Pick your numbers. Watch the draw.</text></svg></div><h1 class="title">🎰 NB — Round #${s.round_number}</h1><div class="nb-stats"><div class="stat"><small>Status</small><h2 id="nbStatusH">${nbStatusText(s)}</h2></div><div class="stat"><small>Sold</small><h2 id="nbSoldH">${uniqueSoldNumbers}/${s.total_numbers}</h2></div><div class="stat"><small>Bundle</small><h2>${s.tickets_per_purchase} for ${s.price_per_purchase}</h2></div><div class="stat"><small>Drawn</small><h2 id="nbDrawnH">${drawnSoFar}/${s.drawn_count}</h2></div></div><div class="nb-timer ${drawing ? 'drawing' : open ? 'sales' : 'idle'}" id="nbTimer">--:--</div><div class="card"><div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:10px"><h2 style="margin:0">Numbers Board</h2><button class="small-button gold-button" onclick="enterPublicView()">🖥️ Public View</button></div><p class="muted" style="font-size:12px;margin-bottom:6px">⏳ Waiting · 🟡 Your pick · 🟢 Drawn · 🔴 Not drawn</p><div id="nbGrid" class="nb-grid-inline">${grid}</div><div id="nbWinnersOverlay" class="nb-overlay-winners"></div></div>${isAdmin ? `<div class="card"><h2>Admin Controls</h2><div class="action-buttons"><button class="action-btn green" onclick="nbStartSales()" ${open||drawing?'disabled':''}>🟢 OPEN SALES</button><button class="action-btn red" onclick="nbCloseSales()" ${!open?'disabled':''}>🔴 CLOSE</button><button class="action-btn" onclick="nbDraw()" ${drawing||!open?'disabled':''}>🎬 DRAW</button><button class="action-btn red" onclick="nbNewRound()" ${drawing?'disabled':''}>🔄 NEW ROUND</button></div></div>` : ''}`;
+    const drawnSoFar = nbDrawnSoFar(s); 
+    const drawnSet = new Set((s.winning_numbers || []).slice(0, drawnSoFar)); 
+    const drawingOrDone = s.round_state === 'drawing' || s.round_state === 'finished'; 
+    let grid = '';
+    
+    for (let i = 1; i <= s.total_numbers; i++) { 
+        let cls = 'nb-cell'; 
+        if (drawingOrDone) cls += drawnSet.has(i) ? ' drawn-win' : ' drawn-lose'; 
+        else if (mineSet.has(i)) cls += ' mine'; 
+        else if (userNums.has(i)) cls += ' taken'; 
+        grid += '<div class="' + cls + '" data-num="' + i + '">' + i + '</div>'; 
+    }
+    
+    document.getElementById('main').innerHTML = `<div class="nb-hero-decor"><div class="nbd-title">🎰 NUMBER BETTING</div><div class="nbd-row"><span class="nbd-ball red">7</span><span class="nbd-ball green">13</span><span class="nbd-ball red">42</span><span class="nbd-ball green">8</span><span class="nbd-ball red">21</span><span class="nbd-ball green">3</span><span class="nbd-ball red">36</span><span class="nbd-ball green">55</span></div><div class="nbd-sub">Pick your numbers. Watch the draw.</div></div><h1 class="title">🎰 NB — Round #${s.round_number}</h1><div class="nb-stats"><div class="stat"><small>Status</small><h2 id="nbStatusH">${nbStatusText(s)}</h2></div><div class="stat"><small>Sold</small><h2 id="nbSoldH">${uniqueSoldNumbers}/${s.total_numbers}</h2></div><div class="stat"><small>Bundle</small><h2>${s.tickets_per_purchase} for ${s.price_per_purchase}</h2></div><div class="stat"><small>Drawn</small><h2 id="nbDrawnH">${drawnSoFar}/${s.drawn_count}</h2></div></div><div class="nb-timer ${drawing ? 'drawing' : open ? 'sales' : 'idle'}" id="nbTimer">--:--</div><div class="card"><div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:10px"><h2 style="margin:0">Numbers Board</h2><button class="small-button gold-button" onclick="enterPublicView()">🖥️ Public View</button></div><p class="muted" style="font-size:12px;margin-bottom:6px">⏳ Waiting · 🟡 Your pick · 🟢 Drawn · 🔴 Not drawn</p><div id="nbGrid" class="nb-grid-inline">${grid}</div><div id="nbWinnersOverlay" class="nb-overlay-winners"></div></div>${isAdmin ? `<div class="card"><h2>Admin Controls</h2><div class="action-buttons"><button class="action-btn green" onclick="nbStartSales()" ${open||drawing?'disabled':''}>🟢 OPEN SALES</button><button class="action-btn red" onclick="nbCloseSales()" ${!open?'disabled':''}>🔴 CLOSE</button><button class="action-btn" onclick="nbDraw()" ${drawing||!open?'disabled':''}>🎬 DRAW</button><button class="action-btn red" onclick="nbNewRound()" ${drawing?'disabled':''}>🔄 NEW ROUND</button></div></div>` : ''}`;
     renderNbWinnersOverlay(s); nbStartPolls(s);
 }
 function renderNbWinnersOverlay(s) {
@@ -1386,7 +1925,7 @@ function nbStartPolls(s) {
     if (s.round_state === 'drawing' && s.drawing_started_at) { const key = s.round_number + ':' + s.drawing_started_at; if (_drawRoundKey !== key) { _drawRoundKey = key; _drawStartClient = Date.now(); _lastShown = -1; } } else { _drawStartClient = null; _drawRoundKey = null; _lastShown = -1; }
     nbTickTimer();
     nbPollId = setInterval(() => { nbTickTimer(); nbRevealTick(); }, 200);
-    
+
     nbSettleId = setInterval(async () => {
         if (nbState && nbState.settings.round_state === 'drawing') {
             try { await api('/nb/settle', { method: 'POST' }); const s2 = await api('/nb/state'); nbState = s2; if (s2.settings.round_state === 'finished') nbPage(); } catch (e) {}
@@ -1431,7 +1970,8 @@ function enterPublicViewWheel() { document.body.classList.add('public-view', 'wh
 function buildWheel() {
     const wheel = document.getElementById('wheel'); const labels = document.getElementById('wheelLabels'); if (!wheel || !labels) return;
     const seen = new Set(); const sold = [];
-    for (const t of TICKETS) { if (!t.user_id && !t.owner_name && !t.phone) continue; if (seen.has(t.ticket_number)) continue; seen.add(t.ticket_number); sold.push(t); }
+    for (const t of TICKETS) { if (!t.user_id && !t.user_name && !t.phone) continue; if (seen.has(t.ticket_number)) continue; seen.add(t.ticket_number); sold.push(t); }
+    sold.sort((a, b) => a.ticket_number - b.ticket_number);
     const n = sold.length;
     if (n === 0) { wheel.style.background = '#334155'; labels.innerHTML = '<div style="position:absolute;inset:0;display:flex;justify-content:center;align-items:center;color:#94a3b8;font-size:16px">No tickets sold</div>'; return; }
     const angle = 360 / n; const winners = SETTINGS.round_state === 'finished' ? (SETTINGS.winner_numbers || []) : []; const stops = [];
@@ -1441,30 +1981,137 @@ function buildWheel() {
     for (let i = 0; i < n; i++) { const t = sold[i]; const rot = i * angle + angle / 2; const isW = winners.includes(t.ticket_number); html += '<div class="wl" style="transform:rotate(' + rot + 'deg)"><span style="font-size:' + fs + 'px;color:' + (isW?'#111827':'#fff') + '">#' + t.ticket_number + '</span></div>'; }
     labels.innerHTML = html;
 }
+
 function applyWheelState() {
-    const wheel = document.getElementById('wheel'); if (!wheel) return; const s = SETTINGS; const target = Number(s.target_rotation || 0); const timerEl = document.getElementById('timer'); if (!timerEl) return;
+    const wheel = document.getElementById('wheel'); if (!wheel) return;
+    const s = SETTINGS; const target = Number(s.target_rotation || 0);
+    const timerEl = document.getElementById('timer'); if (!timerEl) return;
+
     if (s.round_state === 'spinning') {
-        const startedAt = new Date(s.spin_started_at).getTime(); const duration = 8;
+        const startedAt = new Date(s.spin_started_at).getTime();
+        const duration = Math.max(3, Number(s.duration_seconds) || 8);
         const spinKey = s.round_number + ':' + s.spin_started_at;
+
         if (wheel._spinKey !== spinKey) {
-            wheel._spinKey = spinKey; wheel.style.transition = 'none'; wheel.style.transform = 'rotate(0deg)'; wheel.getBoundingClientRect();
-            setTimeout(() => { wheel.style.transition = 'transform ' + duration + 's cubic-bezier(.17,.67,.35,1)'; wheel.style.transform = 'rotate(' + (360 * 6 + target) + 'deg)'; }, 20);
-            const pointer = document.getElementById('topPointer'); if (pointer) pointer.classList.remove('winner'); const center = document.getElementById('wheelCenter'); if (center) center.textContent = 'SPINNING';
+            wheel._spinKey = spinKey;
+            wheel.style.transition = 'none';
+            wheel.style.transform = 'rotate(0deg)';
+            void wheel.offsetWidth;
+
+            if (wheel._onSpinEnd) {
+                wheel.removeEventListener('transitionend', wheel._onSpinEnd);
+                wheel._onSpinEnd = null;
+            }
+
+            setTimeout(() => {
+                wheel.style.transition = 'transform ' + duration + 's cubic-bezier(0.15, 0.85, 0.3, 1)';
+                wheel.style.transform = 'rotate(' + (360 * 10 + target) + 'deg)';
+
+                wheel._onSpinEnd = () => {
+                    api('/spin/settle', { method: 'POST' }).catch(() => {});
+                    wheel.removeEventListener('transitionend', wheel._onSpinEnd);
+                    wheel._onSpinEnd = null;
+                };
+                wheel.addEventListener('transitionend', wheel._onSpinEnd, { once: true });
+
+                setTimeout(() => { api('/spin/settle', { method: 'POST' }).catch(() => {}); }, (duration * 1000) + 300);
+            }, 30);
+
+            const pointer = document.getElementById('topPointer'); if (pointer) pointer.classList.remove('winner');
+            const center = document.getElementById('wheelCenter'); if (center) center.textContent = 'SPINNING';
         }
-        timerEl.classList.remove('sales'); timerEl.classList.add('spinning'); startCountdown(startedAt, duration); return;
+
+        timerEl.classList.remove('sales'); timerEl.classList.add('spinning');
+        startCountdown(startedAt, duration); return;
     }
-    if (s.round_state === 'idle' && s.sales_state === 'open') { timerEl.classList.remove('spinning'); timerEl.classList.add('sales'); startSalesCountdown(new Date(s.sales_started_at).getTime(), s.sales_duration || 120); const center = document.getElementById('wheelCenter'); if (center) center.textContent = 'READY'; return; }
-    if (s.round_state === 'idle' && s.sales_state !== 'open') { stopCountdown(); wheel._spinKey = null; wheel.style.transition = 'none'; wheel.style.transform = 'rotate(0deg)'; const pointer = document.getElementById('topPointer'); if (pointer) pointer.classList.remove('winner'); const center = document.getElementById('wheelCenter'); if (center) center.textContent = 'SPIN'; const area = document.getElementById('winnerArea'); if (area) area.innerHTML = ''; timerEl.classList.remove('spinning', 'sales'); timerEl.textContent = formatTime(s.duration_seconds); return; }
+
+    if (s.round_state === 'idle' && s.sales_state === 'open') {
+        timerEl.classList.remove('spinning'); timerEl.classList.add('sales');
+        startSalesCountdown(new Date(s.sales_started_at).getTime(), s.sales_duration || 120);
+        const center = document.getElementById('wheelCenter'); if (center) center.textContent = 'READY';
+        return;
+    }
+
+    if (s.round_state === 'idle' && s.sales_state !== 'open') {
+        stopCountdown();
+        wheel._spinKey = null;
+        wheel.style.transition = 'none';
+        wheel.style.transform = 'rotate(0deg)';
+        const pointer = document.getElementById('topPointer'); if (pointer) pointer.classList.remove('winner');
+        const center = document.getElementById('wheelCenter'); if (center) center.textContent = 'SPIN';
+        const area = document.getElementById('winnerArea'); if (area) area.innerHTML = '';
+        timerEl.classList.remove('spinning', 'sales');
+        timerEl.textContent = formatTime(s.duration_seconds);
+        return;
+    }
+
     if (s.round_state === 'finished') {
-        stopCountdown(); timerEl.classList.remove('spinning', 'sales'); wheel._spinKey = null; wheel.style.transition = 'none'; wheel.style.transform = 'rotate(' + target + 'deg)'; const pointer = document.getElementById('topPointer'); if (pointer) pointer.classList.add('winner'); const winners = s.winner_numbers || []; const center = document.getElementById('wheelCenter'); if (center) center.innerHTML = winners.length ? '🏆<br>#' + winners[0] : 'DONE'; timerEl.textContent = '00:00'; const statusEl = document.getElementById('status'); if (statusEl) statusEl.textContent = 'Round completed.'; showWinners(s.winners || []);
+        stopCountdown();
+        timerEl.classList.remove('spinning', 'sales');
+        wheel._spinKey = null;
+        wheel.style.transition = 'none';
+        wheel.style.transform = 'rotate(' + target + 'deg)';
+        const pointer = document.getElementById('topPointer'); if (pointer) pointer.classList.add('winner');
+        const winners = s.winner_numbers || [];
+        const center = document.getElementById('wheelCenter');
+        if (center) center.innerHTML = winners.length ? '🏆<br>#' + winners[0] : 'DONE';
+        timerEl.textContent = '00:00';
+        const statusEl = document.getElementById('status'); if (statusEl) statusEl.textContent = 'Round completed.';
+
+        const spinEnd = new Date(s.spin_started_at).getTime() + (Math.max(3, Number(s.duration_seconds) || 8)) * 1000;
+        const wait = Math.max(0, spinEnd - Date.now()) + 300;
+        setTimeout(() => showWinners(s.winners || []), wait);
+
+        // FIX: Restored the Auto-Restart timer. Rounds will reset automatically 10 seconds after finishing.
         if (!window._wheelFinishedAt) window._wheelFinishedAt = Date.now();
-        if (Date.now() - window._wheelFinishedAt > 10000) { window._wheelFinishedAt = null; newRound(); }
-        else { setTimeout(() => { if (SETTINGS.round_state === 'finished') newRound(); }, 10000 - (Date.now() - window._wheelFinishedAt)); }
+        const finishDelay = Math.max(wait, 10000); 
+        setTimeout(() => {
+            window._wheelFinishedAt = null;
+            if (SETTINGS.round_state === 'finished') newRound();
+        }, finishDelay);
         return;
     }
 }
-function startSalesCountdown(at, min) { if (countdownId) clearInterval(countdownId); const dur = min * 60; const tick = () => { const rem = Math.max(0, Math.ceil(dur - (Date.now() - at) / 1000)); const el = document.getElementById('timer'); if (el) el.textContent = formatTime(rem); if (rem <= 0) { clearInterval(countdownId); countdownId = null; } }; tick(); countdownId = setInterval(tick, 500); }
-function startCountdown(at, dur) { if (countdownId) clearInterval(countdownId); const tick = () => { const rem = Math.max(0, Math.ceil(dur - (Date.now() - at) / 1000)); const el = document.getElementById('timer'); if (el) el.textContent = formatTime(rem); if (rem <= 0) { clearInterval(countdownId); countdownId = null; api('/spin/settle', { method: 'POST' }).catch(() => {}); } }; tick(); countdownId = setInterval(tick, 250); }
+
+function startSalesCountdown(at, min) {
+    if (countdownId) clearInterval(countdownId);
+    const dur = min * 60;
+    const localStart = Date.now(); 
+    const tick = () => {
+        const elapsed = (Date.now() - localStart) / 1000;
+        const rem = Math.max(0, Math.ceil(dur - elapsed));
+        const el = document.getElementById('timer');
+        if (el) el.textContent = formatTime(rem);
+        if (rem <= 0) {
+            clearInterval(countdownId);
+            countdownId = null;
+        }
+    };
+    tick();
+    countdownId = setInterval(tick, 500);
+}
+function startCountdown(at, dur) {
+    if (countdownId) clearInterval(countdownId);
+    let settled = false;
+    const localStart = Date.now(); 
+    
+    const tick = () => {
+        const elapsed = (Date.now() - localStart) / 1000;
+        const rem = Math.max(0, Math.ceil(dur - elapsed));
+        
+        const el = document.getElementById('timer'); 
+        if (el) el.textContent = formatTime(rem);
+        
+        if (rem <= 0 && !settled) {
+            settled = true;
+            clearInterval(countdownId);
+            countdownId = null;
+            api('/spin/settle', { method: 'POST' }).catch(() => {});
+        }
+    };
+    tick();
+    countdownId = setInterval(tick, 200);
+}
 function stopCountdown() { if (countdownId) { clearInterval(countdownId); countdownId = null; } }
 async function startSpin() { try { await api('/admin/spin/start', { method: 'POST' }); await refreshState(); renderPage(); } catch (e) { toast('❌ ' + e.message, true); } }
 async function newRound() { try { await api('/admin/round/reset', { method: 'POST' }); await refreshState(); renderPage(); } catch (e) { toast('❌ ' + e.message, true); } }
@@ -1484,38 +2131,38 @@ async function closeSales() { try { await api('/admin/close-sales', { method: 'P
 
 async function depositPage() {
     if (ME.role === 'admin' || ME.role === 'main_admin' || ME.role === 'branch') { document.getElementById('main').innerHTML = '<div class="card"><p class="muted">Users only.</p></div>'; return; }
-    
+
     let branchData = null;
     try { branchData = await api('/user/branch-details'); } catch (e) {}
-    
+
     let dep = { deposits: [] }; try { dep = await api('/user/deposits'); } catch (e) {}
-    
+
     const cbe = branchData?.cbe_account || '1000676405058';
     const boa = branchData?.boa_account || '189018436';
     const holder = branchData?.holder_name || 'Teshome Ayenew';
 
-    document.getElementById('main').innerHTML = `<img src="${IMG.deposit}" class="banner-img" onerror="this.style.display='none'"><h1 class="title">💰 Deposit</h1><div class="card"><h2>Send to</h2><div class="method-box"><h3>🏦 CBE</h3><div class="acct">${cbe}</div><div class="name">${holder}</div></div><div class="method-box"><h3>🏦 BOA</h3><div class="acct">${boa}</div><div class="name">${holder}</div></div></div><div class="card"><h2>Submit</h2><br><label>Method</label><select id="depMethod"><option value="cbe">CBE</option><option value="boa">BOA</option></select><label>Amount (ETB)</label><input id="depAmount" type="number" min="1"><label>Transaction ID (Optional if Screenshot)</label><input id="depTxn" placeholder="e.g. FT23XXXXXX"><label>Transaction Screenshot (Optional if Tx ID)</label><input id="depScreenshot" type="file" accept="image/*" onchange="previewDepScreenshot(this)"><div id="depScreenshotPreview" style="margin:10px 0"></div><button class="main-button" onclick="submitDeposit()">📤 SUBMIT</button></div><div class="card"><h2>My Deposits</h2><br>${!dep.deposits.length ? '<p class="muted">None</p>' : dep.deposits.map(d => '<div class="req-card"><div class="row"><b>Amount:</b> <span class="gold">' + money(d.amount) + '</span></div>' + (d.transaction_id && d.transaction_id !== 'SCREENSHOT_ONLY' ? '<div class="row"><b>Txn ID:</b> <span style="font-family:monospace;color:#0ea5e9">' + escapeHTML(d.transaction_id) + '</span></div>' : '') + '<div class="row"><b>Status:</b> <span class="status-badge ' + d.status + '">' + d.status.toUpperCase() + '</span></div>' + (d.screenshot ? '<div class="row"><b>Screenshot:</b> <img src="' + d.screenshot + '" class="dep-shot-thumb" onclick="viewImg(\'' + d.screenshot + '\')"></div>' : '') + '</div>').join('')}</div>`;
+    document.getElementById('main').innerHTML = `<img src="${IMG.deposit}" class="banner-img" onerror="this.style.display='none'"><h1 class="title">💰 Deposit</h1><div class="card"><h2>Send to</h2><div class="method-box"><h3>🏦 CBE</h3><div class="acct">${cbe}</div><div class="name">${holder}</div></div><div class="method-box"><h3>🏦 BOA</h3><div class="acct">${boa}</div><div class="name">${holder}</div></div></div><div class="card"><h2>Submit</h2><br><label>Method</label><select id="depMethod"><option value="cbe">CBE</option><option value="boa">BOA</option></select><label>Amount (ETB)</label><input id="depAmount" type="number" min="1"><label>Transaction ID (Optional if Screenshot)</label><input id="depTxn" placeholder="e.g. FT23XXXXXX"><label>Transaction Screenshot (Optional if Tx ID)</label><input id="depScreenshot" type="file" accept="image/*" onchange="previewDepScreenshot(this)"><div id="depScreenshotPreview" style="margin:10px 0"></div><button type="button" class="main-button" onclick="submitDeposit()">📤 SUBMIT</button></div><div class="card"><h2>My Deposits</h2><br>${!dep.deposits.length ? '<p class="muted">None</p>' : dep.deposits.map(d => '<div class="req-card"><div class="row"><b>Amount:</b> <span class="gold">' + money(d.amount) + '</span></div>' + (d.transaction_id && d.transaction_id !== 'SCREENSHOT_ONLY' ? '<div class="row"><b>Txn ID:</b> <span style="font-family:monospace;color:#0ea5e9">' + escapeHTML(d.transaction_id) + '</span></div>' : '') + '<div class="row"><b>Status:</b> <span class="status-badge ' + d.status + '">' + d.status.toUpperCase() + '</span></div>' + (d.screenshot ? '<div class="row"><b>Screenshot:</b> <img src="' + d.screenshot + '" class="dep-shot-thumb" onclick="viewImg(\'' + d.screenshot + '\')"></div>' : '') + '</div>').join('')}</div>`;
 }
 function previewDepScreenshot(input) { const box = document.getElementById('depScreenshotPreview'); _depScreenshotData = null; box.innerHTML = ''; const file = input.files && input.files[0]; if (!file) return; if (file.size > 3 * 1024 * 1024) { toast('Image too large (max 3MB)', true); input.value = ''; return; } const reader = new FileReader(); reader.onload = e => { _depScreenshotData = e.target.result; box.innerHTML = '<img src="' + e.target.result + '" style="max-width:100%;max-height:220px;border-radius:8px;border:1px solid #334155">'; }; reader.readAsDataURL(file); }
-async function submitDeposit() { 
-    const method = document.getElementById('depMethod').value; 
-    const amount = Number(document.getElementById('depAmount').value); 
-    const transactionId = document.getElementById('depTxn').value.trim(); 
-    if (!amount || amount <= 0) { toast('Enter a valid amount', true); return; } 
-    if (!transactionId && !_depScreenshotData) { toast('Enter a Transaction ID or upload a screenshot', true); return; } 
-    try { 
+async function submitDeposit() {
+    const method = document.getElementById('depMethod').value;
+    const amount = Number(document.getElementById('depAmount').value);
+    const transactionId = document.getElementById('depTxn').value.trim();
+    if (!amount || amount <= 0) { toast('Enter a valid amount', true); return; }
+    if (!transactionId && !_depScreenshotData) { toast('Enter a Transaction ID or upload a screenshot', true); return; }
+    try {
         const finalTxnId = transactionId || 'SCREENSHOT_ONLY';
-        await api('/user/deposits', { method: 'POST', body: { method, amount, transactionId: finalTxnId, screenshot: _depScreenshotData || null }}); 
-        _depScreenshotData = null; 
-        toast('✅ Deposit request submitted'); 
-        depositPage(); 
-    } catch (e) { toast('❌ ' + e.message, true); } 
+        await api('/user/deposits', { method: 'POST', body: { method, amount, transactionId: finalTxnId, screenshot: _depScreenshotData || null }});
+        _depScreenshotData = null;
+        toast('✅ Deposit request submitted');
+        depositPage();
+    } catch (e) { toast('❌ ' + e.message, true); }
 }
 
 async function withdrawPage() {
     if (ME.role === 'admin' || ME.role === 'main_admin' || ME.role === 'branch') { document.getElementById('main').innerHTML = '<div class="card"><p class="muted">Users only.</p></div>'; return; }
     let w = { withdrawals: [] }; try { w = await api('/user/withdrawals'); } catch (e) {}
-    document.getElementById('main').innerHTML = `<img src="${IMG.withdraw}" class="banner-img" onerror="this.style.display='none'"><h1 class="title">💸 Withdraw</h1><div class="stats"><div class="stat"><small>Balance</small><h2>${money(ME.balance)}</h2></div></div><div class="card"><h2>Request</h2><br><label>Method</label><select id="wdMethod"><option value="cbe">CBE</option><option value="boa">BOA</option></select><label>Amount</label><input id="wdAmount" type="number" min="1"><label>Account Number</label><input id="wdAccount"><button class="main-button" onclick="submitWithdraw()">📤 SUBMIT</button></div><div class="card"><h2>My Withdrawals</h2><br>${!w.withdrawals.length ? '<p class="muted">None</p>' : w.withdrawals.map(x => '<div class="req-card"><div class="row"><b>Amount:</b> <span class="gold">' + money(x.amount) + '</span></div><div class="row"><b>Status:</b> <span class="status-badge ' + x.status + '">' + x.status.toUpperCase() + '</span></div></div>').join('')}</div>`;
+    document.getElementById('main').innerHTML = `<img src="${IMG.withdraw}" class="banner-img" onerror="this.style.display='none'"><h1 class="title">💸 Withdraw</h1><div class="stats"><div class="stat"><small>Balance</small><h2>${money(ME.balance)}</h2></div></div><div class="card"><h2>Request</h2><br><label>Method</label><select id="wdMethod"><option value="cbe">CBE</option><option value="boa">BOA</option></select><label>Amount</label><input id="wdAmount" type="number" min="1"><label>Account Number</label><input id="wdAccount"><button type="button" class="main-button" onclick="submitWithdraw()">📤 SUBMIT</button></div><div class="card"><h2>My Withdrawals</h2><br>${!w.withdrawals.length ? '<p class="muted">None</p>' : w.withdrawals.map(x => '<div class="req-card"><div class="row"><b>Amount:</b> <span class="gold">' + money(x.amount) + '</span></div><div class="row"><b>Status:</b> <span class="status-badge ' + x.status + '">' + x.status.toUpperCase() + '</span></div></div>').join('')}</div>`;
 }
 async function submitWithdraw() { const method = document.getElementById('wdMethod').value; const amount = Number(document.getElementById('wdAmount').value); const accountNumber = document.getElementById('wdAccount').value.trim(); if (!amount || amount <= 0) { toast('Enter a valid amount', true); return; } if (!accountNumber) { toast('Enter your account number', true); return; } if (amount > Number(ME.balance)) { toast('Insufficient balance', true); return; } const ok = await confirmToast(`Withdraw ${money(amount)}?`, { title: 'Confirm Withdrawal', okText: 'Withdraw' }); if (!ok) return; try { await api('/user/withdrawals', { method: 'POST', body: { method, amount, accountNumber } }); toast('✅ Withdrawal request submitted'); await refreshState(); withdrawPage(); } catch (e) { toast('❌ ' + e.message, true); } }
 
@@ -1561,7 +2208,12 @@ async function requestsPage() {
             '<div class="row"><b>Date:</b> <span>' + (item.created_at ? formatDate(item.created_at) : '—') + '</span></div>' +
             '<div class="row"><b>Status:</b> <span class="status-badge ' + item.status + '">' + item.status.toUpperCase() + '</span></div>' +
             shot +
-            (item.status === 'pending' ? '<div class="req-actions"><button class="small-button green-button" onclick="openCustomModal(\'Approve\', (val)=>{ decide' + (isDep?'Deposit':'Withdraw') + '(' + item.id + ', \'approve\', val) })">✓ Approve</button><button class="small-button red-button" onclick="openCustomModal(\'Reject\', (val)=>{ decide' + (isDep?'Deposit':'Withdraw') + '(' + item.id + ', \'reject\', val) })">✗ Reject</button></div>' : '') +
+            (item.status === 'pending'
+              ? '<div class="req-actions">'
+                + '<button class="small-button green-button" onclick="decide' + (isDep ? 'Deposit' : 'Withdraw') + '(' + item.id + ', \'approve\')">✓ Approve</button>'
+                + '<button class="small-button red-button" onclick="decide' + (isDep ? 'Deposit' : 'Withdraw') + '(' + item.id + ', \'reject\')">✗ Reject</button>'
+                + '</div>'
+              : '') +
             '</div>';
     }
 
@@ -1586,16 +2238,65 @@ async function requestsPage() {
         </div>`;
 }
 
-async function decideDeposit(id, action, comment) { try { await api('/admin/deposits/' + id + '/decide', { method: 'POST', body: { action, comment } }); await refreshState(); requestsPage(); } catch (e) { toast('❌ ' + e.message, true); } }
-async function decideWithdraw(id, action, comment) { try { await api('/admin/withdrawals/' + id + '/decide', { method: 'POST', body: { action, comment } }); await refreshState(); requestsPage(); } catch (e) { toast('❌ ' + e.message, true); } }
+async function decideDeposit(id, action) {
+  let comment = '';
+  if (action === 'reject') {
+    const c = await promptModal('Rejection reason (optional)', { okText: 'Reject', placeholder: 'Reason...' });
+    if (c === null) return;
+    comment = c;
+  }
+  try {
+    await api('/admin/deposits/' + id + '/decide', { method: 'POST', body: { action, comment } });
+    toast(action === 'approve' ? '✅ Deposit APPROVED' : '✅ Deposit REJECTED');
+    await refreshState();
+    requestsPage();
+  } catch (e) { toast('❌ ' + e.message, true); }
+}
+
+async function decideWithdraw(id, action) {
+  let comment = '';
+  if (action === 'reject') {
+    const c = await promptModal('Rejection reason (optional)', { okText: 'Reject', placeholder: 'Reason...' });
+    if (c === null) return;
+    comment = c;
+  }
+  try {
+    await api('/admin/withdrawals/' + id + '/decide', { method: 'POST', body: { action, comment } });
+    toast(action === 'approve' ? '✅ Withdrawal APPROVED' : '✅ Withdrawal REJECTED');
+    await refreshState();
+    requestsPage();
+  } catch (e) { toast('❌ ' + e.message, true); }
+}
 
 function openCustomModal(title, callback) {
+    _modalCallback = callback;
     const area = document.getElementById('modalArea');
-    area.innerHTML = `<div class="custom-modal" onclick="if(event.target===this)closeCustomModal()"><div class="custom-modal-box"><h3>${title}</h3><input id="modalInput" placeholder="Enter comment/amount"><div class="btn-row"><button class="main-button" onclick="submitModal()">Submit</button><button class="main-button" style="background:#64748b;color:white" onclick="closeCustomModal()">Cancel</button></div></div></div>`;
-    area._callback = callback; setTimeout(() => { document.getElementById('modalInput').focus(); }, 100);
+    area.innerHTML = `<div class="custom-modal" onclick="if(event.target===this)closeCustomModal()">
+        <div class="custom-modal-box">
+            <h3>${escapeHTML(title)}</h3>
+            <input id="modalInput" placeholder="Enter comment (optional)">
+            <div class="btn-row">
+                <button class="main-button" onclick="submitModal()">Submit</button>
+                <button class="main-button" style="background:#64748b;color:white" onclick="closeCustomModal()">Cancel</button>
+            </div>
+        </div>
+    </div>`;
+    setTimeout(() => {
+        const inp = document.getElementById('modalInput');
+        if (inp) inp.focus();
+    }, 100);
 }
-function closeCustomModal() { document.getElementById('modalArea').innerHTML = ''; }
-function submitModal() { const val = document.getElementById('modalInput').value; if (document.getElementById('modalArea')._callback) { document.getElementById('modalArea')._callback(val); } closeCustomModal(); }
+function closeCustomModal() {
+    _modalCallback = null;
+    document.getElementById('modalArea').innerHTML = '';
+}
+async function submitModal() {
+    const inp = document.getElementById('modalInput');
+    const val = inp ? inp.value : '';
+    const cb = _modalCallback;
+    closeCustomModal();
+    if (cb) { try { await cb(val); } catch (e) { toast('❌ ' + e.message, true); } }
+}
 
 async function historyPage() {
     const [w, nb] = await Promise.all([api('/rounds').catch(() => ({rounds:[]})), api('/nb/rounds').catch(() => ({rounds:[]}))]);
@@ -1650,9 +2351,255 @@ async function deleteHistoryRecord(game, roundId) {
     } catch (e) { toast('❌ ' + e.message, true); }
 }
 
-/* ============================================================
-   SETTINGS PAGE (WITH ADMIN-ONLY PASSWORD CHANGE)
-   ============================================================ */
+async function financePage() {
+    const stats = await api('/admin/stats');
+    const isMain = ME.role === 'main_admin' || ME.role === 'admin';
+    
+    let dailyRecordsHtml = '';
+    if (isMain) {
+        try {
+            const daily = await api('/admin/daily-records');
+            let rows = '';
+            for (const r of daily.records) {
+                rows += `<tr>
+                    <td>${escapeHTML(r.branch_name)}</td>
+                    <td class="gold">${money(r.daily_collected)}</td>
+                    <td style="color:#f87171">${money(r.daily_payouts)}</td>
+                    <td style="color:#4ade80; font-weight:bold">${money(r.daily_net_profit)}</td>
+                </tr>`;
+            }
+            dailyRecordsHtml = `
+                <div class="card" style="margin-top:20px; border-color:#fbbf24;">
+                    <h2 style="color:#fbbf24">🏢 Branch Daily Records (Today)</h2>
+                    <div class="table-box">
+                        <table>
+                            <thead><tr><th>Branch</th><th>Collected (Sales)</th><th>Paid to Winners</th><th>Net Profit</th></tr></thead>
+                            <tbody>${rows || '<tr><td colspan="4" class="muted">No branches found.</td></tr>'}</tbody>
+                        </table>
+                    </div>
+                </div>`;
+        } catch (e) { console.error(e); }
+    }
+
+    document.getElementById('main').innerHTML = `
+        <h1 class="title" data-en="📊 Financial Dashboard">📊 Financial Dashboard</h1>
+        <div class="stats">
+            <div class="stat"><small data-en="Total Deposits">Total Deposits</small><h2>${money(stats.totalDeposit)}</h2></div>
+            <div class="stat"><small data-en="Total Withdrawals">Total Withdrawals</small><h2>${money(stats.totalWithdraw)}</h2></div>
+            <div class="stat"><small data-en="Total Profit">Total Profit</small><h2 style="color:#4ade80">${money(stats.totalProfit)}</h2></div>
+            <div class="stat"><small data-en="Profit Today">Profit Today</small><h2 style="color:#fbbf24">${money(stats.todayProfit)}</h2></div>
+            <div class="stat"><small data-en="Winners Today">Winners Today</small><h2 style="color:#f87171">${money(stats.todayWinnerPayouts)}</h2></div>
+        </div>
+
+        ${dailyRecordsHtml}
+
+        ${isMain ? `
+            <div class="card" style="margin-top:20px;">
+                <h2 data-en="Request Profit from Branches">Request Profit from Branches</h2>
+                <p class="muted" data-en="Send a request to a branch admin asking for a specific amount.">Send a request to a branch admin asking for a specific amount.</p>
+                <label data-en="Select Branch">Select Branch</label>
+                <select id="reqBranchId"></select>
+                <label data-en="Amount to Request (ETB)">Amount to Request (ETB)</label>
+                <input id="reqAmount" type="number" min="1">
+                <label data-en="Account Number">Account Number</label>
+                <input id="reqAcc" placeholder="Enter your account number">
+                <label data-en="Holder Name">Holder Name</label>
+                <input id="reqHolder" placeholder="Enter account holder name">
+                <label data-en="Message">Message</label>
+                <input id="reqMsg" placeholder="e.g. Please send today's profit.">
+                <button type="button" class="main-button" onclick="requestProfit()" data-en="Send Request">Send Request</button>
+            </div>
+        ` : ''}
+    `;
+
+    if (isMain) {
+        const branches = await api('/admin/branches');
+        const select = document.getElementById('reqBranchId');
+        select.innerHTML = branches.branches.map(b => `<option value="${b.id}">${b.name}</option>`).join('');
+    }
+    translateUI();
+}
+
+async function requestProfit() {
+    const receiver_id = document.getElementById('reqBranchId').value;
+    const amount = Number(document.getElementById('reqAmount').value);
+    const account_number = document.getElementById('reqAcc').value.trim();
+    const holder_name = document.getElementById('reqHolder').value.trim();
+    const message = document.getElementById('reqMsg').value || "Please send the requested profit amount.";
+
+    if (!amount || amount <= 0) { toast('Enter a valid amount', true); return; }
+    if (!account_number || !holder_name) { toast('Please enter your Account Number and Holder Name', true); return; }
+
+    try {
+        await api('/admin/messages', { method: 'POST', body: { receiver_id, amount_requested: amount, message, account_number, holder_name } });
+        toast('✅ Request sent to branch!');
+        document.getElementById('reqAmount').value = '';
+        document.getElementById('reqAcc').value = '';
+        document.getElementById('reqHolder').value = '';
+        document.getElementById('reqMsg').value = '';
+        refreshState();
+    } catch (e) { toast('❌ ' + e.message, true); }
+}
+
+async function messagesPage() {
+    const data = await api('/admin/messages');
+    let html = '<h1 class="title" data-en="✉️ Messages & Requests">✉️ Messages & Requests</h1>';
+
+    if (ME.role === 'branch') {
+        html += `<div class="card">
+            <h2 data-en="Message Main Admin">Message Main Admin</h2>
+            <label data-en="Message">Message</label>
+            <input id="msgText" placeholder="Type your message here...">
+            <button type="button" class="main-button" onclick="sendMessage()" data-en="Send">Send</button>
+        </div>`;
+    }
+
+    html += '<div class="card"><h2 data-en="Inbox">Inbox</h2><br>';
+    if (!data.messages.length) html += '<p class="muted">No messages yet.</p>';
+
+    for (const m of data.messages) {
+        const isRequest = m.amount_requested > 0 && m.status === 'pending';
+        const isApproved = m.status === 'approved';
+        const isRejected = m.status === 'rejected';
+
+        const borderColor = isRequest ? '#fbbf24' : (isApproved ? '#22c55e' : (isRejected ? '#ef4444' : '#334155'));
+        const bgColor = isRequest ? '#2a200c' : '#172033';
+        const alertHeader = isRequest ? `<div style="color:#fcd34d;font-weight:bold;margin-bottom:8px;">🔔 NEW PROFIT REQUEST</div>` : '';
+
+        html += `
+            <div class="req-card" style="border-color:${borderColor}; background:${bgColor}">
+                ${alertHeader}
+                <div class="row"><b>From:</b> <span>${m.sender_role === 'main_admin' ? 'Main Admin' : 'Branch Admin'}</span></div>
+                <div class="row"><b>Date:</b> <span>${new Date(m.created_at).toLocaleString()}</span></div>
+                <div class="row"><b>Message:</b> <span>${escapeHTML(m.message)}</span></div>
+                ${m.amount_requested > 0 ? `<div class="row"><b>Amount Requested:</b> <span class="gold">${money(m.amount_requested)}</span></div>` : ''}
+                ${m.account_number ? `<div class="row"><b>Paid to Account:</b> <span style="font-family:monospace;color:#0ea5e9">${escapeHTML(m.account_number)} (${escapeHTML(m.holder_name)})</span></div>` : ''}
+                ${m.transaction_id ? `<div class="row"><b>Txn ID:</b> <span style="font-family:monospace;color:#0ea5e9">${escapeHTML(m.transaction_id)}</span></div>` : ''}
+                ${m.screenshot ? `<div class="row" style="flex-direction:column;align-items:flex-start;gap:6px"><b>Screenshot:</b><img src="${m.screenshot}" class="dep-shot-thumb" onclick="viewImg('${m.screenshot}')"></div>` : ''}
+
+                ${isRequest && ME.role === 'branch' ? `
+                    <div style="margin-top:15px;border-top:1px dashed #475569;padding-top:15px;">
+                        <h3 style="color:#4ade80;font-size:16px;margin-bottom:10px;">Approve & Pay</h3>
+                        <label>Amount</label>
+                        <input type="number" value="${m.amount_requested || 0}" readonly style="background:rgba(255,255,255,0.05); cursor:not-allowed;">
+                        <label>Account Number Paid To</label>
+                        <input id="payAcc_${m.id}" placeholder="Enter account number you paid to">
+                        <label>Holder Name</label>
+                        <input id="payHolder_${m.id}" placeholder="Enter name on account">
+                        <label>Transaction ID</label>
+                        <input id="payTxn_${m.id}" placeholder="e.g. FT12345678">
+                        <label>Screenshot (Optional)</label>
+                        <input type="file" id="payShot_${m.id}" accept="image/*" onchange="previewMsgScreenshot(this, '${m.id}')">
+                        <div id="payShotPreview_${m.id}" style="margin:10px 0"></div>
+                        <button type="button" class="main-button" style="background:#22c55e;" onclick="submitPaymentConfirmation(${m.id})">✅ Send Payment Confirmation</button>
+                    </div>
+                ` : ''}
+
+                ${isRequest && ME.role === 'main_admin' ? `
+                    <div class="req-actions">
+                        <button type="button" class="small-button green-button" onclick="decideMessage(${m.id}, 'approved')">✓ Approve</button>
+                        <button type="button" class="small-button red-button" onclick="decideMessage(${m.id}, 'rejected')">✗ Reject</button>
+                    </div>
+                ` : ''}
+
+                ${!isRequest ? `<div class="row"><b>Status:</b> <span class="status-badge ${m.status || 'pending'}">${(m.status || 'pending').toUpperCase()}</span></div>` : ''}
+            </div>
+        `;
+    }
+    html += '</div>';
+    document.getElementById('main').innerHTML = html;
+    translateUI();
+}
+
+async function decideMessage(id, status) {
+    try {
+        await api('/admin/messages/decide', { method: 'POST', body: { id, status } });
+        toast(`✅ Message ${status}`);
+        refreshState();
+        messagesPage();
+    } catch (e) { toast('❌ ' + e.message, true); }
+}
+
+let _msgScreenshotData = {};
+function previewMsgScreenshot(input, msgId) {
+    const box = document.getElementById('payShotPreview_' + msgId); _msgScreenshotData[msgId] = null; box.innerHTML = '';
+    const file = input.files && input.files[0]; if (!file) return;
+    const reader = new FileReader();
+    reader.onload = e => { _msgScreenshotData[msgId] = e.target.result; box.innerHTML = '<img src="' + e.target.result + '" style="max-width:100%;max-height:220px;border-radius:8px;border:1px solid #334155">'; };
+    reader.readAsDataURL(file);
+}
+
+async function submitPaymentConfirmation(msgId) {
+    const account_number = document.getElementById('payAcc_' + msgId).value.trim();
+    const holder_name = document.getElementById('payHolder_' + msgId).value.trim();
+    const transaction_id = document.getElementById('payTxn_' + msgId).value.trim();
+    const screenshot = _msgScreenshotData[msgId] || null;
+
+    if (!account_number || !holder_name) { toast('Please fill Account Number and Holder Name', true); return; }
+    if (!transaction_id && !screenshot) { toast('Provide a Transaction ID or Screenshot', true); return; }
+
+    try {
+        await api('/admin/messages', { method: 'POST', body: {
+            message: 'Payment confirmation sent.',
+            account_number, holder_name, transaction_id, screenshot,
+            request_id: msgId
+        }});
+        toast('✅ Payment details sent to Main Admin');
+        refreshState();
+        messagesPage();
+    } catch (e) { toast('❌ ' + e.message, true); }
+}
+
+async function sendMessage() {
+    const msg = document.getElementById('msgText').value.trim();
+    if (!msg) { toast('Enter a message', true); return; }
+    try {
+        await api('/admin/messages', { method: 'POST', body: { message: msg } });
+        toast('✅ Message sent to Main Admin');
+        refreshState();
+        messagesPage();
+    } catch (e) { toast('❌ ' + e.message, true); }
+}
+
+async function auditPage() {
+    const data = await api('/admin/audit');
+    const branches = data.branches;
+    const logs = data.auditLog;
+
+    const dates = Object.keys(logs).sort((a, b) => new Date(b) - new Date(a));
+
+    let html = `<h1 class="title" data-en="📋 Audit & Checklist">📋 Audit & Checklist</h1>`;
+    html += `<div class="card" style="overflow-x:auto;"><table><thead><tr><th>Date</th>`;
+    for (const b of branches) html += `<th style="text-align:center">${escapeHTML(b.name)}<br><small class="muted" style="font-weight:normal">(Dep / Sales / Profit)</small></th>`;
+    html += `</tr></thead><tbody>`;
+
+    if (!dates.length) {
+        html += `<tr><td colspan="${branches.length + 1}" class="muted" style="text-align:center">No records yet.</td></tr>`;
+    } else {
+        for (const date of dates) {
+            html += `<tr><td style="font-weight:bold">${date}</td>`;
+            for (const b of branches) {
+                const record = logs[date][b.id];
+                if (record && (record.deposit_amt > 0 || record.sales_amt > 0 || record.payout_amt > 0)) {
+                    const net = record.sales_amt - record.payout_amt;
+                    html += `<td style="text-align:center; font-size:12px; line-height:1.4;">
+                        <div style="color:#0ea5e9">Dep: ${money(record.deposit_amt)}</div>
+                        <div style="color:#fbbf24">Sales: ${money(record.sales_amt)}</div>
+                        <div style="color:${net >= 0 ? '#4ade80' : '#f87171'}; font-weight:bold">Profit: ${money(net)}</div>
+                    </td>`;
+                } else {
+                    html += `<td style="text-align:center; color:#475569;">—</td>`;
+                }
+            }
+            html += `</tr>`;
+        }
+    }
+
+    html += `</tbody></table></div>`;
+    document.getElementById('main').innerHTML = html;
+    translateUI();
+}
+
 function settingsScopeBanner() {
     if (!ME) return '';
     if (ME.role === 'branch') {
@@ -1677,8 +2624,7 @@ function settingsSwitchGame(g) { if (settingsGame === g) return; settingsGame = 
 function renderWheelSettings() {
     const wc = SETTINGS.winner_count || 1; const pcts = SETTINGS.prize_percents || []; let inputs = '';
     for (let i = 0; i < wc; i++) { const v = pcts[i] !== undefined ? pcts[i] : (i === 0 ? 50 : i === 1 ? 30 : 10); inputs += '<label>Winner #' + (i + 1) + ' — % of revenue</label><input class="pct-input" type="number" min="0" max="100" value="' + v + '">'; }
-    
-    // ONLY show the password box to main admins
+
     const isMainAdmin = ME.role === 'main_admin' || ME.role === 'admin';
     const passwordHtml = isMainAdmin ? `
         <div class="card" style="border-color:#dc2626; margin-top:20px;">
@@ -1687,7 +2633,7 @@ function renderWheelSettings() {
             <input id="newAdminPw" type="password">
             <label>Secret Reset Code</label>
             <input id="resetCode" type="password">
-            <button class="main-button" style="background:#dc2626;color:white" onclick="changeAdminPassword('')">🔐 Change Password</button>
+            <button type="button" class="main-button" style="background:#dc2626;color:white" onclick="changeAdminPassword('')">🔐 Change Password</button>
         </div>` : '';
 
     document.getElementById('settingsContent').innerHTML = `
@@ -1705,10 +2651,11 @@ function renderWheelSettings() {
         <h3 style="color:#fbbf24">🎁 Referral Rewards</h3>
         <label>Referrals For Free Ticket</label><input id="referralGoal" type="number" min="1" value="${SETTINGS.referral_goal || 8}">
         <label>Free Tickets Per Goal</label><input id="referralReward" type="number" min="1" value="${SETTINGS.referral_reward || 1}">
-        <button class="main-button" onclick="saveWheelSettings()">Save Wheel Settings</button>
+        <button type="button" class="main-button" onclick="saveWheelSettings()">Save Wheel Settings</button>
     </div>
     ${passwordHtml}
     `;
+    translateUI();
 }
 function reloadPrizeInputs() { const wc = Math.max(1, Math.min(60, Number(document.getElementById('winnerCount').value) || 1)); let h = ''; for (let i = 0; i < wc; i++) { const d = i === 0 ? 50 : i === 1 ? 30 : i === 2 ? 10 : 5; h += '<label>Winner #' + (i + 1) + ' — %</label><input class="pct-input" type="number" min="0" max="100" value="' + d + '">'; } document.getElementById('prizeList').innerHTML = h; }
 async function saveWheelSettings() {
@@ -1719,8 +2666,7 @@ function renderNBSettings(s) {
     if (!s) { document.getElementById('settingsContent').innerHTML = '<div class="card"><p class="muted">Not available</p></div>'; return; }
     const wc = s.winner_count || 1; const pcts = s.prize_percents || []; const roundMin = Number(s.round_duration_minutes || s.duration_minutes || 120); let inputs = '';
     for (let i = 0; i < wc; i++) { const v = pcts[i] !== undefined ? pcts[i] : (i === 0 ? 50 : i === 1 ? 30 : 10); inputs += '<label>Winner #' + (i + 1) + ' — % of revenue</label><input class="nb-pct-input" type="number" min="0" max="100" value="' + v + '">'; }
-    
-    // ONLY show the password box to main admins
+
     const isMainAdmin = ME.role === 'main_admin' || ME.role === 'admin';
     const passwordHtml = isMainAdmin ? `
         <div class="card" style="border-color:#dc2626; margin-top:20px;">
@@ -1729,7 +2675,7 @@ function renderNBSettings(s) {
             <input id="newAdminPwNb" type="password">
             <label>Secret Reset Code</label>
             <input id="resetCodeNb" type="password">
-            <button class="main-button" style="background:#dc2626;color:white" onclick="changeAdminPassword('Nb')">🔐 Change Password</button>
+            <button type="button" class="main-button" style="background:#dc2626;color:white" onclick="changeAdminPassword('Nb')">🔐 Change Password</button>
         </div>` : '';
 
     document.getElementById('settingsContent').innerHTML = `
@@ -1745,10 +2691,11 @@ function renderNBSettings(s) {
         <br><hr style="border-color:#334155;margin:16px 0"><br>
         <h3 style="color:#fbbf24">🏆 Prize % per place</h3>
         <div id="nbPrizeList">${inputs}</div>
-        <button class="main-button" onclick="saveNBSettings()">Save NB Settings</button>
+        <button type="button" class="main-button" onclick="saveNBSettings()">Save NB Settings</button>
     </div>
     ${passwordHtml}
     `;
+    translateUI();
 }
 function nbSettingsReloadPrizes() { const c = Math.max(1, Math.min(20, Number(document.getElementById('nbWinners').value) || 1)); let h = ''; for (let i = 0; i < c; i++) { const d = i === 0 ? 50 : i === 1 ? 30 : i === 2 ? 10 : 5; h += '<label>Winner #' + (i + 1) + ' — %</label><input class="nb-pct-input" type="number" min="0" max="100" value="' + d + '">'; } document.getElementById('nbPrizeList').innerHTML = h; }
 async function saveNBSettings() {
