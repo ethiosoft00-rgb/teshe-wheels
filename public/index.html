@@ -7,6 +7,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://unpkg.com/html5-qrcode"></script>
 <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: Arial, sans-serif; background: #0f172a; color: white; overflow-x: hidden; }
@@ -14,151 +15,53 @@ button, input, select { font-family: inherit; }
 button { cursor: pointer; }
 .hidden { display: none !important; }
 .banner-img { width: 100%; height: 200px; object-fit: cover; border-radius: 15px; margin-bottom: 20px; display: block; background: #1e293b; box-shadow: 0 8px 30px rgba(0,0,0,0.4); border: 2px solid #334155; }
-
-/* ============ DECORATED LOGIN PAGE ============ */
-.login-page {
-  min-height: 100vh;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  padding: 20px;
-  background: radial-gradient(circle at 50% 0%, #1e3a5f 0%, #0f172a 55%, #060b16 100%);
-  position: relative;
-  overflow: hidden;
-}
-
+.login-page { min-height: 100vh; display: flex; justify-content: center; align-items: center; padding: 20px; background: radial-gradient(circle at 50% 0%, #1e3a5f 0%, #0f172a 55%, #060b16 100%); position: relative; overflow: hidden; }
 .login-bg-art { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
 .bg-orbit { position: absolute; top: 50%; left: 50%; width: 0; height: 0; animation: orbitSpin linear infinite; }
-.orbit-1 { animation-duration: 22s; }
-.orbit-2 { animation-duration: 30s; animation-direction: reverse; }
-.orbit-3 { animation-duration: 18s; }
-.orbit-4 { animation-duration: 26s; animation-direction: reverse; }
-.orbit-5 { animation-duration: 34s; }
+.orbit-1 { animation-duration: 22s; } .orbit-2 { animation-duration: 30s; animation-direction: reverse; } .orbit-3 { animation-duration: 18s; } .orbit-4 { animation-duration: 26s; animation-direction: reverse; } .orbit-5 { animation-duration: 34s; }
 .bg-symbol { position: absolute; display: inline-block; font-size: 40px; opacity: 0.12; filter: drop-shadow(0 0 10px rgba(251,191,36,0.4)); transform: translate(-50%, -50%); }
-.orbit-1 .bg-symbol { transform: translate(280px, 0) translate(-50%, -50%); }
-.orbit-2 .bg-symbol { transform: translate(-340px, 0) translate(-50%, -50%) scale(1.3); }
-.orbit-3 .bg-symbol { transform: translate(0, 340px) translate(-50%, -50%) scale(0.9); }
-.orbit-4 .bg-symbol { transform: translate(0, -300px) translate(-50%, -50%) scale(1.2); }
-.orbit-5 .bg-symbol { transform: translate(420px, 220px) translate(-50%, -50%) scale(1.1); }
+.orbit-1 .bg-symbol { transform: translate(280px, 0) translate(-50%, -50%); } .orbit-2 .bg-symbol { transform: translate(-340px, 0) translate(-50%, -50%) scale(1.3); } .orbit-3 .bg-symbol { transform: translate(0, 340px) translate(-50%, -50%) scale(0.9); } .orbit-4 .bg-symbol { transform: translate(0, -300px) translate(-50%, -50%) scale(1.2); } .orbit-5 .bg-symbol { transform: translate(420px, 220px) translate(-50%, -50%) scale(1.1); }
 @keyframes orbitSpin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-
-.bg-float {
-  position: absolute;
-  font-family: 'Impact', monospace;
-  font-weight: 900;
-  font-size: 90px;
-  opacity: 0.08;
-  animation: floatY 8s ease-in-out infinite;
-}
-.f1 { top: 12%; left: 8%;  animation-delay: 0s; color: #ef4444; }
-.f2 { top: 68%; left: 14%; animation-delay: 1.2s; font-size: 70px; color: #22c55e; }
-.f3 { top: 22%; right: 9%; animation-delay: 0.6s; font-size: 110px; color: #ef4444; }
-.f4 { bottom: 12%; right: 16%; animation-delay: 2s; color: #22c55e; }
-.f5 { top: 45%; left: 4%; animation-delay: 1.6s; font-size: 60px; color: #22c55e; }
-.f6 { bottom: 18%; left: 40%; animation-delay: 2.6s; font-size: 80px; opacity: 0.05; color: #ef4444; }
-@keyframes floatY {
-  0%, 100% { transform: translateY(0) rotate(-4deg); }
-  50% { transform: translateY(-28px) rotate(4deg); }
-}
-
-/* GAMING DECORATIONS */
-.slot-strip {
-  position: absolute; top: 8%; left: 50%; transform: translateX(-50%);
-  display: flex; gap: 15px; opacity: 0.15; z-index: 0; pointer-events: none;
-}
-.slot-reel {
-  width: 70px; height: 100px; background: #111827; border: 4px solid #fbbf24;
-  border-radius: 10px; display: flex; flex-direction: column; align-items: center;
-  overflow: hidden; font-family: 'Impact', sans-serif; font-size: 36px; color: #fbbf24;
-  box-shadow: inset 0 0 20px #000;
-}
-.slot-reel span {
-  height: 100px; line-height: 100px; animation: reelSpin 1s linear infinite; text-align: center;
-}
-.slot-reel:nth-child(2) span { animation-delay: -0.3s; color: #22c55e; }
-.slot-reel:nth-child(3) span { animation-delay: -0.6s; color: #ef4444; }
-@keyframes reelSpin {
-  0% { transform: translateY(0); }
-  100% { transform: translateY(-300px); }
-}
-
-.chip-anim {
-  position: absolute;
-  width: 70px; height: 70px; border-radius: 50%;
-  border: 6px dashed #fbbf24;
-  background: radial-gradient(circle at 30% 30%, #dc2626, #7f1d1d);
-  box-shadow: 0 0 20px rgba(0,0,0,0.8), inset 0 0 15px rgba(255,255,255,0.2);
-  display: flex; align-items: center; justify-content: center;
-  font-size: 28px; color: #fff; font-weight: bold;
-  animation: chipFloat 8s ease-in-out infinite;
-  z-index: 1; opacity: 0.4;
-}
-.chip-anim::after {
-  content: ''; position: absolute; inset: 10px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.2);
-}
-.chip-1 { top: 15%; left: 10%; animation-delay: 0s; }
-.chip-2 { bottom: 20%; right: 10%; animation-delay: -2s; background: radial-gradient(circle at 30% 30%, #111827, #000); border-color: #ef4444; }
-.chip-3 { top: 25%; right: 15%; animation-delay: -4s; background: radial-gradient(circle at 30% 30%, #22c55e, #14532d); border-color: #86efac; }
-.chip-4 { bottom: 15%; left: 15%; animation-delay: -6s; background: radial-gradient(circle at 30% 30%, #0ea5e9, #0c4a6e); border-color: #7dd3fc; }
-@keyframes chipFloat {
-  0%, 100% { transform: translateY(0) rotate(0deg); }
-  50% { transform: translateY(-30px) rotate(180deg); }
-}
-
-/* Login Card */
-.login-card {
-  width: 430px;
-  max-width: 100%;
-  padding: 30px 35px 35px;
-  background: rgba(17, 24, 39, 0.88);
-  backdrop-filter: blur(14px);
-  border: 2px solid #fbbf24;
-  border-radius: 22px;
-  position: relative;
-  z-index: 10;
-  animation: cardPop 0.7s cubic-bezier(.2,1.3,.4,1), cardGlow 3s infinite alternate;
-}
-@keyframes cardPop {
-  0% { transform: translateY(30px) scale(0.95); opacity: 0; }
-  100% { transform: translateY(0) scale(1); opacity: 1; }
-}
-@keyframes cardGlow {
-  0% { box-shadow: 0 0 30px rgba(251, 191, 36, 0.1), inset 0 0 10px rgba(251, 191, 36, 0.05); }
-  100% { box-shadow: 0 0 60px rgba(251, 191, 36, 0.3), inset 0 0 30px rgba(251, 191, 36, 0.1); }
-}
-
+.bg-float { position: absolute; font-family: 'Impact', monospace; font-weight: 900; font-size: 90px; opacity: 0.08; animation: floatY 8s ease-in-out infinite; }
+.f1 { top: 12%; left: 8%;  animation-delay: 0s; color: #ef4444; } .f2 { top: 68%; left: 14%; animation-delay: 1.2s; font-size: 70px; color: #22c55e; } .f3 { top: 22%; right: 9%; animation-delay: 0.6s; font-size: 110px; color: #ef4444; } .f4 { bottom: 12%; right: 16%; animation-delay: 2s; color: #22c55e; } .f5 { top: 45%; left: 4%; animation-delay: 1.6s; font-size: 60px; color: #22c55e; } .f6 { bottom: 18%; left: 40%; animation-delay: 2.6s; font-size: 80px; opacity: 0.05; color: #ef4444; }
+@keyframes floatY { 0%, 100% { transform: translateY(0) rotate(-4deg); } 50% { transform: translateY(-28px) rotate(4deg); } }
+.slot-strip { position: absolute; top: 8%; left: 50%; transform: translateX(-50%); display: flex; gap: 15px; opacity: 0.15; z-index: 0; pointer-events: none; }
+.slot-reel { width: 70px; height: 100px; background: #111827; border: 4px solid #fbbf24; border-radius: 10px; display: flex; flex-direction: column; align-items: center; overflow: hidden; font-family: 'Impact', sans-serif; font-size: 36px; color: #fbbf24; box-shadow: inset 0 0 20px #000; }
+.slot-reel span { height: 100px; line-height: 100px; animation: reelSpin 1s linear infinite; text-align: center; }
+.slot-reel:nth-child(2) span { animation-delay: -0.3s; color: #22c55e; } .slot-reel:nth-child(3) span { animation-delay: -0.6s; color: #ef4444; }
+@keyframes reelSpin { 0% { transform: translateY(0); } 100% { transform: translateY(-300px); } }
+.chip-anim { position: absolute; width: 70px; height: 70px; border-radius: 50%; border: 6px dashed #fbbf24; background: radial-gradient(circle at 30% 30%, #dc2626, #7f1d1d); box-shadow: 0 0 20px rgba(0,0,0,0.8), inset 0 0 15px rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; font-size: 28px; color: #fff; font-weight: bold; animation: chipFloat 8s ease-in-out infinite; z-index: 1; opacity: 0.4; }
+.chip-anim::after { content: ''; position: absolute; inset: 10px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.2); }
+.chip-1 { top: 15%; left: 10%; animation-delay: 0s; } .chip-2 { bottom: 20%; right: 10%; animation-delay: -2s; background: radial-gradient(circle at 30% 30%, #111827, #000); border-color: #ef4444; } .chip-3 { top: 25%; right: 15%; animation-delay: -4s; background: radial-gradient(circle at 30% 30%, #22c55e, #14532d); border-color: #86efac; } .chip-4 { bottom: 15%; left: 15%; animation-delay: -6s; background: radial-gradient(circle at 30% 30%, #0ea5e9, #0c4a6e); border-color: #7dd3fc; }
+@keyframes chipFloat { 0%, 100% { transform: translateY(0) rotate(0deg); } 50% { transform: translateY(-30px) rotate(180deg); } }
+.login-card { width: 430px; max-width: 100%; padding: 30px 35px 35px; background: rgba(17, 24, 39, 0.88); backdrop-filter: blur(14px); border: 2px solid #fbbf24; border-radius: 22px; position: relative; z-index: 10; animation: cardPop 0.7s cubic-bezier(.2,1.3,.4,1), cardGlow 3s infinite alternate; }
+@keyframes cardPop { 0% { transform: translateY(30px) scale(0.95); opacity: 0; } 100% { transform: translateY(0) scale(1); opacity: 1; } }
+@keyframes cardGlow { 0% { box-shadow: 0 0 30px rgba(251, 191, 36, 0.1), inset 0 0 10px rgba(251, 191, 36, 0.05); } 100% { box-shadow: 0 0 60px rgba(251, 191, 36, 0.3), inset 0 0 30px rgba(251, 191, 36, 0.1); } }
 .login-hero { position: relative; height: 130px; margin-bottom: 6px; display: flex; justify-content: center; align-items: center; }
 .hero-wheel { position: relative; width: 110px; height: 110px; animation: wheelSpin 6s linear infinite; filter: drop-shadow(0 0 20px rgba(251,191,36,0.6)); }
 .hero-wheel-svg { width: 100%; height: 100%; }
 .hero-wheel-glow { position: absolute; inset: -10px; border-radius: 50%; background: radial-gradient(circle, rgba(251,191,36,0.35), transparent 70%); animation: glowPulse 2.4s ease-in-out infinite; pointer-events: none; }
 @keyframes wheelSpin { to { transform: rotate(360deg); } }
 @keyframes glowPulse { 0%, 100% { opacity: 0.5; transform: scale(0.95); } 50% { opacity: 1; transform: scale(1.1); } }
-
 .hero-dice { position: absolute; right: 26px; bottom: 6px; width: 46px; height: 46px; animation: diceBounce 2.2s ease-in-out infinite; }
 .dice-face { position: relative; width: 100%; height: 100%; background: linear-gradient(145deg, #fbbf24, #b45309); border-radius: 10px; border: 2px solid #fde68a; box-shadow: 0 6px 20px rgba(0,0,0,0.5), inset 0 -3px 0 rgba(0,0,0,0.25); transform: rotate(-8deg); }
 .pip { position: absolute; width: 8px; height: 8px; background: #111827; border-radius: 50%; box-shadow: inset 0 1px 2px rgba(0,0,0,0.6); }
 .p1 { top: 20%; left: 20%; } .p2 { top: 20%; right: 20%; } .p3 { top: 50%; left: 50%; transform: translate(-50%,-50%); } .p4 { bottom: 20%; left: 20%; } .p5 { bottom: 20%; right: 20%; }
 @keyframes diceBounce { 0%, 100% { transform: translateY(0) rotate(-8deg); } 50% { transform: translateY(-10px) rotate(8deg); } }
-
 .hero-trophy { position: absolute; left: 26px; bottom: 6px; font-size: 38px; animation: trophyBounce 2.6s ease-in-out infinite; filter: drop-shadow(0 0 14px rgba(251,191,36,0.9)); }
 @keyframes trophyBounce { 0%, 100% { transform: translateY(0) scale(1); } 50% { transform: translateY(-12px) scale(1.12); } }
-
 .login-logo-text { text-align: center; font-size: 40px; font-weight: 900; margin-bottom: 8px; letter-spacing: 2px; background: linear-gradient(90deg, #fbbf24, #fde68a, #f59e0b, #fbbf24); background-size: 200% auto; color: transparent; -webkit-background-clip: text; background-clip: text; animation: shine 3s linear infinite; text-transform: uppercase; font-family: 'Impact', sans-serif; }
 .login-description { text-align: center; color: #94a3b8; margin-bottom: 22px; font-size: 13px; font-weight: bold; letter-spacing: 1px; display: flex; justify-content: center; gap: 10px; align-items: center; }
 .desc-wheel, .desc-nb { animation: pulseText 2s infinite; padding: 4px 10px; border-radius: 20px; background: rgba(251,191,36,0.08); border: 1px solid rgba(251,191,36,0.25); }
-.desc-nb { animation-delay: 0.5s; }
-.desc-dot { color: #475569; }
+.desc-nb { animation-delay: 0.5s; } .desc-dot { color: #475569; }
 @keyframes shine { to { background-position: 200% center; } }
 @keyframes pulseText { 0%, 100% { opacity: 0.75; } 50% { opacity: 1; color: #fbbf24; } }
-
 input, select { width: 100%; padding: 13px; margin: 7px 0 12px; border: 1px solid #475569; border-radius: 8px; background: #0b1220; color: white; outline: none; font-size: 14px; }
 input:focus, select:focus { border-color: #fbbf24; }
 .main-button { width: 100%; padding: 13px; border: none; border-radius: 8px; background: #fbbf24; color: #111827; font-weight: bold; margin-top: 8px; transition: 0.2s; }
 .main-button:disabled { opacity: .5; cursor: not-allowed; }
 .login-footer { text-align: center; color: #94a3b8; margin-top: 18px; }
 .link-button { border: none; background: none; color: #fbbf24; font-weight: bold; }
-
-/* App Layout */
 .header { height: 70px; padding: 0 25px; display: flex; justify-content: space-between; align-items: center; background: #111827; border-bottom: 1px solid #334155; }
 .header-logo { font-size: 25px; font-weight: bold; }
 .header-user { display: flex; align-items: center; gap: 15px; }
@@ -186,8 +89,8 @@ input:focus, select:focus { border-color: #fbbf24; }
 .action-btn.red { background: #dc2626; color: white; border-color: #dc2626; }
 .action-btn.blue { background: #0ea5e9; color: white; border-color: #0ea5e9; }
 .action-btn.purple { background: #a855f7; color: white; border-color: #a855f7; }
-.ticket-grid, .ticket-selector { display: grid; grid-template-columns: repeat(auto-fill, minmax(95px, 1fr)); gap: 10px; margin-top: 10px; }
-.ticket-select { padding: 15px 5px; border: 1px solid #475569; border-radius: 8px; background: #172033; color: white; }
+.ticket-grid, .ticket-selector { display: grid; grid-template-columns: repeat(auto-fill, minmax(65px, 1fr)); gap: 6px; margin-top: 10px; }
+.ticket-select { padding: 10px 4px; border: 1px solid #475569; border-radius: 6px; background: #172033; color: white; font-size: 12px; }
 .ticket-select.selected { background: #fbbf24; color: #111827; }
 .ticket-select.sold { background: #7f1d1d; color: #fecaca; }
 .ticket-select.mine { background: #166534; color: #86efac; border-color: #4ade80; }
@@ -275,54 +178,17 @@ th { color: #94a3b8; }
 .ref-badge { padding: 3px 9px; border-radius: 20px; font-size: 11px; font-weight: bold; }
 .ref-badge.active { background: #166534; color: #86efac; }
 .ref-badge.pending { background: #78350f; color: #fcd34d; }
-
-/* ===== NB DECORATED HERO ===== */
-.nb-hero-decor {
-  position: relative;
-  width: 100%; height: 190px;
-  border-radius: 15px; margin-bottom: 20px;
-  overflow: hidden;
-  background: radial-gradient(circle at 30% 20%, #1e293b, #060b16 75%);
-  border: 2px solid #334155;
-  display: flex; flex-direction: column;
-  align-items: center; justify-content: center;
-  gap: 10px;
-}
-.nb-hero-decor::before {
-  content: ""; position: absolute; inset: 0;
-  background:
-    radial-gradient(circle at 15% 80%, rgba(239,68,68,.25), transparent 40%),
-    radial-gradient(circle at 85% 20%, rgba(34,197,94,.25), transparent 40%);
-  animation: nbdGlow 4s ease-in-out infinite alternate;
-}
+.nb-hero-decor { position: relative; width: 100%; height: 190px; border-radius: 15px; margin-bottom: 20px; overflow: hidden; background: radial-gradient(circle at 30% 20%, #1e293b, #060b16 75%); border: 2px solid #334155; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; }
+.nb-hero-decor::before { content: ""; position: absolute; inset: 0; background: radial-gradient(circle at 15% 80%, rgba(239,68,68,.25), transparent 40%), radial-gradient(circle at 85% 20%, rgba(34,197,94,.25), transparent 40%); animation: nbdGlow 4s ease-in-out infinite alternate; }
 @keyframes nbdGlow { from { opacity: .4 } to { opacity: 1 } }
-.nbd-title {
-  position: relative;
-  font-family: 'Impact', sans-serif; font-size: 30px;
-  letter-spacing: 4px; color: #fbbf24;
-  text-shadow: 0 0 20px rgba(251,191,36,.7);
-}
+.nbd-title { position: relative; font-family: 'Impact', sans-serif; font-size: 30px; letter-spacing: 4px; color: #fbbf24; text-shadow: 0 0 20px rgba(251,191,36,.7); }
 .nbd-row { position: relative; display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
-.nbd-ball {
-  width: 46px; height: 46px; border-radius: 50%;
-  display: flex; align-items: center; justify-content: center;
-  font-weight: 900; font-size: 18px; color: #fff;
-  border: 3px solid; animation: nbdPop 2.4s ease-in-out infinite;
-  font-family: 'Courier New', monospace;
-}
+.nbd-ball { width: 46px; height: 46px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 18px; color: #fff; border: 3px solid; animation: nbdPop 2.4s ease-in-out infinite; font-family: 'Courier New', monospace; }
 .nbd-ball.red   { background: radial-gradient(circle at 30% 30%, #ef4444, #7f1d1d); border-color: #fca5a5; box-shadow: 0 0 16px rgba(239,68,68,.7); }
 .nbd-ball.green { background: radial-gradient(circle at 30% 30%, #22c55e, #14532d); border-color: #86efac; box-shadow: 0 0 16px rgba(34,197,94,.7); }
-.nbd-ball:nth-child(1){animation-delay:0s}
-.nbd-ball:nth-child(2){animation-delay:.2s}
-.nbd-ball:nth-child(3){animation-delay:.4s}
-.nbd-ball:nth-child(4){animation-delay:.6s}
-.nbd-ball:nth-child(5){animation-delay:.8s}
-.nbd-ball:nth-child(6){animation-delay:1s}
-.nbd-ball:nth-child(7){animation-delay:1.2s}
-.nbd-ball:nth-child(8){animation-delay:1.4s}
+.nbd-ball:nth-child(1){animation-delay:0s} .nbd-ball:nth-child(2){animation-delay:.2s} .nbd-ball:nth-child(3){animation-delay:.4s} .nbd-ball:nth-child(4){animation-delay:.6s} .nbd-ball:nth-child(5){animation-delay:.8s} .nbd-ball:nth-child(6){animation-delay:1s} .nbd-ball:nth-child(7){animation-delay:1.2s} .nbd-ball:nth-child(8){animation-delay:1.4s}
 @keyframes nbdPop { 0%,100%{transform:translateY(0) scale(1)} 50%{transform:translateY(-8px) scale(1.12)} }
 .nbd-sub { position: relative; color: #94a3b8; font-size: 13px; letter-spacing: 1px; }
-
 .wheel-hero-img { width: 100%; height: 220px; border-radius: 15px; overflow: hidden; margin-bottom: 20px; border: 2px solid #334155; box-shadow: 0 10px 40px rgba(0,0,0,0.6); }
 .wheel-hero-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .wheel-page-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
@@ -344,14 +210,7 @@ th { color: #94a3b8; }
 .nb-win-card .nwc-nums { font-size: 12px; color: #cbd5e1; font-family: monospace; margin-top: 4px; }
 .nb-win-card .nwc-prize { color: #fbbf24; font-weight: bold; font-size: 16px; white-space: nowrap; }
 #exitPublicBtn { display: none; position: fixed; top: 12px; right: 12px; z-index: 9999; padding: 10px 16px; background: #991b1b; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; box-shadow: 0 6px 20px rgba(0,0,0,0.5); }
-body.public-view .header,
-body.public-view .sidebar,
-body.public-view .mobile-topbar,
-body.public-view .nb-stats,
-body.public-view .nb-timer,
-body.public-view .nb-hero-decor,
-body.public-view .title,
-body.public-view .card > div > p.muted { display: none !important; }
+body.public-view .header, body.public-view .sidebar, body.public-view .mobile-topbar, body.public-view .nb-stats, body.public-view .nb-timer, body.public-view .nb-hero-decor, body.public-view .title, body.public-view .card > div > p.muted { display: none !important; }
 body.public-view .layout { grid-template-columns: 1fr !important; }
 body.public-view .main { max-width: 100% !important; padding: 8px !important; height: 100vh; overflow: auto; }
 body.public-view .card { border: none; background: transparent; padding: 0; margin: 0; }
@@ -362,12 +221,7 @@ body.public-view #exitPublicBtn { display: inline-flex !important; }
 body.public-view .nb-win-card { min-width: 320px; flex: 1 1 320px; max-width: 480px; }
 body.public-view .nwc-name { font-size: 18px; }
 body.public-view .nwc-prize { font-size: 20px; }
-body.wheel-public .header,
-body.wheel-public .sidebar,
-body.wheel-public .mobile-topbar,
-body.wheel-public .title,
-body.wheel-public .wheel-hero-img,
-body.wheel-public .status { display: none !important; }
+body.wheel-public .header, body.wheel-public .sidebar, body.wheel-public .mobile-topbar, body.wheel-public .title, body.wheel-public .wheel-hero-img, body.wheel-public .status { display: none !important; }
 body.wheel-public .layout { grid-template-columns: 1fr !important; }
 body.wheel-public .main { max-width: 100% !important; padding: 8px !important; height: 100vh; overflow: hidden; }
 body.wheel-public .card { border: none; background: transparent; padding: 0; margin: 0; }
@@ -383,28 +237,15 @@ body.wheel-public #exitPublicBtn { display: inline-flex !important; }
 .mobile-topbar .mt-burger { background: none; border: none; color: #fbbf24; font-size: 26px; padding: 6px 10px; border-radius: 6px; }
 .sidebar-backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.6); z-index: 800; }
 .sidebar-backdrop.show { display: block; }
-@media(max-width:700px) {
-    .header { display: none; }
-    .mobile-topbar { display: flex; }
-    .layout { display: block; min-height: calc(100vh - 56px); }
-    .sidebar { position: fixed; top: 0; left: -260px; width: 250px; height: 100vh; z-index: 900; overflow-y: auto; padding: 16px; transition: left .25s ease; display: flex; flex-direction: column; }
-    .sidebar.open { left: 0; }
-    .nav { min-width: 0; width: 100%; margin-right: 0; }
-    .main { padding: 14px; }
-    .stats, .nb-stats { grid-template-columns: 1fr 1fr; }
-    .wheel-container { width: 320px; }
-    .timer { font-size: 40px; }
-}
+@media(max-width:700px) { .header { display: none; } .mobile-topbar { display: flex; } .layout { display: block; min-height: calc(100vh - 56px); } .sidebar { position: fixed; top: 0; left: -260px; width: 250px; height: 100vh; z-index: 900; overflow-y: auto; padding: 16px; transition: left .25s ease; display: flex; flex-direction: column; } .sidebar.open { left: 0; } .nav { min-width: 0; width: 100%; margin-right: 0; } .main { padding: 14px; } .stats, .nb-stats { grid-template-columns: 1fr 1fr; } .wheel-container { width: 320px; } .timer { font-size: 40px; } }
 body.wheel-public #winnerArea { width: 100%; max-width: 1400px; margin: 20px auto 0; padding: 0 20px; }
 body.wheel-public .winners { background: linear-gradient(135deg, #14532d, #0f172a); border: 3px solid #4ade80; border-radius: 20px; padding: 24px; box-shadow: 0 0 60px rgba(74,222,128,0.5); animation: winnerFlash 1.5s ease-in-out infinite; }
 @keyframes winnerFlash { 0%, 100% { box-shadow: 0 0 40px rgba(74,222,128,0.45); } 50% { box-shadow: 0 0 80px rgba(74,222,128,0.95); } }
 body.wheel-public .winners h2 { font-size: 42px; text-align: center; margin-bottom: 20px; text-shadow: 0 0 30px rgba(74,222,128,0.9); }
 body.wheel-public .winners .winner { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; padding: 18px 22px; margin-bottom: 12px; background: #0b1220; border: 2px solid #4ade80; border-radius: 14px; font-size: 22px; font-weight: bold; }
 body.wheel-public .winners .winner .gold { font-size: 26px; color: #fbbf24; text-shadow: 0 0 15px rgba(251,191,36,0.9); }
-
 .login-error-box { display: none; background: #7f1d1d; color: #fca5a5; padding: 12px; border-radius: 8px; border: 1px solid #dc2626; margin-bottom: 15px; font-size: 14px; font-weight: bold; text-align: center; }
 .dep-shot-thumb { max-width: 260px; max-height: 260px; border-radius: 8px; border: 1px solid #334155; margin-top: 6px; cursor: pointer; }
-
 .custom-modal { position: fixed; inset: 0; z-index: 100000; background: rgba(0,0,0,.8); display: flex; justify-content: center; align-items: center; padding: 20px; }
 .custom-modal-box { background: #111827; border: 1px solid #334155; border-radius: 12px; width: 100%; max-width: 400px; padding: 25px; }
 .custom-modal-box h3 { margin-bottom: 15px; color: #fbbf24; }
@@ -412,16 +253,9 @@ body.wheel-public .winners .winner .gold { font-size: 26px; color: #fbbf24; text
 .custom-modal-box .btn-row { display: flex; gap: 10px; margin-top: 15px; }
 .custom-modal-box input { font-size: 16px; }
 @media (max-width: 480px) { .custom-modal-box { padding: 20px; } .custom-modal-box .btn-row { flex-direction: column; } .custom-modal-box .btn-row button { width: 100%; } }
-
-@media print {
-    body * { visibility: hidden; }
-    #print-ticket-container, #print-ticket-container * { visibility: visible; }
-    #print-ticket-container { position: absolute; left: 0; top: 0; width: 100%; margin: 0; padding: 0; background: white; color: black; }
-    .receipt-box { box-shadow: none !important; border: none !important; max-height: none !important; overflow: visible !important; }
-}
+@media print { body * { visibility: hidden; } #print-ticket-container, #print-ticket-container * { visibility: visible; } #print-ticket-container { position: absolute; left: 0; top: 0; width: 100%; margin: 0; padding: 0; background: white; color: black; } .receipt-box { box-shadow: none !important; border: none !important; max-height: none !important; overflow: visible !important; } }
 #qr-reader-dummy { display: none; }
 .verify-hint { font-size: 12px; color: #94a3b8; margin-top: 4px; }
-
 .ai-chat-container { position: fixed; bottom: 20px; right: 20px; z-index: 9999; width: 350px; max-width: 90vw; height: 500px; max-height: 80vh; background: #111827; border: 2px solid #334155; border-radius: 16px; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 10px 40px rgba(0,0,0,0.6); transition: opacity 0.3s; }
 .ai-chat-header { padding: 15px; background: #1e293b; border-bottom: 1px solid #334155; display: flex; justify-content: space-between; align-items: center; }
 .ai-chat-header h3 { font-size: 16px; color: #fbbf24; display: flex; align-items: center; gap: 8px; }
@@ -432,7 +266,6 @@ body.wheel-public .winners .winner .gold { font-size: 26px; color: #fbbf24; text
 .ai-chat-footer { padding: 12px; background: #1e293b; border-top: 1px solid #334155; display: flex; gap: 8px; }
 .ai-chat-footer input { margin: 0; padding: 10px 14px; border-radius: 20px; font-size: 14px; }
 .ai-chat-footer button { padding: 0 16px; border-radius: 20px; background: #fbbf24; color: #111827; border: none; font-weight: bold; cursor: pointer; }
-
 .verify-status { margin-top: 15px; padding: 20px; border-radius: 12px; text-align: center; border: 2px solid; box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
 .verify-status.progress { background: #0369a1; border-color: #0ea5e9; }
 .verify-status.winner { background: #14532d; border-color: #4ade80; }
@@ -441,28 +274,22 @@ body.wheel-public .winners .winner .gold { font-size: 26px; color: #fbbf24; text
 .verify-status h3 { font-size: 22px; margin-bottom: 8px; letter-spacing: 1px; }
 .verify-status .prize { font-size: 28px; font-weight: bold; color: #fbbf24; margin: 10px 0; text-shadow: 0 0 10px rgba(251,191,36,0.5); }
 .verify-status small { font-size: 13px; opacity: 0.9; display: block; margin-top: 8px; line-height: 1.4; }
-
 @keyframes bounceIn { 0% { transform: scale(0.3); opacity: 0; } 50% { transform: scale(1.05); opacity: 1; } 70% { transform: scale(0.9); } 100% { transform: scale(1); } }
 @keyframes shake { 0%, 100% { transform: translateX(0); } 10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); } 20%, 40%, 60%, 80% { transform: translateX(5px); } }
-
 .support-banner { display: flex; align-items: center; gap: 12px; padding: 14px 18px; background: linear-gradient(135deg, #0088cc, #006699); border: 1px solid #4dd0e1; border-radius: 12px; margin-bottom: 20px; flex-wrap: wrap; }
 .support-banner .icon { font-size: 32px; }
 .support-banner .text { flex: 1; min-width: 200px; }
 .support-banner .text h3 { color: #fff; margin-bottom: 4px; font-size: 16px; }
 .support-banner .text p { color: #e0f7fa; font-size: 13px; }
 .support-banner .join-btn { padding: 10px 20px; background: #fff; color: #006699; border: none; border-radius: 8px; font-weight: bold; text-decoration: none; cursor: pointer; }
-
 .receipt-branch-head h2 { text-align:center; margin-bottom:2px; }
 .receipt-branch-code { text-align:center; font-size:11px; color:#555; margin-bottom:2px; letter-spacing:1px; }
-
 .congrats-burst { font-size: 50px; margin-bottom: 5px; animation: burst 0.9s ease-out; }
 @keyframes burst { 0% { transform: scale(0.2) rotate(-20deg); opacity: 0; } 60% { transform: scale(1.35) rotate(8deg); opacity: 1; } 100% { transform: scale(1) rotate(0); opacity: 1; } }
-
 .scope-banner { padding: 14px 18px; border-radius: 12px; margin-bottom: 16px; font-size: 14px; line-height: 1.5; }
 .scope-banner.branch { background: #0c2a3a; border: 1px solid #0ea5e9; color: #7dd3fc; }
 .scope-banner.global { background: #3a2a0c; border: 1px solid #fbbf24; color: #fcd34d; }
 .scope-banner b { color: #fff; }
-
 .nav-badge { background: #dc2626; color: white; border-radius: 50%; padding: 2px 6px; font-size: 10px; font-weight: bold; margin-left: 5px; display: inline-block; vertical-align: middle; }
 </style>
 </head>
@@ -486,7 +313,6 @@ body.wheel-public .winners .winner .gold { font-size: 26px; color: #fbbf24; text
     <div class="bg-float f5">21</div>
     <div class="bg-float f6">3</div>
 
-    <!-- New Gaming Decorations -->
     <div class="slot-strip">
       <div class="slot-reel"><span>7<br>7<br>7</span></div>
       <div class="slot-reel"><span>$<br>$<br>$</span></div>
@@ -694,7 +520,7 @@ const translations = {
         "Message Main Admin": "ንዋና ኣስተዳዳሪ መልእኽቲ ስደድ", "Send": "ስደድ", "Account Number": "ቁጽሪ ሕሳብ",
         "Holder Name": "ስም ወናኒ", "Transaction ID": "መለለዪ ግብይት", "Screenshot": "ስክሪንሾት",
         "From": "ካብ", "Date": "ዕለት", "Amount Requested": "መጠን ዝተሓተተ", "Approve & Pay": "ኣረጋግጽ & ክፈል",
-        "Paid to Account": "ሕሳብ ዝተኸፍለ", "Payment confirmation sent.": "መረጋገጺ ክፍሊት ተላኢኹ።",
+        "Paid to Account": "ሕሳብ ዝተከፍለ", "Payment confirmation sent.": "መረጋገጺ ክፍሊት ተላኢኹ።",
         "Send Payment Confirmation": "መረጋገጺ ክፍሊት ስደድ", "Request Profit": "ረብሓ ሕተት",
         "Audit & Checklist": "ኦዲት & ምርግጋጽ", "Daily Income": "መዓልታዊ እቶት", "Approve": "ኣረጋግጽ", "Reject": "ኣይትቀበል"
     }
@@ -1037,7 +863,6 @@ async function refreshState() {
     } catch(e) {}
 }
 
-/* FIX: double-refresh helper to defeat DB commit lag */
 async function refreshStateTwice() {
     await refreshState();
     await new Promise(r => setTimeout(r, 500));
@@ -1224,8 +1049,6 @@ function showReceipt(data) {
 }
 function closeReceipt() { const el = document.getElementById('receiptArea'); if (el) el.innerHTML = ''; }
 
-/* FIX #1: finishAssign now does double-refresh so newly assigned
-   tickets show as SOLD immediately in the assign grid. */
 async function finishAssign() {
     closeReceipt();
     if (PAGE === 'tickets') {
@@ -1334,37 +1157,145 @@ async function verifyPage() {
         }, 100);
     }
 }
+
+// --- FIXED QR UPLOAD LOGIC WITH TESSERACT OCR FALLBACK ---
 async function handleFileUpload(event) {
-    const file = event.target.files[0]; if (!file) return;
-    const resultDiv = document.getElementById('qr-file-result'); resultDiv.innerHTML = '<p class="muted">Processing image...</p>';
-    if (!document.getElementById('qr-file-reader-temp')) { const tempDiv = document.createElement('div'); tempDiv.id = 'qr-file-reader-temp'; tempDiv.style.display = 'none'; document.body.appendChild(tempDiv); }
-    const scanner = new Html5Qrcode("qr-file-reader-temp");
-    try {
-        const decodedText = await scanner.scanFile(file, false);
-        resultDiv.innerHTML = `<div class="req-card" style="border-color:#4ade80; margin-bottom:10px;"><p style="color:#4ade80; font-weight:bold;">✅ QR Code Detected!</p><p style="font-family:monospace; color:#0ea5e9; word-break:break-all;">${escapeHTML(decodedText)}</p></div><button class="main-button" onclick="doVerify('${decodedText.replace(/'/g, "\\'")}')">🔍 SUBMIT & VERIFY</button>`;
-    } catch (err) {
-        const img = new Image();
-        img.onload = () => {
-            const canvas = document.createElement('canvas'); const ctx = canvas.getContext('2d', { willReadFrequently: true });
-            const MAX_SIZE = 1200; let width = img.width; let height = img.height;
-            if (width > height && width > MAX_SIZE) { height *= MAX_SIZE / width; width = MAX_SIZE; } else if (height > MAX_SIZE) { width *= MAX_SIZE / height; height = MAX_SIZE; }
-            canvas.width = width; canvas.height = height; ctx.drawImage(img, 0, 0, width, height);
-            const imageData = ctx.getImageData(0, 0, width, height);
+    const file = event.target.files[0]; 
+    if (!file) return;
+    
+    const resultDiv = document.getElementById('qr-file-result'); 
+    resultDiv.innerHTML = '<p class="muted">Processing image... please wait.</p>';
+    
+    const img = new Image();
+    img.onload = async () => {
+        // 1. Try Native BarcodeDetector (Chrome/Edge on Windows/Android) - Most reliable
+        if ('BarcodeDetector' in window) {
             try {
-                const code = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: "attemptBoth" });
-                if (code) resultDiv.innerHTML = `<div class="req-card" style="border-color:#4ade80; margin-bottom:10px;"><p style="color:#4ade80; font-weight:bold;">✅ QR Code Detected!</p><p style="font-family:monospace; color:#0ea5e9; word-break:break-all;">${escapeHTML(code.data)}</p></div><button class="main-button" onclick="doVerify('${code.data.replace(/'/g, "\\'")}')">🔍 SUBMIT & VERIFY</button>`;
-                else throw new Error('No QR code found');
-            } catch (jsErr) { resultDiv.innerHTML = `<p style="color:#f87171; font-weight:bold;">❌ No QR code found.</p><p class="muted" style="font-size:13px; margin-top:5px;">Tips: Ensure the image is clear, well-lit, and try cropping tightly around the QR code before uploading.</p>`; }
+                const barcodeDetector = new BarcodeDetector({ formats: ['qr_code'] });
+                const barcodes = await barcodeDetector.detect(img);
+                if (barcodes.length > 0) {
+                    renderSuccessUI(barcodes[0].rawValue, resultDiv);
+                    return;
+                }
+            } catch (e) { console.warn('Native BarcodeDetector failed, falling back to jsQR', e); }
+        }
+
+        // 2. Fallback to jsQR with Canvas enhancements
+        const canvas = document.createElement('canvas'); 
+        const ctx = canvas.getContext('2d', { willReadFrequently: true });
+        
+        const MAX_SIZE = 1500; 
+        let width = img.width; 
+        let height = img.height;
+        
+        if (width > height && width > MAX_SIZE) { height *= MAX_SIZE / width; width = MAX_SIZE; } 
+        else if (height > MAX_SIZE) { width *= MAX_SIZE / height; height = MAX_SIZE; }
+        
+        const MIN_SIZE = 600;
+        if (width < MIN_SIZE && height < MIN_SIZE) {
+            const scale = MIN_SIZE / Math.min(width, height);
+            width *= scale; height *= scale;
+        }
+
+        canvas.width = width; canvas.height = height; 
+        ctx.drawImage(img, 0, 0, width, height);
+        
+        const imageData = ctx.getImageData(0, 0, width, height);
+        const data = imageData.data;
+        for (let i = 0; i < data.length; i += 4) {
+            const avg = (data[i] + data[i+1] + data[i+2]) / 3;
+            const val = avg < 110 ? 0 : 255; 
+            data[i] = val; data[i+1] = val; data[i+2] = val;
+        }
+        ctx.putImageData(imageData, 0, 0);
+
+        const attemptScan = () => {
+            const code = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: "attemptBoth" });
+            return code ? code.data : null;
         };
-        img.onerror = () => { resultDiv.innerHTML = '<p style="color:#f87171">❌ Failed to load image.</p>'; };
-        img.src = URL.createObjectURL(file);
-    } finally { try { await scanner.clear(); } catch(e) {} }
+
+        try {
+            let qrText = attemptScan();
+            
+            if (!qrText) {
+                const tempCanvas = document.createElement('canvas');
+                const tempCtx = tempCanvas.getContext('2d');
+                const rotations = [90, 180, 270];
+                
+                for (let angle of rotations) {
+                    tempCanvas.width = height;
+                    tempCanvas.height = width;
+                    tempCtx.translate(height / 2, width / 2);
+                    tempCtx.rotate(angle * Math.PI / 180);
+                    tempCtx.drawImage(canvas, -width / 2, -height / 2);
+                    const rotData = tempCtx.getImageData(0, 0, height, width);
+                    const rotCode = jsQR(rotData.data, rotData.width, rotData.height, { inversionAttempts: "attemptBoth" });
+                    if (rotCode) { qrText = rotCode.data; break; }
+                }
+            }
+
+            if (qrText) {
+                renderSuccessUI(qrText, resultDiv);
+                return;
+            }
+
+            // 3. Fallback to Tesseract OCR
+            resultDiv.innerHTML = '<p class="muted">QR not found. Scanning text (OCR) as fallback... this may take 3-5 seconds.</p>';
+            
+            try {
+                const worker = await Tesseract.createWorker('eng');
+                const ret = await worker.recognize(file);
+                await worker.terminate();
+                
+                let text = ret.data.text.toUpperCase().replace(/\s+/g, '');
+                text = text.replace(/O/g, '0').replace(/I/g, '1').replace(/L/g, '1');
+                
+                const match = text.match(/(TICKET\d+|LW[A-Z0-9]+|NB[A-Z0-9]+)/);
+                
+                if (match) {
+                    renderSuccessUI(match[0], resultDiv);
+                } else {
+                    resultDiv.innerHTML = `
+                        <div class="req-card" style="border-color:#fbbf24; background:#2a200c; margin-bottom:10px;">
+                            <p style="color:#fcd34d; font-weight:bold; font-size:16px;">⚠️ Could not detect QR or text automatically.</p>
+                            <p style="font-size:13px; margin-top:5px; line-height:1.4; color:#fff;">
+                                The image might be blurry or the QR code is damaged. 
+                                <br><br>
+                                <b>Please type the Ticket ID below:</b>
+                            </p>
+                            <input id="manual-ocr-input" placeholder="e.g. TICKET-5 or LW-A1B2C3" style="width:100%; padding:10px; margin-top:10px; border-radius:6px; border:1px solid #475569; background:#0b1220; color:white;">
+                            <button class="main-button" style="background:#fbbf24; color:#111827; margin-top:10px;" onclick="doVerify(document.getElementById('manual-ocr-input').value.trim())">
+                                🔍 SUBMIT & VERIFY
+                            </button>
+                        </div>
+                    `;
+                }
+            } catch (ocrErr) {
+                console.error("OCR Error:", ocrErr);
+                resultDiv.innerHTML = `<p style="color:#f87171">❌ Error processing image. Please use Manual ID.</p>`;
+            }
+
+        } catch (err) {
+            resultDiv.innerHTML = '<p style="color:#f87171">❌ Error processing image.</p>';
+        }
+    };
+    img.onerror = () => { resultDiv.innerHTML = '<p style="color:#f87171">❌ Failed to load image.</p>'; };
+    img.src = URL.createObjectURL(file);
 }
 
-/* FIX #2: doVerify now has a client-side fallback that scans
-   ALL round history by batch_id when the server returns current-
-   round-only results. Also renders detailed status (winner /
-   not_winner / progress / pending) with winning numbers. */
+function renderSuccessUI(text, div) {
+    const safeTextForOnclick = JSON.stringify(text).replace(/"/g, '&quot;');
+    div.innerHTML = `
+        <div class="req-card" style="border-color:#4ade80; margin-bottom:10px; background:#0f172a;">
+            <p style="color:#4ade80; font-weight:bold; font-size:16px;">✅ QR Code Detected!</p>
+            <p style="font-family:monospace; color:#0ea5e9; word-break:break-all; margin-top:5px;">${escapeHTML(text)}</p>
+        </div>
+        <button class="main-button" style="background:#22c55e; color:white;" onclick='doVerify(${safeTextForOnclick})'>
+            🔍 SUBMIT & VERIFY
+        </button>
+    `;
+}
+
 async function doVerify(input) {
     if (!input) { toast('Enter a ticket number or ID', true); return; }
     const btn = document.querySelector('#main .main-button'); 
@@ -1382,7 +1313,6 @@ async function doVerify(input) {
             });
         } catch (e) { serverErr = e; }
 
-        // Client-side fallback: scan all round history for matching batch_id
         if (!res || !res.unique_id) {
             const hist = await scanHistoryForTicket(input);
             if (hist) res = hist;
@@ -1396,7 +1326,6 @@ async function doVerify(input) {
             return;
         }
 
-        // Branch guard
         const myBranch = getMyBranch();
         if (myBranch) {
             const ticketBranchId = res.branch_id != null ? String(res.branch_id) : null;
@@ -1412,7 +1341,6 @@ async function doVerify(input) {
             }
         }
 
-        // Render detailed result
         let html = '<div class="req-card" style="border-color:#4ade80; background:#0f172a">';
         html += '<h3 style="color:#4ade80; margin-bottom:10px">✅ Ticket Matched (Valid)</h3>';
         if (res.branch_name) html += '<div class="row"><b>Branch:</b> <span>' + escapeHTML(res.branch_name) + '</span></div>';
@@ -1471,13 +1399,10 @@ async function doVerify(input) {
     finally { if (btn) { btn.textContent = '🔍 VERIFY TICKET'; btn.disabled = false; } }
 }
 
-/* Client-side fallback: scan ALL round history for a ticket whose
-   batch_id or ticket number matches the input. */
 async function scanHistoryForTicket(input) {
     const needle = String(input).trim().toUpperCase();
     const isNumeric = /^\d+$/.test(needle);
 
-    // Try wheel history
     try {
         const w = await api('/rounds');
         for (const r of (w.rounds || [])) {
@@ -1511,7 +1436,6 @@ async function scanHistoryForTicket(input) {
         }
     } catch (e) {}
 
-    // Try NB history
     try {
         const nb = await api('/nb/rounds');
         for (const r of (nb.rounds || [])) {
@@ -1708,7 +1632,6 @@ async function buyPage() {
 }
 function buySwitchGame(g) { if (buyGame === g) return; buyGame = g; buySelected = []; nbBuyPicked = []; buyPage(); }
 
-/* FIX: robust sold detection — uses user_id OR owner_name OR phone */
 function buyRenderWheel() {
     const open = SETTINGS.sales_state === 'open'; 
     const seen = new Set(); 
@@ -1750,8 +1673,6 @@ function updateBuyTotals() {
     const c2 = document.getElementById('buyCost'); if (c2) c2.textContent = money(cost);
 }
 
-/* FIX #1: buy now does double-refresh so newly bought tickets
-   show as SOLD immediately on the next render. */
 async function buySelectedTickets() {
     if (!buySelected.length) { toast('Select at least one ticket', true); return; }
     const free = document.getElementById('buyUseFree').checked; if (free && buySelected.length > 1) { toast('Free ticket allows only 1 selection', true); return; }
@@ -1796,9 +1717,7 @@ async function ticketsPage() {
 }
 function assignSwitchGame(g) { if (assignGame === g) return; assignGame = g; assignSelectedWheel = []; assignSelectedNB = []; ticketsPage(); }
 
-/* FIX: robust sold detection for assign grid */
 function assignRenderWheel() {
-    // ALWAYS render all tickets from 1 to ticket_count, regardless of what's in the DB
     let grid = '';
     for (let num = 1; num <= SETTINGS.ticket_count; num++) { 
         const owners = TICKETS.filter(x => 
@@ -1841,12 +1760,10 @@ async function assignTicketsNB() {
     } catch (e) { toast('❌ ' + e.message, true); }
 }
 
-/* FIX: Safely handle undefined/null values in NB state */
 async function nbPage() {
     try { 
         nbState = await api('/nb/state'); 
     } catch (e) { 
-        // FIX: Show the REAL error message from the backend so you can debug it
         document.getElementById('main').innerHTML = `
             <div class="card" style="border-color:#ef4444">
                 <h2 style="color:#f87171">❌ Error loading NB state</h2>
@@ -1874,7 +1791,6 @@ async function nbPage() {
 
     const s = nbState.settings; 
     
-    // FORCE DEFAULTS TO PREVENT CRASHES (If backend sends null values)
     s.winning_numbers = s.winning_numbers || [];
     s.winners = s.winners || [];
     s.total_numbers = Number(s.total_numbers) || 80;
@@ -1963,7 +1879,7 @@ async function nbNewRound() { try { await api('/admin/nb/new-round', { method: '
 
 async function wheelPage() {
     const isAdmin = ME.role === 'admin' || ME.role === 'main_admin' || ME.role === 'branch'; const spinning = SETTINGS.round_state === 'spinning'; const open = SETTINGS.sales_state === 'open';
-    document.getElementById('main').innerHTML = `<div class="wheel-hero-img"><img src="image2.jpg" onerror="this.src='https://images.unsplash.com/photo-1511512578047-dfb367046420?w=1600&h=400&fit=crop'"></div><div class="wheel-page-head"><h1 class="title" style="margin:0">🎡 Lucky Wheel</h1><button class="small-button gold-button" onclick="enterPublicViewWheel()">🖥️ Public View</button></div><div class="card"><div class="wheel-layout"><div class="wheel-container"><div id="wheel" class="wheel"><div class="wheel-labels" id="wheelLabels"></div></div><div id="topPointer" class="pointer"></div><div class="center" id="wheelCenter">SPIN</div></div><div><div id="timer" class="timer">${formatTime(SETTINGS.duration_seconds)}</div><p id="status" class="status">${spinning ? '🎡 Spinning...' : SETTINGS.round_state === 'finished' ? 'Done.' : isAdmin ? 'Ready' : 'Waiting'}</p>${isAdmin ? '<div class="action-buttons">' + '<button class="action-btn green" onclick="startSales()" ' + (open?'disabled':'') + '>🟢 START SALES</button>' + '<button class="action-btn red" onclick="closeSales()" ' + (!open?'disabled':'') + '>🔴 CLOSE</button>' + '<button id="spinBtn" class="action-btn" onclick="startSpin()" ' + (spinning?'disabled':'') + '>🎡 SPIN</button>' + '<button class="action-btn red" onclick="newRound()" ' + (spinning?'disabled':'') + '>🔄 NEW ROUND</button>' + '</div>' : ''}<div id="winnerArea"></div></div></div></div>`;
+    document.getElementById('main').innerHTML = `<div class="wheel-hero-img"><img src="image2.jpg" onerror="this.src='https://images.unsplash.com/photo-1511512578047-dfb367046420?w=1600&h=400&fit=crop'"></div><div class="wheel-page-head"><h1 class="title" style="margin:0">🎡 Lucky Wheel</h1><button class="small-button gold-button" onclick="enterPublicViewWheel()">🖥️ Public View</button></div><div class="card"><div class="wheel-layout"><div class="wheel-container"><div id="wheel" class="wheel"><div class="wheel-labels" id="wheelLabels"></div></div><div id="topPointer" class="pointer"></div><div class="center" id="wheelCenter">SPIN</div></div><div><div id="timer" class="timer">${formatTime(SETTINGS.duration_seconds)}</div><p id="status" class="status">${spinning ? '🎡 Spinning...' : SETTINGS.round_state === 'finished' ? 'Done.' : isAdmin ? 'Ready' : 'Waiting'}</p>${isAdmin ? '<div class="action-buttons">' + '<button class="action-btn green" onclick="startSales(event)" ' + (open?'disabled':'') + '>🟢 START SALES</button>' + '<button class="action-btn red" onclick="closeSales(event)" ' + (!open?'disabled':'') + '>🔴 CLOSE</button>' + '<button id="spinBtn" class="action-btn" onclick="startSpin(event)" ' + (spinning?'disabled':'') + '>🎡 SPIN</button>' + '<button class="action-btn red" onclick="newRound(event)" ' + (spinning?'disabled':'') + '>🔄 NEW ROUND</button>' + '</div>' : ''}<div id="winnerArea"></div></div></div></div>`;
     buildWheel(); applyWheelState();
 }
 function enterPublicViewWheel() { document.body.classList.add('public-view', 'wheel-public'); setTimeout(() => { const board = document.querySelector('.wheel-container'); if (board) board.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 100); }
@@ -1987,42 +1903,45 @@ function applyWheelState() {
     const s = SETTINGS; const target = Number(s.target_rotation || 0);
     const timerEl = document.getElementById('timer'); if (!timerEl) return;
 
+    let spinDuration = Number(s.duration_seconds);
+    if (!spinDuration || spinDuration < 10) spinDuration = 30; 
+
     if (s.round_state === 'spinning') {
-        const startedAt = new Date(s.spin_started_at).getTime();
-        const duration = Math.max(3, Number(s.duration_seconds) || 8);
+        let startedAt = new Date(s.spin_started_at).getTime();
+        
+        if (isNaN(startedAt)) {
+             api('/spin/settle', { method: 'POST' }).then(() => refreshState().then(() => renderPage())).catch(() => {});
+             return;
+        }
+
         const spinKey = s.round_number + ':' + s.spin_started_at;
 
-        if (wheel._spinKey !== spinKey) {
+        if (!wheel._hasSpunForRound || wheel._spinKey !== spinKey) {
             wheel._spinKey = spinKey;
+            wheel._hasSpunForRound = true;
+            
             wheel.style.transition = 'none';
             wheel.style.transform = 'rotate(0deg)';
-            void wheel.offsetWidth;
-
-            if (wheel._onSpinEnd) {
-                wheel.removeEventListener('transitionend', wheel._onSpinEnd);
-                wheel._onSpinEnd = null;
-            }
+            void wheel.offsetWidth; 
 
             setTimeout(() => {
-                wheel.style.transition = 'transform ' + duration + 's cubic-bezier(0.15, 0.85, 0.3, 1)';
-                wheel.style.transform = 'rotate(' + (360 * 10 + target) + 'deg)';
+                wheel.style.transition = `transform ${spinDuration}s cubic-bezier(0.1, 0.8, 0.2, 1)`;
+                wheel.style.transform = `rotate(${360 * 15 + target + 180}deg)`;
 
-                wheel._onSpinEnd = () => {
-                    api('/spin/settle', { method: 'POST' }).catch(() => {});
-                    wheel.removeEventListener('transitionend', wheel._onSpinEnd);
-                    wheel._onSpinEnd = null;
-                };
-                wheel.addEventListener('transitionend', wheel._onSpinEnd, { once: true });
-
-                setTimeout(() => { api('/spin/settle', { method: 'POST' }).catch(() => {}); }, (duration * 1000) + 300);
-            }, 30);
+                setTimeout(() => {
+                    api('/spin/settle', { method: 'POST' }).then(() => {
+                        refreshState().then(() => renderPage());
+                    }).catch(() => {});
+                }, (spinDuration * 1000) + 1000);
+            }, 50);
 
             const pointer = document.getElementById('topPointer'); if (pointer) pointer.classList.remove('winner');
             const center = document.getElementById('wheelCenter'); if (center) center.textContent = 'SPINNING';
         }
 
         timerEl.classList.remove('sales'); timerEl.classList.add('spinning');
-        startCountdown(startedAt, duration); return;
+        startCountdown(startedAt, spinDuration); 
+        return;
     }
 
     if (s.round_state === 'idle' && s.sales_state === 'open') {
@@ -2034,14 +1953,16 @@ function applyWheelState() {
 
     if (s.round_state === 'idle' && s.sales_state !== 'open') {
         stopCountdown();
+        if (window._autoRestartTimer) { clearTimeout(window._autoRestartTimer); window._autoRestartTimer = null; }
         wheel._spinKey = null;
+        wheel._hasSpunForRound = false;
         wheel.style.transition = 'none';
         wheel.style.transform = 'rotate(0deg)';
         const pointer = document.getElementById('topPointer'); if (pointer) pointer.classList.remove('winner');
         const center = document.getElementById('wheelCenter'); if (center) center.textContent = 'SPIN';
         const area = document.getElementById('winnerArea'); if (area) area.innerHTML = '';
         timerEl.classList.remove('spinning', 'sales');
-        timerEl.textContent = formatTime(s.duration_seconds);
+        timerEl.textContent = formatTime(spinDuration);
         return;
     }
 
@@ -2050,53 +1971,63 @@ function applyWheelState() {
         timerEl.classList.remove('spinning', 'sales');
         wheel._spinKey = null;
         wheel.style.transition = 'none';
-        wheel.style.transform = 'rotate(' + target + 'deg)';
+        wheel.style.transform = `rotate(${target + 180}deg)`;
         const pointer = document.getElementById('topPointer'); if (pointer) pointer.classList.add('winner');
         const winners = s.winner_numbers || [];
         const center = document.getElementById('wheelCenter');
-        if (center) center.innerHTML = winners.length ? '🏆<br>#' + winners[0] : 'DONE';
+        if (center) center.innerHTML = winners.length ? `🏆<br>#${winners[0]}` : 'DONE';
         timerEl.textContent = '00:00';
         const statusEl = document.getElementById('status'); if (statusEl) statusEl.textContent = 'Round completed.';
 
-        const spinEnd = new Date(s.spin_started_at).getTime() + (Math.max(3, Number(s.duration_seconds) || 8)) * 1000;
-        const wait = Math.max(0, spinEnd - Date.now()) + 300;
-        setTimeout(() => showWinners(s.winners || []), wait);
+        showWinners(s.winners || []);
 
-        // FIX: Restored the Auto-Restart timer. Rounds will reset automatically 10 seconds after finishing.
-        if (!window._wheelFinishedAt) window._wheelFinishedAt = Date.now();
-        const finishDelay = Math.max(wait, 10000); 
-        setTimeout(() => {
-            window._wheelFinishedAt = null;
-            if (SETTINGS.round_state === 'finished') newRound();
-        }, finishDelay);
+        if (!window._autoRestartTimer) {
+            window._autoRestartTimer = setTimeout(() => {
+                window._autoRestartTimer = null;
+                if (SETTINGS.round_state === 'finished') {
+                    newRound();
+                }
+            }, 10000);
+        }
         return;
     }
 }
 
-function startSalesCountdown(at, min) {
+function startSalesCountdown(startedAtTimestamp, min) {
     if (countdownId) clearInterval(countdownId);
     const dur = min * 60;
-    const localStart = Date.now(); 
+    
+    const elapsed = (Date.now() - startedAtTimestamp) / 1000;
+    if (elapsed > dur || elapsed < -10) {
+        api('/admin/round/reset', { method: 'POST' }).then(() => {
+            refreshState().then(() => renderPage());
+        }).catch(() => {});
+        return;
+    }
+
     const tick = () => {
-        const elapsed = (Date.now() - localStart) / 1000;
+        const elapsed = (Date.now() - startedAtTimestamp) / 1000;
         const rem = Math.max(0, Math.ceil(dur - elapsed));
         const el = document.getElementById('timer');
         if (el) el.textContent = formatTime(rem);
         if (rem <= 0) {
             clearInterval(countdownId);
             countdownId = null;
+            api('/admin/close-sales', { method: 'POST' }).then(() => {
+                refreshState().then(() => renderPage());
+            }).catch(() => {});
         }
     };
     tick();
     countdownId = setInterval(tick, 500);
 }
-function startCountdown(at, dur) {
+
+function startCountdown(startedAtTimestamp, dur) {
     if (countdownId) clearInterval(countdownId);
     let settled = false;
-    const localStart = Date.now(); 
     
     const tick = () => {
-        const elapsed = (Date.now() - localStart) / 1000;
+        const elapsed = (Date.now() - startedAtTimestamp) / 1000;
         const rem = Math.max(0, Math.ceil(dur - elapsed));
         
         const el = document.getElementById('timer'); 
@@ -2106,15 +2037,71 @@ function startCountdown(at, dur) {
             settled = true;
             clearInterval(countdownId);
             countdownId = null;
-            api('/spin/settle', { method: 'POST' }).catch(() => {});
+            api('/spin/settle', { method: 'POST' }).then(() => {
+                refreshState().then(() => renderPage());
+            }).catch(() => {});
         }
     };
     tick();
     countdownId = setInterval(tick, 200);
 }
+
 function stopCountdown() { if (countdownId) { clearInterval(countdownId); countdownId = null; } }
-async function startSpin() { try { await api('/admin/spin/start', { method: 'POST' }); await refreshState(); renderPage(); } catch (e) { toast('❌ ' + e.message, true); } }
-async function newRound() { try { await api('/admin/round/reset', { method: 'POST' }); await refreshState(); renderPage(); } catch (e) { toast('❌ ' + e.message, true); } }
+
+async function startSales(e) { 
+    const btn = e ? e.target : null; const orig = btn ? btn.innerHTML : '';
+    try { 
+        if(btn) { btn.innerHTML = '⏳ Opening...'; btn.disabled = true; }
+        await api('/admin/start-sales', { method: 'POST' }); 
+        toast('🟢 Sales opened'); 
+        await refreshState(); renderPage(); 
+    } catch (e) { 
+        toast('❌ ' + e.message, true); 
+    } finally { 
+        if(btn && document.body.contains(btn)) { btn.innerHTML = orig; btn.disabled = false; } 
+    } 
+}
+
+async function closeSales(e) { 
+    const btn = e ? e.target : null; const orig = btn ? btn.innerHTML : '';
+    try { 
+        if(btn) { btn.innerHTML = '⏳ Closing...'; btn.disabled = true; }
+        await api('/admin/close-sales', { method: 'POST' }); 
+        toast('🔴 Sales closed'); 
+        await refreshState(); renderPage(); 
+    } catch (e) { 
+        toast('❌ ' + e.message, true); 
+    } finally { 
+        if(btn && document.body.contains(btn)) { btn.innerHTML = orig; btn.disabled = false; } 
+    } 
+}
+
+async function startSpin(e) { 
+    const btn = e ? e.target : null; const orig = btn ? btn.innerHTML : '';
+    try { 
+        if(btn) { btn.innerHTML = '⏳ Spinning...'; btn.disabled = true; }
+        await api('/admin/spin/start', { method: 'POST' }); 
+        await refreshState(); renderPage(); 
+    } catch (e) { 
+        toast('❌ ' + e.message, true); 
+    } finally { 
+        if(btn && document.body.contains(btn)) { btn.innerHTML = orig; btn.disabled = false; } 
+    } 
+}
+
+async function newRound(e) { 
+    const btn = e ? e.target : null; const orig = btn ? btn.innerHTML : '';
+    try { 
+        if(btn) { btn.innerHTML = '⏳ Resetting...'; btn.disabled = true; }
+        await api('/admin/round/reset', { method: 'POST' }); 
+        await refreshState(); renderPage(); 
+    } catch (e) { 
+        toast('❌ ' + e.message, true); 
+    } finally { 
+        if(btn && document.body.contains(btn)) { btn.innerHTML = orig; btn.disabled = false; } 
+    } 
+}
+
 function showWinners(winners) {
     const area = document.getElementById('winnerArea'); if (!area) return; if (!winners || !winners.length) { area.innerHTML = ''; return; }
     let html = '<div class="winners">'; html += '<h2>🏆 WINNERS — Round #' + SETTINGS.round_number + '</h2>';
@@ -2126,8 +2113,6 @@ function showWinners(winners) {
     html += '</div>'; area.innerHTML = html;
     if (document.body.classList.contains('wheel-public')) setTimeout(() => { area.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 300);
 }
-async function startSales() { try { await api('/admin/start-sales', { method: 'POST' }); toast('🟢 Sales opened'); await refreshState(); renderPage(); } catch (e) { toast('❌ ' + e.message, true); } }
-async function closeSales() { try { await api('/admin/close-sales', { method: 'POST' }); toast('🔴 Sales closed'); await refreshState(); renderPage(); } catch (e) { toast('❌ ' + e.message, true); } }
 
 async function depositPage() {
     if (ME.role === 'admin' || ME.role === 'main_admin' || ME.role === 'branch') { document.getElementById('main').innerHTML = '<div class="card"><p class="muted">Users only.</p></div>'; return; }
