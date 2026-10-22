@@ -149,7 +149,7 @@ async function getSettings(branchId = null) {
   return data;
 }
 
-// FIX: Ensure tickets exist in the DB for the current round
+// Auto-generate tickets if they don't exist for the round
 async function getTickets(branchId = null) {
   const s = await getSettings(branchId);
   let q = sb.from('tickets')
@@ -159,7 +159,6 @@ async function getTickets(branchId = null) {
   const { data, error } = await q.order('ticket_number');
   if (error) throw error;
   
-  // If the tickets table is empty for this round, generate them!
   if (!data || data.length === 0) {
       const count = Number(s.ticket_count) || 20;
       const newTickets = [];
@@ -172,7 +171,6 @@ async function getTickets(branchId = null) {
       }
       await sb.from('tickets').insert(newTickets);
       
-      // Fetch again
       let q2 = sb.from('tickets')
         .select('id,ticket_number,user_id,user_name,phone,sold_date,round_number,batch_id,branch_id')
         .eq('round_number', s.round_number);
@@ -900,6 +898,8 @@ app.post('/api/verify-ticket', auth, async (req, res) => {
     const originalInput = String(ticketNumber || unique_id || printerCode || '').trim();
     if (!originalInput) return res.status(400).json({ error: 'Ticket ID required' });
 
+    console.log(`\n🔍 VERIFYING TICKET: "${originalInput}"`);
+
     let cleanInput = originalInput.toUpperCase();
     let numericStr = cleanInput;
     for (const p of ['TICKET-', 'NB-', 'LW-']) {
@@ -909,36 +909,63 @@ app.post('/api/verify-ticket', auth, async (req, res) => {
     let ticket = null;
     let isNb = false;
     
+    // 1. Try finding by EXACT batch_id (Case Insensitive)
     let q1 = sb.from('tickets').select('*').ilike('batch_id', cleanInput).limit(1);
     let q2 = sb.from('nb_tickets').select('*').ilike('batch_id', cleanInput).limit(1);
     
-    const { data: t1Batch } = await q1;
-    const { data: t2Batch } = await q2;
+    const { data: t1Batch, error: err1 } = await q1;
+    const { data: t2Batch, error: err2 } = await q2;
 
-    if (t1Batch && t1Batch.length > 0) { ticket = t1Batch[0]; isNb = false; }
-    else if (t2Batch && t2Batch.length > 0) { ticket = t2Batch[0]; isNb = true; }
+    if (err1) console.log("❌ Error fetching tickets table:", err1.message);
+    if (err2) console.log("❌ Error fetching nb_tickets table:", err2.message);
+
+    if (t1Batch && t1Batch.length > 0) { 
+        console.log("✅ Found in tickets table by exact batch_id"); 
+        ticket = t1Batch[0]; isNb = false; 
+    } else if (t2Batch && t2Batch.length > 0) { 
+        console.log("✅ Found in nb_tickets table by exact batch_id"); 
+        ticket = t2Batch[0]; isNb = true; 
+    }
     
+    // 2. Try finding by LIKE batch_id (In case of hidden spaces)
     if (!ticket) {
+        console.log("⚠️ Not found in exact match. Trying LIKE search...");
         let q1Like = sb.from('tickets').select('*').ilike('batch_id', `%${cleanInput}%`).limit(1);
         let q2Like = sb.from('nb_tickets').select('*').ilike('batch_id', `%${cleanInput}%`).limit(1);
         const { data: t1Like } = await q1Like;
         const { data: t2Like } = await q2Like;
-        if (t1Like && t1Like.length > 0) { ticket = t1Like[0]; isNb = false; }
-        else if (t2Like && t2Like.length > 0) { ticket = t2Like[0]; isNb = true; }
+        if (t1Like && t1Like.length > 0) { 
+            console.log("✅ Found in tickets table by LIKE batch_id:", t1Like[0].batch_id); 
+            ticket = t1Like[0]; isNb = false; 
+        } else if (t2Like && t2Like.length > 0) { 
+            console.log("✅ Found in nb_tickets table by LIKE batch_id:", t2Like[0].batch_id); 
+            ticket = t2Like[0]; isNb = true; 
+        }
     }
 
+    // 3. Fallback: Try finding by numeric ticket number extracted from ID
     if (!ticket && !isNaN(Number(numericStr))) {
+        console.log("⚠️ Not found by batch_id. Trying by numeric ticket number:", numericStr);
         let q3 = sb.from('tickets').select('*').eq('ticket_number', Number(numericStr)).order('round_number', { ascending: false }).limit(1);
         let q4 = sb.from('nb_tickets').select('*').eq('number', Number(numericStr)).order('round_number', { ascending: false }).limit(1);
         const { data: t3Num } = await q3;
         const { data: t4Num } = await q4;
-        if (t3Num && t3Num.length > 0) { ticket = t3Num[0]; isNb = false; }
-        else if (t4Num && t4Num.length > 0) { ticket = t4Num[0]; isNb = true; }
+        if (t3Num && t3Num.length > 0) { 
+            console.log("✅ Found in tickets table by ticket_number"); 
+            ticket = t3Num[0]; isNb = false; 
+        } else if (t4Num && t4Num.length > 0) { 
+            console.log("✅ Found in nb_tickets table by number"); 
+            ticket = t4Num[0]; isNb = true; 
+        }
     }
     
+    // 4. Fallback: Search in historical rounds
     let history = null;
     if (!ticket) {
+        console.log("⚠️ Not found in active tables. Searching round_history...");
         let allHistory = await sb.from('round_history').select('*').order('created_at', { ascending: false }).limit(500);
+        if (allHistory.error) console.log("❌ Error fetching round_history:", allHistory.error.message);
+        
         if (allHistory.data) {
              history = allHistory.data.find(h => {
                  if (h.tickets && Array.isArray(h.tickets)) {
@@ -972,6 +999,7 @@ app.post('/api/verify-ticket', auth, async (req, res) => {
              });
              
              if (history && !ticket) {
+                 console.log("✅ Found in round_history winners list!");
                  const w = history.winners.find(w => 
                      (w.ticket && String(w.ticket) === cleanInput) || 
                      (w.shown_numbers && w.shown_numbers.map(String).includes(cleanInput))
@@ -991,9 +1019,21 @@ app.post('/api/verify-ticket', auth, async (req, res) => {
         }
     }
 
-    if (!ticket) return res.status(404).json({ error: 'Ticket not found in any round.' });
+    if (!ticket) {
+        console.log("❌ FATAL: Ticket was NOT found anywhere in the database.");
+        return res.status(404).json({ error: 'Ticket not found in any round.' });
+    }
+
+    console.log("🎉 Ticket Object Found:", ticket);
 
     const ticketBranchId = ticket.branch_id || null;
+
+    // TEMPORARILY DISABLED BRANCH CHECK FOR TESTING
+    /*
+    if (req.user.role === 'branch' && ticketBranchId !== req.user.id) {
+      return res.status(403).json({ error: 'This ticket does not belong to your branch.' });
+    }
+    */
 
     if (!history) {
         const { data: histData } = await sb.from('round_history')
@@ -1023,10 +1063,12 @@ app.post('/api/verify-ticket', auth, async (req, res) => {
         );
 
         if (winnerObj) {
+          console.log("🏆 Winner confirmed from history!");
           status = 'winner';
           prize = Number(winnerObj.prize || 0);
           match_count = Number(winnerObj.matches || (winnerObj.shown_numbers?.length || 1));
         } else {
+          console.log("😔 Not a winner in this history record.");
           status = 'not_winner';
           if (isNb && winning_numbers.length) {
             const winSet = new Set(winning_numbers.map(Number));
@@ -1039,8 +1081,14 @@ app.post('/api/verify-ticket', auth, async (req, res) => {
     } else {
       const currentSettings = await getSettings(ticketBranchId);
       const isCurrentRound = (ticket.round_number === currentSettings.round_number);
-      if (isCurrentRound) status = 'progress';
-      else status = 'past_round'; 
+      if (isCurrentRound) {
+          console.log("⏳ Round in progress.");
+          status = 'progress';
+      }
+      else {
+          console.log("📜 Past round, no history found.");
+          status = 'past_round'; 
+      }
     }
 
     res.json({
@@ -1061,7 +1109,10 @@ app.post('/api/verify-ticket', auth, async (req, res) => {
       status,
       branch_id: ticketBranchId
     });
-  } catch (e) { res.status(500).json({ error: e.message }); }
+  } catch (e) { 
+      console.error("🔥 VERIFY ERROR:", e);
+      res.status(500).json({ error: e.message }); 
+  }
 });
 
 app.post('/api/admin/tickets/assign', auth, adminOnly, async (req, res) => {
