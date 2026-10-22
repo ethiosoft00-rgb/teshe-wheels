@@ -79,11 +79,11 @@ function asArray(v) {
   return [v];
 }
 
-/* ============================================================
-   BULLETPROOF SETTINGS HELPERS (UUID FIXED)
-   ============================================================ */
 const GLOBAL_SETTINGS_ID = '00000000-0000-0000-0000-000000000001';
 
+/* ============================================================
+   BULLETPROOF SETTINGS HELPERS
+   ============================================================ */
 async function getSettings(branchId = null) {
   let q = sb.from('app_settings').select('*');
   q = branchId ? q.eq('branch_id', branchId) : q.is('branch_id', null).eq('id', GLOBAL_SETTINGS_ID);
@@ -118,7 +118,6 @@ async function getSettings(branchId = null) {
   }
   
   if (!data) {
-      // If global settings are missing entirely, create them using the UUID
       const { data: newSettings, error: createErr } = await sb.from('app_settings').insert({
         id: GLOBAL_SETTINGS_ID,
         branch_id: null, round_number: 1, ticket_count: 20, ticket_price: 50,
@@ -146,9 +145,11 @@ async function getSettings(branchId = null) {
   tq = scopeQuery(tq, branchId);
   const { count } = await tq;
   data.wheel_sold = count || 0;
+  
   return data;
 }
 
+// FIX: Ensure tickets exist in the DB for the current round
 async function getTickets(branchId = null) {
   const s = await getSettings(branchId);
   let q = sb.from('tickets')
@@ -157,7 +158,30 @@ async function getTickets(branchId = null) {
   q = scopeQuery(q, branchId);
   const { data, error } = await q.order('ticket_number');
   if (error) throw error;
-  return data || [];
+  
+  // If the tickets table is empty for this round, generate them!
+  if (!data || data.length === 0) {
+      const count = Number(s.ticket_count) || 20;
+      const newTickets = [];
+      for (let i = 1; i <= count; i++) {
+          newTickets.push({
+              ticket_number: i,
+              round_number: s.round_number,
+              branch_id: branchId
+          });
+      }
+      await sb.from('tickets').insert(newTickets);
+      
+      // Fetch again
+      let q2 = sb.from('tickets')
+        .select('id,ticket_number,user_id,user_name,phone,sold_date,round_number,batch_id,branch_id')
+        .eq('round_number', s.round_number);
+      q2 = scopeQuery(q2, branchId);
+      const { data: newData } = await q2.order('ticket_number');
+      return newData || [];
+  }
+  
+  return data;
 }
 
 async function getNbSettings(branchId = null) {
@@ -288,7 +312,6 @@ app.get('/api/config', (req, res) => {
   res.json({ supabaseUrl: process.env.SUPABASE_URL, supabaseAnonKey: process.env.SUPABASE_ANON_KEY });
 });
 
-// FIX: Added missing NB config route for frontend
 app.get('/api/nb/config', auth, async (req, res) => {
   try {
     const branchId = await resolveBranchId(req);
@@ -886,17 +909,15 @@ app.post('/api/verify-ticket', auth, async (req, res) => {
     let ticket = null;
     let isNb = false;
     
-    // 1. Try finding by EXACT batch_id (Case Insensitive)
     let q1 = sb.from('tickets').select('*').ilike('batch_id', cleanInput).limit(1);
     let q2 = sb.from('nb_tickets').select('*').ilike('batch_id', cleanInput).limit(1);
     
-    const { data: t1Batch, error: err1 } = await q1;
-    const { data: t2Batch, error: err2 } = await q2;
+    const { data: t1Batch } = await q1;
+    const { data: t2Batch } = await q2;
 
     if (t1Batch && t1Batch.length > 0) { ticket = t1Batch[0]; isNb = false; }
     else if (t2Batch && t2Batch.length > 0) { ticket = t2Batch[0]; isNb = true; }
     
-    // 2. Try finding by LIKE batch_id (In case of hidden spaces)
     if (!ticket) {
         let q1Like = sb.from('tickets').select('*').ilike('batch_id', `%${cleanInput}%`).limit(1);
         let q2Like = sb.from('nb_tickets').select('*').ilike('batch_id', `%${cleanInput}%`).limit(1);
@@ -906,7 +927,6 @@ app.post('/api/verify-ticket', auth, async (req, res) => {
         else if (t2Like && t2Like.length > 0) { ticket = t2Like[0]; isNb = true; }
     }
 
-    // 3. Fallback: Try finding by numeric ticket number extracted from ID
     if (!ticket && !isNaN(Number(numericStr))) {
         let q3 = sb.from('tickets').select('*').eq('ticket_number', Number(numericStr)).order('round_number', { ascending: false }).limit(1);
         let q4 = sb.from('nb_tickets').select('*').eq('number', Number(numericStr)).order('round_number', { ascending: false }).limit(1);
@@ -916,7 +936,6 @@ app.post('/api/verify-ticket', auth, async (req, res) => {
         else if (t4Num && t4Num.length > 0) { ticket = t4Num[0]; isNb = true; }
     }
     
-    // 4. Fallback: Search in historical rounds
     let history = null;
     if (!ticket) {
         let allHistory = await sb.from('round_history').select('*').order('created_at', { ascending: false }).limit(500);
@@ -975,13 +994,6 @@ app.post('/api/verify-ticket', auth, async (req, res) => {
     if (!ticket) return res.status(404).json({ error: 'Ticket not found in any round.' });
 
     const ticketBranchId = ticket.branch_id || null;
-
-    // TEMPORARILY DISABLED BRANCH CHECK FOR TESTING
-    /*
-    if (req.user.role === 'branch' && ticketBranchId !== req.user.id) {
-      return res.status(403).json({ error: 'This ticket does not belong to your branch.' });
-    }
-    */
 
     if (!history) {
         const { data: histData } = await sb.from('round_history')
