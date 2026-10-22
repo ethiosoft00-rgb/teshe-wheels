@@ -1158,7 +1158,6 @@ async function verifyPage() {
     }
 }
 
-// --- FIXED QR UPLOAD LOGIC WITH TESSERACT OCR FALLBACK ---
 async function handleFileUpload(event) {
     const file = event.target.files[0]; 
     if (!file) return;
@@ -1168,7 +1167,6 @@ async function handleFileUpload(event) {
     
     const img = new Image();
     img.onload = async () => {
-        // 1. Try Native BarcodeDetector (Chrome/Edge on Windows/Android) - Most reliable
         if ('BarcodeDetector' in window) {
             try {
                 const barcodeDetector = new BarcodeDetector({ formats: ['qr_code'] });
@@ -1180,7 +1178,6 @@ async function handleFileUpload(event) {
             } catch (e) { console.warn('Native BarcodeDetector failed, falling back to jsQR', e); }
         }
 
-        // 2. Fallback to jsQR with Canvas enhancements
         const canvas = document.createElement('canvas'); 
         const ctx = canvas.getContext('2d', { willReadFrequently: true });
         
@@ -1239,7 +1236,6 @@ async function handleFileUpload(event) {
                 return;
             }
 
-            // 3. Fallback to Tesseract OCR
             resultDiv.innerHTML = '<p class="muted">QR not found. Scanning text (OCR) as fallback... this may take 3-5 seconds.</p>';
             
             try {
@@ -1644,17 +1640,18 @@ function buyRenderWheel() {
     list.sort((a, b) => a.ticket_number - b.ticket_number); 
     let grid = '';
     for (const t of list) {
+        // CORRECT LOGIC: Check if user_id is present to mark as sold
         const owners = TICKETS.filter(x => 
             Number(x.ticket_number) === Number(t.ticket_number) && 
-            (x.user_id || x.user_name || x.phone || x.sold || x.sold_date)
+            x.user_id // Only consider it owned if user_id exists
         );
         const mine = owners.some(x => String(x.user_id) === String(ME.id));
         let cls = 'ticket-select'; 
         if (mine) cls += ' mine'; 
-        else if (owners.length) cls += ' sold';
+        else if (owners.length > 0) cls += ' sold';
         let label = 'AVAILABLE'; 
         if (mine) label = 'YOURS (' + owners.length + ')'; 
-        else if (owners.length) label = 'SOLD';
+        else if (owners.length > 0) label = 'SOLD';
         grid += '<button type="button" class="' + cls + '" onclick="selectBuy(' + t.ticket_number + ', this)">#' + 
                 t.ticket_number + '<br><small>' + label + '</small></button>';
     }
@@ -1722,7 +1719,7 @@ function assignRenderWheel() {
     for (let num = 1; num <= SETTINGS.ticket_count; num++) { 
         const owners = TICKETS.filter(x => 
             Number(x.ticket_number) === num && 
-            (x.user_id || x.user_name || x.phone || x.sold || x.sold_date)
+            x.user_id // Only consider it owned if user_id exists
         ); 
         const label = owners.length ? ('SOLD (' + owners.length + ')') : 'AVAILABLE'; 
         grid += '<button type="button" class="ticket-select ' + (owners.length ? 'sold' : '') + '" onclick="selectAssignWheel(' + num + ', this)">#' + num + '<br><small>' + label + '</small></button>'; 
