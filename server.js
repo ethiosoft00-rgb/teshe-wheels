@@ -94,40 +94,22 @@ async function getSettings(branchId = null) {
   if (!data && branchId) {
     const newId = crypto.randomUUID();
     const { data: newSettings, error: createErr } = await sb.from('app_settings').insert({
-      id: newId,
-      branch_id: branchId, round_number: 1, ticket_count: 20, ticket_price: 50,
-      sales_state: 'idle', round_state: 'idle', 
-      duration_seconds: 30, 
-      winner_count: 1,
+      id: newId, branch_id: branchId, round_number: 1, ticket_count: 20, ticket_price: 50,
+      sales_state: 'idle', round_state: 'idle', duration_seconds: 30, winner_count: 1,
       prize_percents: [50], sales_duration: 120, referral_goal: 8, referral_reward: 1,
       winner_numbers: [], winners: [], target_rotation: 0
     }).select().single();
-    
-    if (createErr) {
-        console.error("Auto-create settings failed, using fallback.", createErr);
-        return {
-          branch_id: branchId, round_number: 1, ticket_count: 20, ticket_price: 50,
-          sales_state: 'idle', round_state: 'idle', 
-          duration_seconds: 30, 
-          winner_count: 1,
-          prize_percents: [50], sales_duration: 120, referral_goal: 8, referral_reward: 1,
-          winner_numbers: [], winners: [], target_rotation: 0, wheel_sold: 0
-        };
-    }
+    if (createErr) return { branch_id: branchId, round_number: 1, ticket_count: 20, ticket_price: 50, sales_state: 'idle', round_state: 'idle', duration_seconds: 30, winner_count: 1, prize_percents: [50], sales_duration: 120, referral_goal: 8, referral_reward: 1, winner_numbers: [], winners: [], target_rotation: 0, wheel_sold: 0 };
     return getSettings(branchId);
   }
   
   if (!data) {
       const { data: newSettings, error: createErr } = await sb.from('app_settings').insert({
-        id: GLOBAL_SETTINGS_ID,
-        branch_id: null, round_number: 1, ticket_count: 20, ticket_price: 50,
-        sales_state: 'idle', round_state: 'idle', 
-        duration_seconds: 30, 
-        winner_count: 1,
+        id: GLOBAL_SETTINGS_ID, branch_id: null, round_number: 1, ticket_count: 20, ticket_price: 50,
+        sales_state: 'idle', round_state: 'idle', duration_seconds: 30, winner_count: 1,
         prize_percents: [50], sales_duration: 120, referral_goal: 8, referral_reward: 1,
         winner_numbers: [], winners: [], target_rotation: 0
       }).select().single();
-      
       if (createErr) throw createErr;
       return newSettings;
   }
@@ -135,13 +117,12 @@ async function getSettings(branchId = null) {
   data.prize_percents = asArray(data.prize_percents);
   data.winner_numbers = asArray(data.winner_numbers);
   data.winners        = asArray(data.winners);
-
   data.duration_seconds = Number(data.duration_seconds) || 30;
   data.sales_duration = Number(data.sales_duration) || 120;
   data.ticket_count = Number(data.ticket_count) || 20;
+  data.ticket_price = Number(data.ticket_price) || 50;
 
-  let tq = sb.from('tickets').select('*', { count: 'exact', head: true })
-    .eq('round_number', data.round_number).not('user_id', 'is', null);
+  let tq = sb.from('tickets').select('*', { count: 'exact', head: true }).eq('round_number', data.round_number).not('user_id', 'is', null);
   tq = scopeQuery(tq, branchId);
   const { count } = await tq;
   data.wheel_sold = count || 0;
@@ -149,12 +130,9 @@ async function getSettings(branchId = null) {
   return data;
 }
 
-// Auto-generate tickets if they don't exist for the round
 async function getTickets(branchId = null) {
   const s = await getSettings(branchId);
-  let q = sb.from('tickets')
-    .select('id,ticket_number,user_id,user_name,phone,sold_date,round_number,batch_id,branch_id')
-    .eq('round_number', s.round_number);
+  let q = sb.from('tickets').select('id,ticket_number,user_id,user_name,phone,sold_date,round_number,batch_id,branch_id').eq('round_number', s.round_number);
   q = scopeQuery(q, branchId);
   const { data, error } = await q.order('ticket_number');
   if (error) throw error;
@@ -162,23 +140,14 @@ async function getTickets(branchId = null) {
   if (!data || data.length === 0) {
       const count = Number(s.ticket_count) || 20;
       const newTickets = [];
-      for (let i = 1; i <= count; i++) {
-          newTickets.push({
-              ticket_number: i,
-              round_number: s.round_number,
-              branch_id: branchId
-          });
-      }
+      for (let i = 1; i <= count; i++) newTickets.push({ ticket_number: i, round_number: s.round_number, branch_id: branchId });
       await sb.from('tickets').insert(newTickets);
       
-      let q2 = sb.from('tickets')
-        .select('id,ticket_number,user_id,user_name,phone,sold_date,round_number,batch_id,branch_id')
-        .eq('round_number', s.round_number);
+      let q2 = sb.from('tickets').select('id,ticket_number,user_id,user_name,phone,sold_date,round_number,batch_id,branch_id').eq('round_number', s.round_number);
       q2 = scopeQuery(q2, branchId);
       const { data: newData } = await q2.order('ticket_number');
       return newData || [];
   }
-  
   return data;
 }
 
@@ -191,31 +160,19 @@ async function getNbSettings(branchId = null) {
 
   if (!data && branchId) {
     const newId = crypto.randomUUID();
-    const insertData = {
-      id: newId,
-      branch_id: branchId, round_number: 1, total_numbers: 80, drawn_count: 20,
+    const { data: newSettings, error: createErr } = await sb.from('nb_settings').insert({
+      id: newId, branch_id: branchId, round_number: 1, total_numbers: 80, drawn_count: 20,
       tickets_per_purchase: 2, price_per_purchase: 30, draw_delay_seconds: 2,
       round_duration_minutes: 120, winner_count: 3, prize_percents: [50, 30, 20],
       sales_state: 'idle', round_state: 'idle', winning_numbers: [], winners: []
-    };
-    const { data: newSettings, error: createErr } = await sb.from('nb_settings').insert(insertData).select().single();
-    
-    if (createErr) {
-        console.error("Auto-create NB settings failed, using fallback.", createErr);
-        return {
-            branch_id: branchId, round_number: 1, total_numbers: 80, drawn_count: 20,
-            tickets_per_purchase: 2, price_per_purchase: 30, draw_delay_seconds: 2,
-            round_duration_minutes: 120, winner_count: 3, prize_percents: [50, 30, 20],
-            sales_state: 'idle', round_state: 'idle', winning_numbers: [], winners: []
-        };
-    }
+    }).select().single();
+    if (createErr) return { branch_id: branchId, round_number: 1, total_numbers: 80, drawn_count: 20, tickets_per_purchase: 2, price_per_purchase: 30, draw_delay_seconds: 2, round_duration_minutes: 120, winner_count: 3, prize_percents: [50, 30, 20], sales_state: 'idle', round_state: 'idle', winning_numbers: [], winners: [] };
     return getNbSettings(branchId); 
   }
 
   if (!data) {
       const { data: newSettings, error: createErr } = await sb.from('nb_settings').insert({
-        id: GLOBAL_SETTINGS_ID,
-        branch_id: null, round_number: 1, total_numbers: 80, drawn_count: 20,
+        id: GLOBAL_SETTINGS_ID, branch_id: null, round_number: 1, total_numbers: 80, drawn_count: 20,
         tickets_per_purchase: 2, price_per_purchase: 30, draw_delay_seconds: 2,
         round_duration_minutes: 120, winner_count: 3, prize_percents: [50, 30, 20],
         sales_state: 'idle', round_state: 'idle', winning_numbers: [], winners: []
@@ -227,14 +184,13 @@ async function getNbSettings(branchId = null) {
   data.prize_percents  = asArray(data.prize_percents);
   data.winning_numbers = asArray(data.winning_numbers);
   data.winners         = asArray(data.winners);
-  
   data.winning_numbers = data.winning_numbers || [];
   data.winners = data.winners || [];
   data.total_numbers = Number(data.total_numbers) || 80;
   data.drawn_count = Number(data.drawn_count) || 20;
   data.draw_delay_seconds = Number(data.draw_delay_seconds) || 2;
   data.tickets_per_purchase = Number(data.tickets_per_purchase) || 1;
-  data.price_per_purchase = Number(data.price_per_purchase) || 0;
+  data.price_per_purchase = Number(data.price_per_purchase) || 30;
 
   return data;
 }
@@ -248,36 +204,46 @@ async function getNbTickets(branchId, roundNumber) {
 }
 
 async function updateSettings(branchId, patch, table = 'app_settings') {
-  try {
-    if (branchId) {
-      const { data: existing, error: checkErr } = await sb.from(table)
-        .select('id')
-        .eq('branch_id', branchId)
-        .maybeSingle();
+  let finalPatch = { ...patch };
+  let attempts = 0;
+  
+  while (attempts < 5) {
+    try {
+      if (branchId) {
+        const { data: existing, error: checkErr } = await sb.from(table).select('id').eq('branch_id', branchId).maybeSingle();
+        if (checkErr) throw checkErr;
 
-      if (checkErr) throw checkErr;
-
-      if (existing) {
-        const { error: updateErr } = await sb.from(table)
-          .update(patch)
-          .eq('branch_id', branchId);
-        if (updateErr) throw updateErr;
+        if (existing) {
+          const { error: updateErr } = await sb.from(table).update(finalPatch).eq('branch_id', branchId);
+          if (updateErr) throw updateErr;
+        } else {
+          const newId = crypto.randomUUID();
+          const { error: insertErr } = await sb.from(table).insert({ id: newId, branch_id: branchId, ...finalPatch });
+          if (insertErr) throw insertErr;
+        }
       } else {
-        const newId = crypto.randomUUID();
-        const { error: insertErr } = await sb.from(table)
-          .insert({ id: newId, branch_id: branchId, ...patch });
-        if (insertErr) throw insertErr;
+        const { data, error } = await sb.from(table).update(finalPatch).eq('id', GLOBAL_SETTINGS_ID).is('branch_id', null).select();
+        if (error) throw error;
+        
+        if (!data || data.length === 0) {
+           const { error: insertErr } = await sb.from(table).insert({ id: GLOBAL_SETTINGS_ID, branch_id: null, ...finalPatch });
+           if (insertErr) throw insertErr;
+        }
       }
-    } else {
-      const { error } = await sb.from(table)
-        .update(patch)
-        .eq('id', GLOBAL_SETTINGS_ID)
-        .is('branch_id', null);
-      if (error) throw error;
+      return;
+    } catch (err) {
+      attempts++;
+      const msg = err.message || '';
+      const match = msg.match(/'([^']+)' column/) || msg.match(/column "([^"]+)" of relation/) || msg.match(/Could not find the '([^']+)' column/);
+      
+      if (match && match[1]) {
+        console.warn(`⚠️ Missing column: ${match[1]}. Stripping and retrying...`);
+        delete finalPatch[match[1]];
+      } else {
+        console.error(`🔥 UPDATE SETTINGS FATAL ERROR (${table}):`, err);
+        throw err; 
+      }
     }
-  } catch (error) {
-    console.error(`🔥 UPDATE SETTINGS ERROR (${table}):`, error);
-    throw error;
   }
 }
 
@@ -398,19 +364,13 @@ app.get('/api/state', auth, async (req, res) => {
     let me;
 
     if (req.user.role === 'main_admin' || req.user.role === 'admin') {
-      const { data } = await sb.from('users')
-        .select('id,name,phone,role,balance,free_tickets,referral_code,active_referrals,public_id')
-        .eq('id', req.user.id).maybeSingle();
+      const { data } = await sb.from('users').select('id,name,phone,role,balance,free_tickets,referral_code,active_referrals,public_id').eq('id', req.user.id).maybeSingle();
       me = data || { id: req.user.id, name: 'Admin', phone: req.user.phone, role: 'admin', balance: 0, free_tickets: 0 };
     } else if (req.user.role === 'branch') {
-      const { data } = await sb.from('branches')
-        .select('id,name,admin_phone,code,telegram_link,holder_name,receipt_company_name')
-        .eq('id', req.user.id).maybeSingle();
+      const { data } = await sb.from('branches').select('id,name,admin_phone,code,telegram_link,holder_name,receipt_company_name').eq('id', req.user.id).maybeSingle();
       me = { ...(data || {}), role: 'branch', branch_name: data?.name };
     } else {
-      const { data } = await sb.from('users')
-        .select('id,name,phone,balance,role,referral_code,active_referrals,free_tickets,has_bought_ticket,public_id,branch_id')
-        .eq('id', req.user.id).maybeSingle();
+      const { data } = await sb.from('users').select('id,name,phone,balance,role,referral_code,active_referrals,free_tickets,has_bought_ticket,public_id,branch_id').eq('id', req.user.id).maybeSingle();
       me = data;
       if (me && me.branch_id) {
         const { data: b } = await sb.from('branches').select('telegram_link,name').eq('id', me.branch_id).maybeSingle();
@@ -468,24 +428,13 @@ app.post('/api/user/tickets/buy', auth, async (req, res) => {
     const { data: user } = await sb.from('users').select('name, phone').eq('id', req.user.id).single();
 
     for (const n of numbers) {
-      let updQ = sb.from('tickets')
-        .update({
-          user_id: req.user.id, user_name: user.name, phone: user.phone,
-          sold_date: now, batch_id: batchId, used_free_ticket: usedFree
-        })
-        .eq('round_number', s.round_number)
-        .eq('ticket_number', n)
-        .is('user_id', null); 
-
+      let updQ = sb.from('tickets').update({ user_id: req.user.id, user_name: user.name, phone: user.phone, sold_date: now, batch_id: batchId, used_free_ticket: usedFree })
+        .eq('round_number', s.round_number).eq('ticket_number', n).is('user_id', null); 
       updQ = scopeQuery(updQ, branchId);
       const { data: updated } = await updQ.select('id');
 
       if (!updated || updated.length === 0) {
-        await sb.from('tickets').insert({
-          ticket_number: n, user_id: req.user.id, user_name: user.name, phone: user.phone,
-          sold_date: now, round_number: s.round_number, used_free_ticket: usedFree,
-          batch_id: batchId, branch_id: branchId
-        });
+        await sb.from('tickets').insert({ ticket_number: n, user_id: req.user.id, user_name: user.name, phone: user.phone, sold_date: now, round_number: s.round_number, used_free_ticket: usedFree, batch_id: batchId, branch_id: branchId });
       }
     }
     res.json({ ok: true, batch_id: batchId });
@@ -511,11 +460,7 @@ app.post('/api/nb/buy', auth, async (req, res) => {
     const now = new Date().toISOString();
     const { data: user } = await sb.from('users').select('name, phone').eq('id', req.user.id).single();
 
-    const insertRows = numbers.map(n => ({
-      number: n, user_id: req.user.id, user_name: user.name, phone: user.phone,
-      round_number: s.round_number, sold_date: now, batch_id: batchId,
-      is_free: false, branch_id: branchId
-    }));
+    const insertRows = numbers.map(n => ({ number: n, user_id: req.user.id, user_name: user.name, phone: user.phone, round_number: s.round_number, sold_date: now, batch_id: batchId, is_free: false, branch_id: branchId }));
     const { error } = await sb.from('nb_tickets').insert(insertRows);
     if (error) throw error;
     res.json({ ok: true, batch_id: batchId });
@@ -525,9 +470,7 @@ app.post('/api/nb/buy', auth, async (req, res) => {
 app.get('/api/referrals', auth, async (req, res) => {
   try {
     if (['admin', 'main_admin', 'branch'].includes(req.user.role)) return res.json({ referrals: [] });
-    const { data, error } = await sb.from('users')
-      .select('name, phone, has_bought_ticket')
-      .eq('referred_by', req.user.id);
+    const { data, error } = await sb.from('users').select('name, phone, has_bought_ticket').eq('referred_by', req.user.id);
     if (error) throw error;
     res.json({ referrals: data || [] });
   } catch (e) { res.status(500).json({ error: e.message }); }
@@ -555,8 +498,7 @@ app.post('/api/admin/branches', auth, mainAdminOnly, async (req, res) => {
 
     const { data, error } = await sb.from('branches').insert({
       name: String(name).trim(), code: cleanCode, admin_phone: cleanPhone, password_hash: hash,
-      cbe_account, boa_account,
-      holder_name: holder_name ? String(holder_name).trim() : null,
+      cbe_account, boa_account, holder_name: holder_name ? String(holder_name).trim() : null,
       telegram_link: telegram_link ? String(telegram_link).trim() : null,
       receipt_company_name: receipt_company_name ? String(receipt_company_name).trim() : null
     }).select().single();
@@ -564,19 +506,15 @@ app.post('/api/admin/branches', auth, mainAdminOnly, async (req, res) => {
     if (error) return res.status(500).json({ error: error.message });
 
     await sb.from('app_settings').insert({
-      id: crypto.randomUUID(),
-      branch_id: data.id, round_number: 1, ticket_count: 20, ticket_price: 50,
+      id: crypto.randomUUID(), branch_id: data.id, round_number: 1, ticket_count: 20, ticket_price: 50,
       sales_state: 'idle', round_state: 'idle', duration_seconds: 30, winner_count: 1,
-      prize_percents: [50], sales_duration: 120, referral_goal: 8, referral_reward: 1,
-      winner_numbers: [], winners: [], target_rotation: 0
+      prize_percents: [50], sales_duration: 120, referral_goal: 8, referral_reward: 1, winner_numbers: [], winners: [], target_rotation: 0
     });
 
     await sb.from('nb_settings').insert({
-      id: crypto.randomUUID(),
-      branch_id: data.id, round_number: 1, total_numbers: 80, drawn_count: 20,
+      id: crypto.randomUUID(), branch_id: data.id, round_number: 1, total_numbers: 80, drawn_count: 20,
       tickets_per_purchase: 2, price_per_purchase: 30, draw_delay_seconds: 2,
-      round_duration_minutes: 120, winner_count: 3, prize_percents: [50, 30, 20],
-      sales_state: 'idle', round_state: 'idle', winning_numbers: [], winners: []
+      round_duration_minutes: 120, winner_count: 3, prize_percents: [50, 30, 20], sales_state: 'idle', round_state: 'idle', winning_numbers: [], winners: []
     });
 
     res.json({ ok: true, branch: data });
@@ -627,9 +565,7 @@ app.get('/api/user/branch-details', auth, async (req, res) => {
     if (!req.user.id) return res.json({});
     const { data: user } = await sb.from('users').select('branch_id').eq('id', req.user.id).maybeSingle();
     if (!user || !user.branch_id) return res.json({});
-    const { data: branch } = await sb.from('branches')
-      .select('cbe_account, boa_account, holder_name, telegram_link, name, code')
-      .eq('id', user.branch_id).maybeSingle();
+    const { data: branch } = await sb.from('branches').select('cbe_account, boa_account, holder_name, telegram_link, name, code').eq('id', user.branch_id).maybeSingle();
     res.json(branch || {});
   } catch (e) { res.json({}); }
 });
@@ -647,22 +583,18 @@ app.get('/api/admin/stats', auth, adminOnly, async (req, res) => {
     let nbQuery = sb.from('nb_tickets').select('price_per_purchase, sold_date, user_id').not('user_id', 'is', null);
 
     if (branchId) {
-      depQuery = depQuery.eq('branch_id', branchId);
-      wdQuery = wdQuery.eq('branch_id', branchId);
-      ticketQuery = ticketQuery.eq('branch_id', branchId);
-      nbQuery = nbQuery.eq('branch_id', branchId);
+      depQuery = depQuery.eq('branch_id', branchId); wdQuery = wdQuery.eq('branch_id', branchId);
+      ticketQuery = ticketQuery.eq('branch_id', branchId); nbQuery = nbQuery.eq('branch_id', branchId);
     }
 
     const [{ data: deps }, { data: wds }, { data: tickets }, { data: nbTickets }] = await Promise.all([depQuery, wdQuery, ticketQuery, nbQuery]);
 
     const totalDeposit = (deps || []).reduce((sum, d) => sum + Number(d.amount), 0);
     const totalWithdraw = (wds || []).reduce((sum, w) => sum + Number(w.amount), 0);
-    const totalSales = (tickets || []).reduce((sum, t) => sum + Number(t.ticket_price), 0) + 
-                       (nbTickets || []).reduce((sum, t) => sum + Number(t.price_per_purchase), 0);
+    const totalSales = (tickets || []).reduce((sum, t) => sum + Number(t.ticket_price), 0) + (nbTickets || []).reduce((sum, t) => sum + Number(t.price_per_purchase), 0);
     const totalProfit = totalSales - totalWithdraw;
 
     const today = new Date().toISOString().split('T')[0];
-    
     let historyQuery = sb.from('round_history').select('winners, created_at');
     if (branchId) historyQuery = historyQuery.eq('branch_id', branchId);
     const { data: history } = await historyQuery;
@@ -674,13 +606,11 @@ app.get('/api/admin/stats', auth, adminOnly, async (req, res) => {
       }
     });
 
-    const todaySales = (tickets || []).filter(t => t.sold_date.startsWith(today)).reduce((sum, t) => sum + Number(t.ticket_price), 0) +
-                       (nbTickets || []).filter(t => t.sold_date.startsWith(today)).reduce((sum, t) => sum + Number(t.price_per_purchase), 0);
+    const todaySales = (tickets || []).filter(t => t.sold_date.startsWith(today)).reduce((sum, t) => sum + Number(t.ticket_price), 0) + (nbTickets || []).filter(t => t.sold_date.startsWith(today)).reduce((sum, t) => sum + Number(t.price_per_purchase), 0);
     const todayWithdraw = (wds || []).filter(w => w.created_at.startsWith(today)).reduce((sum, w) => sum + Number(w.amount), 0);
     const todayProfit = todaySales - todayWithdraw - todayWinnerPayouts;
 
     res.json({ totalDeposit, totalWithdraw, totalProfit, todayProfit, todayWinnerPayouts });
-
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
@@ -690,22 +620,14 @@ app.post('/api/admin/messages', auth, adminOnly, async (req, res) => {
     const sender_role = req.user.role === 'branch' ? 'branch' : 'main_admin';
     
     const payload = {
-      sender_role,
-      sender_id: req.user.id,
-      receiver_role: sender_role === 'main_admin' ? 'branch' : 'main_admin',
-      receiver_id: sender_role === 'main_admin' ? receiver_id : null,
-      message,
-      amount_requested: amount_requested || 0,
-      account_number: account_number || null,
-      holder_name: holder_name || null,
-      screenshot: screenshot || null,
-      transaction_id: transaction_id || null,
-      request_id: request_id || null
+      sender_role, sender_id: req.user.id, receiver_role: sender_role === 'main_admin' ? 'branch' : 'main_admin',
+      receiver_id: sender_role === 'main_admin' ? receiver_id : null, message, amount_requested: amount_requested || 0,
+      account_number: account_number || null, holder_name: holder_name || null, screenshot: screenshot || null,
+      transaction_id: transaction_id || null, request_id: request_id || null
     };
     if (status) payload.status = status;
 
     const { error } = await sb.from('admin_messages').insert(payload);
-    
     if (error) throw error;
     res.json({ ok: true });
   } catch (e) { res.status(500).json({ error: e.message }); }
@@ -716,11 +638,8 @@ app.get('/api/admin/messages', auth, adminOnly, async (req, res) => {
     const branchId = adminBranchScope(req);
     let query = sb.from('admin_messages').select('*').order('created_at', { ascending: false });
 
-    if (branchId) {
-      query = query.or(`receiver_id.eq.${branchId},sender_id.eq.${branchId}`);
-    } else {
-      query = query.or(`receiver_role.eq.main_admin,sender_role.eq.main_admin`);
-    }
+    if (branchId) { query = query.or(`receiver_id.eq.${branchId},sender_id.eq.${branchId}`); }
+    else { query = query.or(`receiver_role.eq.main_admin,sender_role.eq.main_admin`); }
 
     const { data, error } = await query;
     if (error) throw error;
@@ -731,12 +650,8 @@ app.get('/api/admin/messages', auth, adminOnly, async (req, res) => {
 app.post('/api/admin/messages/decide', auth, mainAdminOnly, async (req, res) => {
   try {
     const { id, status } = req.body;
-    
     const { error } = await sb.from('admin_messages').update({ status }).eq('id', id);
-    if (error) {
-      console.error("Decide Error:", error);
-      return res.status(500).json({ error: error.message });
-    }
+    if (error) throw error;
     res.json({ ok: true });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
@@ -744,7 +659,6 @@ app.post('/api/admin/messages/decide', auth, mainAdminOnly, async (req, res) => 
 app.get('/api/admin/daily-records', auth, mainAdminOnly, async (req, res) => {
   try {
     const branches = (await sb.from('branches').select('id, name')).data || [];
-    
     const [deposits, tickets, nbTickets, history] = await Promise.all([
       sb.from('deposits').select('branch_id, amount').eq('status', 'approved'),
       sb.from('tickets').select('branch_id, ticket_price').not('user_id', 'is', null),
@@ -764,16 +678,8 @@ app.get('/api/admin/daily-records', auth, mainAdminOnly, async (req, res) => {
         bPayouts += (h.winners || []).reduce((sum, w) => sum + Number(w.prize || 0), 0);
       });
 
-      records.push({
-        branch_id: branch.id,
-        branch_name: branch.name,
-        daily_collected: bSales,
-        daily_payouts: bPayouts,
-        daily_net_profit: bSales - bPayouts,
-        daily_deposits: bDeposits
-      });
+      records.push({ branch_id: branch.id, branch_name: branch.name, daily_collected: bSales, daily_payouts: bPayouts, daily_net_profit: bSales - bPayouts, daily_deposits: bDeposits });
     }
-
     res.json({ records });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
@@ -781,7 +687,6 @@ app.get('/api/admin/daily-records', auth, mainAdminOnly, async (req, res) => {
 app.get('/api/admin/audit', auth, mainAdminOnly, async (req, res) => {
   try {
     const { data: branches } = await sb.from('branches').select('id, name');
-    
     const { data: deposits } = await sb.from('deposits').select('*, users!inner(branch_id)').eq('status', 'approved');
     const { data: tickets } = await sb.from('tickets').select('branch_id, ticket_price, sold_date').not('user_id', 'is', null);
     const { data: nbTickets } = await sb.from('nb_tickets').select('branch_id, price_per_purchase, sold_date').not('user_id', 'is', null);
@@ -791,16 +696,11 @@ app.get('/api/admin/audit', auth, mainAdminOnly, async (req, res) => {
 
     (deposits || []).forEach(d => {
         let dateStr = 'Unknown';
-        if (d.created_at) {
-            try { dateStr = new Date(d.created_at).toISOString().split('T')[0]; } catch(e) {}
-        }
-        
+        if (d.created_at) { try { dateStr = new Date(d.created_at).toISOString().split('T')[0]; } catch(e) {} }
         const branchId = d.users?.branch_id;
         if (!branchId) return;
-
         if (!auditLog[dateStr]) auditLog[dateStr] = {};
         if (!auditLog[dateStr][branchId]) auditLog[dateStr][branchId] = { deposit_amt: 0, sales_amt: 0, payout_amt: 0 };
-        
         auditLog[dateStr][branchId].deposit_amt += Number(d.amount || 0);
     });
 
@@ -855,12 +755,7 @@ app.post('/api/ticket-receipt', auth, async (req, res) => {
           owner = { name: u.name, phone: u.phone, public_code: u.public_id ? 'U' + String(u.public_id).padStart(5, '0') : null };
           if (u.branch_id) {
             const { data: b } = await sb.from('branches').select('receipt_company_name, name, code, telegram_link').eq('id', u.branch_id).maybeSingle();
-            if (b) {
-              receipt_company = b.receipt_company_name || b.name;
-              owner.branch_name = b.name;
-              owner.branch_code = b.code;
-              owner.branch_telegram = b.telegram_link;
-            }
+            if (b) { receipt_company = b.receipt_company_name || b.name; owner.branch_name = b.name; owner.branch_code = b.code; owner.branch_telegram = b.telegram_link; }
           }
         }
       }
@@ -890,229 +785,145 @@ app.post('/api/ticket-receipt', auth, async (req, res) => {
 });
 
 /* ============================================================
-   VERIFY TICKET & ASSIGN LOGIC (EXTREMELY AGGRESSIVE FIX)
+   VERIFY TICKET (FIXED BRANCH SCOPE)
    ============================================================ */
 app.post('/api/verify-ticket', auth, async (req, res) => {
   try {
-    let { printerCode, ticketNumber, unique_id } = req.body;
-    const originalInput = String(ticketNumber || unique_id || printerCode || '').trim();
-    if (!originalInput) return res.status(400).json({ error: 'Ticket ID required' });
+    const rawInput = String(req.body.ticketNumber || req.body.unique_id || req.body.printerCode || '').trim();
+    if (!rawInput) return res.status(400).json({ error: 'Ticket ID required' });
 
-    console.log(`\n🔍 VERIFYING TICKET: "${originalInput}"`);
-
-    let cleanInput = originalInput.toUpperCase();
-    let numericStr = cleanInput;
-    for (const p of ['TICKET-', 'NB-', 'LW-']) {
-      if (numericStr.startsWith(p)) numericStr = numericStr.slice(p.length);
-    }
+    const cleanInput = rawInput.toUpperCase();
+    const noSpaces   = cleanInput.replace(/\s+/g, '');
+    const afterPrefix  = noSpaces.replace(/^(TICKET|TKT|LW|NB)[-_]?/i, '');
+    const pureNumeric  = /^\d+$/.test(afterPrefix) && afterPrefix.length <= 5;
+    const numericGuess = pureNumeric ? Number(afterPrefix) : null;
 
     let ticket = null;
     let isNb = false;
-    
-    // 1. Try finding by EXACT batch_id (Case Insensitive)
-    let q1 = sb.from('tickets').select('*').ilike('batch_id', cleanInput).limit(1);
-    let q2 = sb.from('nb_tickets').select('*').ilike('batch_id', cleanInput).limit(1);
-    
-    const { data: t1Batch, error: err1 } = await q1;
-    const { data: t2Batch, error: err2 } = await q2;
 
-    if (err1) console.log("❌ Error fetching tickets table:", err1.message);
-    if (err2) console.log("❌ Error fetching nb_tickets table:", err2.message);
-
-    if (t1Batch && t1Batch.length > 0) { 
-        console.log("✅ Found in tickets table by exact batch_id"); 
-        ticket = t1Batch[0]; isNb = false; 
-    } else if (t2Batch && t2Batch.length > 0) { 
-        console.log("✅ Found in nb_tickets table by exact batch_id"); 
-        ticket = t2Batch[0]; isNb = true; 
+    {
+      const { data: w } = await sb.from('tickets').select('*').ilike('batch_id', noSpaces).limit(1);
+      if (w && w.length) { ticket = w[0]; isNb = false; }
     }
-    
-    // 2. Try finding by LIKE batch_id (In case of hidden spaces)
     if (!ticket) {
-        console.log("⚠️ Not found in exact match. Trying LIKE search...");
-        let q1Like = sb.from('tickets').select('*').ilike('batch_id', `%${cleanInput}%`).limit(1);
-        let q2Like = sb.from('nb_tickets').select('*').ilike('batch_id', `%${cleanInput}%`).limit(1);
-        const { data: t1Like } = await q1Like;
-        const { data: t2Like } = await q2Like;
-        if (t1Like && t1Like.length > 0) { 
-            console.log("✅ Found in tickets table by LIKE batch_id:", t1Like[0].batch_id); 
-            ticket = t1Like[0]; isNb = false; 
-        } else if (t2Like && t2Like.length > 0) { 
-            console.log("✅ Found in nb_tickets table by LIKE batch_id:", t2Like[0].batch_id); 
-            ticket = t2Like[0]; isNb = true; 
-        }
+      const { data: n } = await sb.from('nb_tickets').select('*').ilike('batch_id', noSpaces).limit(1);
+      if (n && n.length) { ticket = n[0]; isNb = true; }
     }
 
-    // 3. Fallback: Try finding by numeric ticket number extracted from ID
-    if (!ticket && !isNaN(Number(numericStr))) {
-        console.log("⚠️ Not found by batch_id. Trying by numeric ticket number:", numericStr);
-        let q3 = sb.from('tickets').select('*').eq('ticket_number', Number(numericStr)).order('round_number', { ascending: false }).limit(1);
-        let q4 = sb.from('nb_tickets').select('*').eq('number', Number(numericStr)).order('round_number', { ascending: false }).limit(1);
-        const { data: t3Num } = await q3;
-        const { data: t4Num } = await q4;
-        if (t3Num && t3Num.length > 0) { 
-            console.log("✅ Found in tickets table by ticket_number"); 
-            ticket = t3Num[0]; isNb = false; 
-        } else if (t4Num && t4Num.length > 0) { 
-            console.log("✅ Found in nb_tickets table by number"); 
-            ticket = t4Num[0]; isNb = true; 
-        }
+    if (!ticket && noSpaces.length >= 5) {
+      const { data: w } = await sb.from('tickets').select('*').ilike('batch_id', `%${noSpaces}%`).limit(1);
+      if (w && w.length) { ticket = w[0]; isNb = false; }
     }
-    
-    // 4. Fallback: Search in historical rounds
-    let history = null;
-    if (!ticket) {
-        console.log("⚠️ Not found in active tables. Searching round_history...");
-        let allHistory = await sb.from('round_history').select('*').order('created_at', { ascending: false }).limit(500);
-        if (allHistory.error) console.log("❌ Error fetching round_history:", allHistory.error.message);
-        
-        if (allHistory.data) {
-             history = allHistory.data.find(h => {
-                 if (h.tickets && Array.isArray(h.tickets)) {
-                     const matchTicket = h.tickets.find(t => 
-                         String(t.batch_id).toUpperCase() === cleanInput || 
-                         String(t.batch_id).toUpperCase().includes(cleanInput) ||
-                         String(t.number) === numericStr
-                     );
-                     if (matchTicket) {
-                         ticket = {
-                             ticket_number: matchTicket.number,
-                             number: matchTicket.number,
-                             round_number: h.round_number,
-                             user_name: matchTicket.user_name || matchTicket.owner_name || 'Unknown',
-                             phone: matchTicket.phone || '—',
-                             branch_id: h.branch_id,
-                             batch_id: matchTicket.batch_id || cleanInput,
-                             sold_date: h.created_at
-                         };
-                         isNb = h.game_type === 'nb';
-                         return true;
-                     }
-                 }
-                 if (h.winners) {
-                     return h.winners.some(w => 
-                         (w.ticket && String(w.ticket) === cleanInput) || 
-                         (w.shown_numbers && w.shown_numbers.map(String).includes(cleanInput))
-                     );
-                 }
-                 return false;
-             });
-             
-             if (history && !ticket) {
-                 console.log("✅ Found in round_history winners list!");
-                 const w = history.winners.find(w => 
-                     (w.ticket && String(w.ticket) === cleanInput) || 
-                     (w.shown_numbers && w.shown_numbers.map(String).includes(cleanInput))
-                 );
-                 ticket = {
-                     ticket_number: w.ticket || w.shown_numbers?.[0],
-                     number: w.ticket || w.shown_numbers?.[0],
-                     round_number: history.round_number,
-                     user_name: w.name,
-                     phone: w.phone_masked,
-                     branch_id: history.branch_id,
-                     batch_id: w.uid || cleanInput,
-                     sold_date: history.created_at
-                 };
-                 isNb = history.game_type === 'nb';
-             }
-        }
+    if (!ticket && noSpaces.length >= 5) {
+      const { data: n } = await sb.from('nb_tickets').select('*').ilike('batch_id', `%${noSpaces}%`).limit(1);
+      if (n && n.length) { ticket = n[0]; isNb = true; }
+    }
+
+    if (!ticket && numericGuess !== null) {
+      const { data: w } = await sb.from('tickets').select('*').eq('ticket_number', numericGuess).not('user_id', 'is', null).order('round_number', { ascending: false }).limit(1);
+      if (w && w.length) { ticket = w[0]; isNb = false; }
+
+      if (!ticket) {
+        const { data: n } = await sb.from('nb_tickets').select('*').eq('number', numericGuess).not('user_id', 'is', null).order('round_number', { ascending: false }).limit(1);
+        if (n && n.length) { ticket = n[0]; isNb = true; }
+      }
     }
 
     if (!ticket) {
-        console.log("❌ FATAL: Ticket was NOT found anywhere in the database.");
-        return res.status(404).json({ error: 'Ticket not found in any round.' });
+      const { data: allHistory } = await sb.from('round_history').select('*').order('created_at', { ascending: false }).limit(1000);
+      for (const h of (allHistory || [])) {
+        const histTickets = Array.isArray(h.tickets) ? h.tickets : [];
+        let match = null;
+        for (const ht of histTickets) {
+          const htBatch = String(ht.batch_id || '').toUpperCase();
+          if (htBatch === noSpaces || (noSpaces.length >= 5 && htBatch.includes(noSpaces))) { match = ht; break; }
+        }
+        if (!match && numericGuess !== null) { match = histTickets.find(t => Number(t.number) === numericGuess); }
+
+        if (match) {
+          ticket = { ticket_number: match.number, number: match.number, round_number: h.round_number, user_name: match.user_name || match.owner_name || 'Unknown', phone: match.phone || '—', branch_id: h.branch_id, batch_id: match.batch_id || noSpaces, sold_date: h.created_at };
+          isNb = h.game_type === 'nb';
+          break;
+        }
+
+        if (!ticket && Array.isArray(h.winners) && numericGuess !== null) {
+          for (const w of h.winners) {
+            const wheelHit = h.game_type !== 'nb' && w.ticket != null && Number(w.ticket) === numericGuess;
+            const nbHit    = h.game_type === 'nb' && Array.isArray(w.shown_numbers) && w.shown_numbers.map(Number).includes(numericGuess);
+            if (wheelHit || nbHit) {
+              ticket = { ticket_number: numericGuess, number: numericGuess, round_number: h.round_number, user_name: w.name || 'Unknown', phone: w.phone_masked || '—', branch_id: h.branch_id, batch_id: w.uid || noSpaces, sold_date: h.created_at };
+              isNb = h.game_type === 'nb'; break;
+            }
+          }
+          if (ticket) break;
+        }
+      }
     }
 
-    console.log("🎉 Ticket Object Found:", ticket);
+    if (!ticket) return res.status(404).json({ error: 'Ticket not found. Check the ID and try again.' });
 
     const ticketBranchId = ticket.branch_id || null;
-
-    // TEMPORARILY DISABLED BRANCH CHECK FOR TESTING
-    /*
-    if (req.user.role === 'branch' && ticketBranchId !== req.user.id) {
-      return res.status(403).json({ error: 'This ticket does not belong to your branch.' });
-    }
-    */
-
-    if (!history) {
-        const { data: histData } = await sb.from('round_history')
-            .select('*')
-            .eq('round_number', ticket.round_number)
-            .eq('game_type', isNb ? 'nb' : 'wheel')
-            .order('created_at', { ascending: false })
-            .limit(1);
-        if (histData && histData.length) history = histData[0];
+    let branchInfo = { name: null, code: null, telegram_link: null };
+    if (ticketBranchId) {
+      const { data: b } = await sb.from('branches').select('name, code, telegram_link').eq('id', ticketBranchId).maybeSingle();
+      if (b) branchInfo = b;
     }
 
-    let status = 'pending';
-    let prize = 0;
-    let match_count = 0;
-    let winning_numbers = [];
+    let currentSettings = null;
+    try { currentSettings = isNb ? await getNbSettings(ticketBranchId) : await getSettings(ticketBranchId); } catch (e) {}
+
+    const currentRoundNum   = currentSettings ? Number(currentSettings.round_number) : ticket.round_number;
+    const currentRoundState = currentSettings ? currentSettings.round_state : 'unknown';
+    const round_is_past     = Number(ticket.round_number) < Number(currentRoundNum);
+
+    // FIXED: Strictly filter history by branch_id so it doesn't grab another branch's winners!
+    let hQuery = sb.from('round_history').select('*').eq('round_number', ticket.round_number).eq('game_type', isNb ? 'nb' : 'wheel').order('created_at', { ascending: false }).limit(1);
+    if (ticketBranchId) hQuery = hQuery.eq('branch_id', ticketBranchId); else hQuery = hQuery.is('branch_id', null);
+    const { data: hRows } = await hQuery;
+    const history = hRows?.[0] || null;
 
     const ticketNum = isNb ? Number(ticket.number) : Number(ticket.ticket_number);
+    let status = 'pending', prize = 0, match_count = 0, winning_numbers = [], matches = [];
 
     if (history) {
-      winning_numbers = asArray(history.winning_numbers || history.winner_numbers || []);
-      
-      if (history.winners) {
-        const winnersArr = asArray(history.winners);
-        const winnerObj = winnersArr.find(w =>
-          (w.ticket != null && Number(w.ticket) === ticketNum) ||
-          (w.shown_numbers && w.shown_numbers.map(Number).includes(ticketNum))
-        );
+      const winnersArr = asArray(history.winners);
+      if (isNb) { winning_numbers = asArray(history.winning_numbers || history.winner_numbers || []).map(Number).filter(Number.isFinite); } 
+      else { winning_numbers = winnersArr.map(w => Number(w.ticket)).filter(Number.isFinite); }
 
-        if (winnerObj) {
-          console.log("🏆 Winner confirmed from history!");
-          status = 'winner';
-          prize = Number(winnerObj.prize || 0);
-          match_count = Number(winnerObj.matches || (winnerObj.shown_numbers?.length || 1));
-        } else {
-          console.log("😔 Not a winner in this history record.");
-          status = 'not_winner';
-          if (isNb && winning_numbers.length) {
-            const winSet = new Set(winning_numbers.map(Number));
-            match_count = winSet.has(ticketNum) ? 1 : 0;
-          }
-        }
+      const winnerObj = winnersArr.find(w => {
+        if (!isNb && w.ticket != null && Number(w.ticket) === ticketNum) return true;
+        if ( isNb && Array.isArray(w.shown_numbers) && w.shown_numbers.map(Number).includes(ticketNum)) return true;
+        return false;
+      });
+
+      if (winnerObj) {
+        status = 'winner'; prize = Number(winnerObj.prize || 0);
+        if (isNb) { match_count = Number(winnerObj.matches || (winnerObj.shown_numbers?.length || 0)); matches = (winnerObj.shown_numbers || []).map(Number); } 
+        else { match_count = 1; matches = [ticketNum]; }
       } else {
         status = 'not_winner';
+        if (isNb && winning_numbers.length) {
+          const winSet = new Set(winning_numbers);
+          if (ticket.batch_id) {
+            const { data: batchTickets } = await sb.from('nb_tickets').select('number').eq('batch_id', ticket.batch_id).eq('round_number', ticket.round_number);
+            if (batchTickets && batchTickets.length) { matches = batchTickets.map(t => Number(t.number)).filter(n => winSet.has(n)); match_count = matches.length; }
+            else { match_count = winSet.has(ticketNum) ? 1 : 0; matches = winSet.has(ticketNum) ? [ticketNum] : []; }
+          } else { match_count = winSet.has(ticketNum) ? 1 : 0; matches = winSet.has(ticketNum) ? [ticketNum] : []; }
+        }
       }
-    } else {
-      const currentSettings = await getSettings(ticketBranchId);
-      const isCurrentRound = (ticket.round_number === currentSettings.round_number);
-      if (isCurrentRound) {
-          console.log("⏳ Round in progress.");
-          status = 'progress';
-      }
-      else {
-          console.log("📜 Past round, no history found.");
-          status = 'past_round'; 
-      }
-    }
+    } else if (!round_is_past) {
+      if (currentRoundState === 'drawing' || currentRoundState === 'spinning') { status = 'progress'; } else { status = 'pending'; }
+    } else { status = 'past_round'; }
 
     res.json({
-      ok: true,
-      game: isNb ? 'Number Betting' : 'Lucky Wheel',
-      numbers: [ticketNum],
-      unique_id: ticket.batch_id || originalInput,
-      round: ticket.round_number,
-      owner_name: ticket.user_name,
-      owner_phone: ticket.phone,
+      ok: true, game: isNb ? 'Number Betting' : 'Lucky Wheel', numbers: [ticketNum],
+      unique_id: ticket.batch_id || noSpaces, round: ticket.round_number, round_is_past,
+      owner_name: ticket.user_name || 'Unknown', owner_phone: ticket.phone || '—',
       sold_date: ticket.sold_date || history?.created_at || new Date().toISOString(),
-      round_is_past: true,
-      round_finished: ['winner','not_winner','past_round'].includes(status),
-      is_winner: status === 'winner',
-      prize,
-      match_count,
-      winning_numbers,
-      status,
-      branch_id: ticketBranchId
+      status, prize, match_count, matches, winning_numbers, branch_id: ticketBranchId,
+      branch_name: branchInfo.name, branch_code: branchInfo.code, branch_telegram: branchInfo.telegram_link
     });
-  } catch (e) { 
-      console.error("🔥 VERIFY ERROR:", e);
-      res.status(500).json({ error: e.message }); 
-  }
+  } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 app.post('/api/admin/tickets/assign', auth, adminOnly, async (req, res) => {
@@ -1120,17 +931,14 @@ app.post('/api/admin/tickets/assign', auth, adminOnly, async (req, res) => {
     const { name, phone, password, balance, numbers, useFreeTicket } = req.body;
     const cleanName = String(name).trim(); const cleanPhone = String(phone).trim();
     let { data: user } = await sb.from('users').select('*').eq('phone', cleanPhone).maybeSingle();
-
     const branchId = req.user.role === 'branch' ? req.user.id : null;
 
     if (!user) {
       const hash = await bcrypt.hash(String(password || '1234').trim(), 10);
       const newCode = await generateReferralCode();
       const { data: created, error } = await sb.from('users').insert({
-        name: cleanName, phone: cleanPhone, password_hash: hash,
-        password_plain: String(password || '1234').trim(), role: 'user',
-        balance: Math.max(0, Number(balance) || 0), referral_code: newCode,
-        banned: false, branch_id: branchId
+        name: cleanName, phone: cleanPhone, password_hash: hash, password_plain: String(password || '1234').trim(), role: 'user',
+        balance: Math.max(0, Number(balance) || 0), referral_code: newCode, banned: false, branch_id: branchId
       }).select().single();
       if (error) return res.status(500).json({ error: error.message });
       user = created;
@@ -1140,38 +948,22 @@ app.post('/api/admin/tickets/assign', auth, adminOnly, async (req, res) => {
     }
 
     const settings = await getSettings(branchId);
-
     let usedFree = false;
-    if (useFreeTicket && (user.free_tickets || 0) > 0) {
-      await sb.from('users').update({ free_tickets: user.free_tickets - 1 }).eq('id', user.id);
-      usedFree = true;
-    }
+    if (useFreeTicket && (user.free_tickets || 0) > 0) { await sb.from('users').update({ free_tickets: user.free_tickets - 1 }).eq('id', user.id); usedFree = true; }
 
     const batchId = generateUniqueId('LW');
     const now = new Date().toISOString();
 
     for (const n of numbers) {
-      let updQ = sb.from('tickets')
-        .update({
-          user_id: user.id, user_name: cleanName, phone: cleanPhone,
-          sold_date: now, batch_id: batchId, used_free_ticket: usedFree
-        })
-        .eq('round_number', settings.round_number)
-        .eq('ticket_number', n)
-        .is('user_id', null); 
-
+      let updQ = sb.from('tickets').update({ user_id: user.id, user_name: cleanName, phone: cleanPhone, sold_date: now, batch_id: batchId, used_free_ticket: usedFree })
+        .eq('round_number', settings.round_number).eq('ticket_number', n).is('user_id', null); 
       updQ = scopeQuery(updQ, branchId);
       const { data: updated } = await updQ.select('id');
 
       if (!updated || updated.length === 0) {
-        await sb.from('tickets').insert({
-          ticket_number: n, user_id: user.id, user_name: cleanName, phone: cleanPhone,
-          sold_date: now, round_number: settings.round_number, used_free_ticket: usedFree,
-          batch_id: batchId, branch_id: branchId
-        });
+        await sb.from('tickets').insert({ ticket_number: n, user_id: user.id, user_name: cleanName, phone: cleanPhone, sold_date: now, round_number: settings.round_number, used_free_ticket: usedFree, batch_id: batchId, branch_id: branchId });
       }
     }
-
     res.json({ ok: true, batch_id: batchId });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
@@ -1181,17 +973,14 @@ app.post('/api/admin/nb/assign', auth, adminOnly, async (req, res) => {
     const { name, phone, password, balance, numbers } = req.body;
     const cleanName = String(name).trim(); const cleanPhone = String(phone).trim();
     let { data: user } = await sb.from('users').select('*').eq('phone', cleanPhone).maybeSingle();
-
     const branchId = req.user.role === 'branch' ? req.user.id : null;
 
     if (!user) {
       const hash = await bcrypt.hash(String(password || '1234').trim(), 10);
       const newCode = await generateReferralCode();
       const { data: created, error } = await sb.from('users').insert({
-        name: cleanName, phone: cleanPhone, password_hash: hash,
-        password_plain: String(password || '1234').trim(), role: 'user',
-        balance: Math.max(0, Number(balance) || 0), referral_code: newCode,
-        banned: false, branch_id: branchId
+        name: cleanName, phone: cleanPhone, password_hash: hash, password_plain: String(password || '1234').trim(), role: 'user',
+        balance: Math.max(0, Number(balance) || 0), referral_code: newCode, banned: false, branch_id: branchId
       }).select().single();
       if (error) return res.status(500).json({ error: error.message });
       user = created;
@@ -1203,11 +992,7 @@ app.post('/api/admin/nb/assign', auth, adminOnly, async (req, res) => {
     const s = await getNbSettings(branchId);
     const batchId = generateUniqueId('NB');
     const now = new Date().toISOString();
-    const insertRows = numbers.map(n => ({
-      number: n, user_id: user.id, user_name: cleanName, phone: cleanPhone,
-      round_number: s.round_number, sold_date: now, batch_id: batchId,
-      is_free: false, branch_id: branchId
-    }));
+    const insertRows = numbers.map(n => ({ number: n, user_id: user.id, user_name: cleanName, phone: cleanPhone, round_number: s.round_number, sold_date: now, batch_id: batchId, is_free: false, branch_id: branchId }));
     const { error } = await sb.from('nb_tickets').insert(insertRows);
     if (error) return res.status(500).json({ error: error.message });
     res.json({ ok: true, batch_id: batchId });
@@ -1238,10 +1023,7 @@ app.post('/api/user/withdrawals', auth, async (req, res) => {
     if (!accountNumber) return res.status(400).json({ error: 'Account number required' });
     const { data: me } = await sb.from('users').select('balance').eq('id', req.user.id).maybeSingle();
     if (!me || Number(me.balance) < amount) return res.status(400).json({ error: 'Insufficient balance' });
-    const { error } = await sb.from('withdrawals').insert({
-      user_id: req.user.id, user_name: req.user.phone, phone: req.user.phone,
-      method, amount, account_number: accountNumber, status: 'pending'
-    });
+    const { error } = await sb.from('withdrawals').insert({ user_id: req.user.id, user_name: req.user.phone, phone: req.user.phone, method, amount, account_number: accountNumber, status: 'pending' });
     if (error) throw error;
     res.json({ ok: true });
   } catch (e) { res.status(500).json({ error: e.message }); }
@@ -1253,13 +1035,8 @@ app.post('/api/user/deposits', auth, async (req, res) => {
     if (!amount || amount <= 0) return res.status(400).json({ error: 'Invalid amount' });
     if (!transactionId && !screenshot) return res.status(400).json({ error: 'Provide a Transaction ID or Screenshot' });
     let finalTxnId = transactionId;
-    if (!finalTxnId || finalTxnId === 'SCREENSHOT_ONLY') {
-      finalTxnId = 'IMG-' + Date.now() + '-' + Math.floor(Math.random() * 1000);
-    }
-    const { error } = await sb.from('deposits').insert({
-      user_id: req.user.id, user_name: req.user.phone, phone: req.user.phone,
-      method, amount, transaction_id: finalTxnId, screenshot: screenshot || null, status: 'pending'
-    });
+    if (!finalTxnId || finalTxnId === 'SCREENSHOT_ONLY') { finalTxnId = 'IMG-' + Date.now() + '-' + Math.floor(Math.random() * 1000); }
+    const { error } = await sb.from('deposits').insert({ user_id: req.user.id, user_name: req.user.phone, phone: req.user.phone, method, amount, transaction_id: finalTxnId, screenshot: screenshot || null, status: 'pending' });
     if (error) throw error;
     res.json({ ok: true });
   } catch (e) { res.status(500).json({ error: e.message }); }
@@ -1296,9 +1073,7 @@ app.post('/api/admin/withdrawals/:id/decide', auth, adminOnly, async (req, res) 
       if (Number(user.balance) < Number(w.amount)) return res.status(400).json({ error: 'User has insufficient balance now' });
       await sb.from('users').update({ balance: Number(user.balance) - Number(w.amount) }).eq('id', w.user_id);
       await sb.from('withdrawals').update({ status: 'approved' }).eq('id', w.id);
-    } else {
-      await sb.from('withdrawals').update({ status: 'rejected' }).eq('id', w.id);
-    }
+    } else { await sb.from('withdrawals').update({ status: 'rejected' }).eq('id', w.id); }
     res.json({ ok: true });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
@@ -1314,9 +1089,7 @@ app.post('/api/admin/deposits/:id/decide', auth, adminOnly, async (req, res) => 
       const { data: user } = await sb.from('users').select('balance').eq('id', d.user_id).maybeSingle();
       await sb.from('users').update({ balance: Number(user.balance) + Number(d.amount) }).eq('id', d.user_id);
       await sb.from('deposits').update({ status: 'approved' }).eq('id', d.id);
-    } else {
-      await sb.from('deposits').update({ status: 'rejected' }).eq('id', d.id);
-    }
+    } else { await sb.from('deposits').update({ status: 'rejected' }).eq('id', d.id); }
     res.json({ ok: true });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
@@ -1328,8 +1101,7 @@ app.get('/api/rounds', auth, async (req, res) => {
   try {
     const branchId = await resolveBranchId(req);
     let q = sb.from('round_history').select('*').eq('game_type', 'wheel').order('created_at', { ascending: false }).limit(50);
-    if (branchId) q = q.or(`branch_id.eq.${branchId},branch_id.is.null`);
-    else q = q.is('branch_id', null);
+    if (branchId) q = q.or(`branch_id.eq.${branchId},branch_id.is.null`); else q = q.is('branch_id', null);
     const { data, error } = await q;
     if (error) throw error;
     res.json({ rounds: data || [] });
@@ -1339,8 +1111,7 @@ app.get('/api/nb/rounds', auth, async (req, res) => {
   try {
     const branchId = await resolveBranchId(req);
     let q = sb.from('round_history').select('*').eq('game_type', 'nb').order('created_at', { ascending: false }).limit(50);
-    if (branchId) q = q.or(`branch_id.eq.${branchId},branch_id.is.null`);
-    else q = q.is('branch_id', null);
+    if (branchId) q = q.or(`branch_id.eq.${branchId},branch_id.is.null`); else q = q.is('branch_id', null);
     const { data, error } = await q;
     if (error) throw error;
     res.json({ rounds: data || [] });
@@ -1350,9 +1121,7 @@ app.get('/api/nb/rounds', auth, async (req, res) => {
 app.delete('/api/admin/rounds/:id', auth, adminOnly, async (req, res) => {
   try {
     const { data: row } = await sb.from('round_history').select('branch_id').eq('id', req.params.id).maybeSingle();
-    if (req.user.role === 'branch' && row?.branch_id !== req.user.id) {
-      return res.status(403).json({ error: 'Not your branch record' });
-    }
+    if (req.user.role === 'branch' && row?.branch_id !== req.user.id) { return res.status(403).json({ error: 'Not your branch record' }); }
     const { error } = await sb.from('round_history').delete().eq('id', req.params.id);
     if (error) throw error;
     res.json({ ok: true });
@@ -1361,9 +1130,7 @@ app.delete('/api/admin/rounds/:id', auth, adminOnly, async (req, res) => {
 app.delete('/api/admin/nb/rounds/:id', auth, adminOnly, async (req, res) => {
   try {
     const { data: row } = await sb.from('round_history').select('branch_id').eq('id', req.params.id).maybeSingle();
-    if (req.user.role === 'branch' && row?.branch_id !== req.user.id) {
-      return res.status(403).json({ error: 'Not your branch record' });
-    }
+    if (req.user.role === 'branch' && row?.branch_id !== req.user.id) { return res.status(403).json({ error: 'Not your branch record' }); }
     const { error } = await sb.from('round_history').delete().eq('id', req.params.id);
     if (error) throw error;
     res.json({ ok: true });
@@ -1373,6 +1140,22 @@ app.delete('/api/admin/nb/rounds/:id', auth, adminOnly, async (req, res) => {
 /* ============================================================
    WHEEL ADMIN
    ============================================================ */
+app.post('/api/admin/start-sales', auth, adminOnly, async (req, res) => {
+  try {
+    const branchId = adminBranchScope(req);
+    await updateSettings(branchId, { sales_state: 'open', sales_started_at: new Date().toISOString() });
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.post('/api/admin/close-sales', auth, adminOnly, async (req, res) => {
+  try {
+    const branchId = adminBranchScope(req);
+    await updateSettings(branchId, { sales_state: 'closed' });
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 app.post('/api/admin/spin/start', auth, adminOnly, async (req, res) => {
   try {
     const branchId = adminBranchScope(req);
@@ -1383,23 +1166,28 @@ app.post('/api/admin/spin/start', auth, adminOnly, async (req, res) => {
 
     const winnersCount = s.winner_count || 1;
     const pcts = s.prize_percents || [];
-    const totalSales = sold.length * s.ticket_price;
+    const totalSales = sold.length * Number(s.ticket_price);
     const shuffled = sold.sort(() => Math.random() - 0.5);
     const winnersList = [];
 
     for (let i = 0; i < Math.min(winnersCount, sold.length); i++) {
       const t = shuffled[i];
-      const pct = pcts[i] !== undefined ? pcts[i] : (i === 0 ? 50 : i === 1 ? 30 : 10);
-      const prize = (totalSales * pct) / 100;
+      const pct = pcts[i] !== undefined ? Number(pcts[i]) : (i === 0 ? 50 : i === 1 ? 30 : 10);
+      const prize = Math.round((totalSales * pct) / 100) || 0;
+      
       winnersList.push({
         place: i + 1, name: t.user_name,
         phone_masked: t.phone ? t.phone.slice(0, 3) + '***' + t.phone.slice(-3) : '—',
         public_code: t.user_id ? 'U' + String(t.user_id).padStart(5, '0') : '—',
         ticket: t.ticket_number, prize
       });
+      
       if (prize > 0 && t.user_id) {
         const { data: user } = await sb.from('users').select('balance').eq('id', t.user_id).maybeSingle();
-        if (user) await sb.from('users').update({ balance: Number(user.balance) + prize }).eq('id', t.user_id);
+        if (user) {
+          const newBal = Number(user.balance) + prize;
+          if (!isNaN(newBal)) await sb.from('users').update({ balance: newBal }).eq('id', t.user_id);
+        }
       }
     }
 
@@ -1407,27 +1195,15 @@ app.post('/api/admin/spin/start', auth, adminOnly, async (req, res) => {
     const winnerIndex = sold.findIndex(t => t.ticket_number === firstWinnerTicket);
     const anglePerSection = 360 / sold.length;
     const targetRotation = 360 - (winnerIndex * anglePerSection) - (anglePerSection / 2);
-
     const now = new Date().toISOString();
 
     await updateSettings(branchId, {
-      round_state: 'spinning', 
-      spin_started_at: now, 
-      target_rotation: targetRotation, 
-      winner_numbers: winnersList.map(w => w.ticket), 
-      winners: winnersList
+      round_state: 'spinning', spin_started_at: now, target_rotation: targetRotation,
+      winner_numbers: winnersList.map(w => w.ticket), winners: winnersList
     });
     
-    const historyTickets = sold.map(t => ({
-      number: t.ticket_number,
-      batch_id: t.batch_id,
-      user_name: t.user_name,
-      phone: t.phone
-    }));
-
-    await sb.from('round_history').insert({
-      game_type: 'wheel', round_number: s.round_number, branch_id: branchId, winners: winnersList, tickets: historyTickets
-    });
+    const historyTickets = sold.map(t => ({ number: t.ticket_number, batch_id: t.batch_id, user_name: t.user_name, phone: t.phone }));
+    await sb.from('round_history').insert({ game_type: 'wheel', round_number: s.round_number, branch_id: branchId, winners: winnersList, tickets: historyTickets });
     
     res.json({ ok: true });
   } catch (e) { res.status(500).json({ error: e.message }); }
@@ -1469,26 +1245,13 @@ app.get('/api/nb/state', auth, async (req, res) => {
     const tickets = await getNbTickets(branchId, settings.round_number);
 
     let sold_count = 0;
-    if (tickets.length > 0) {
-      const uniqueNumbers = new Set(tickets.map(t => t.number));
-      sold_count = uniqueNumbers.size;
-    }
+    if (tickets.length > 0) { const uniqueNumbers = new Set(tickets.map(t => t.number)); sold_count = uniqueNumbers.size; }
     
     let my_tickets = [];
-    if (req.user.role === 'user') {
-       my_tickets = tickets.filter(t => String(t.user_id) === String(req.user.id));
-    }
+    if (req.user.role === 'user') { my_tickets = tickets.filter(t => String(t.user_id) === String(req.user.id)); }
 
-    res.json({ 
-      settings, 
-      tickets: tickets, 
-      my_tickets: my_tickets,
-      sold_count: sold_count
-    });
-  } catch (e) { 
-    console.error("🔥 NB STATE ERROR:", e); 
-    res.status(500).json({ error: e.message }); 
-  }
+    res.json({ settings, tickets: tickets, my_tickets: my_tickets, sold_count: sold_count });
+  } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 app.post('/api/admin/nb/start-sales', auth, adminOnly, async (req, res) => {
@@ -1509,11 +1272,10 @@ app.post('/api/admin/nb/draw', auth, adminOnly, async (req, res) => {
   try {
     const branchId = adminBranchScope(req);
     const s = await getNbSettings(branchId);
-    const allNums = Array.from({ length: s.total_numbers }, (_, i) => i + 1);
-    const winning = allNums.sort(() => Math.random() - 0.5).slice(0, s.drawn_count);
-    await updateSettings(branchId, {
-      round_state: 'drawing', drawing_started_at: new Date().toISOString(), winning_numbers: winning
-    }, 'nb_settings');
+    const allNums = Array.from({ length: Number(s.total_numbers) || 80 }, (_, i) => i + 1);
+    const winning = allNums.sort(() => Math.random() - 0.5).slice(0, Number(s.drawn_count) || 20);
+    
+    await updateSettings(branchId, { round_state: 'drawing', drawing_started_at: new Date().toISOString(), winning_numbers: winning }, 'nb_settings');
     res.json({ ok: true });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
@@ -1521,10 +1283,7 @@ app.post('/api/admin/nb/new-round', auth, adminOnly, async (req, res) => {
   try {
     const branchId = adminBranchScope(req);
     const s = await getNbSettings(branchId);
-    await updateSettings(branchId, {
-      round_number: Number(s.round_number) + 1, sales_state: 'idle', round_state: 'idle',
-      winning_numbers: [], winners: []
-    }, 'nb_settings');
+    await updateSettings(branchId, { round_number: Number(s.round_number) + 1, sales_state: 'idle', round_state: 'idle', winning_numbers: [], winners: [] }, 'nb_settings');
     res.json({ ok: true });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
@@ -1536,7 +1295,7 @@ app.post('/api/nb/settle', auth, async (req, res) => {
     if (s.round_state !== 'drawing') return res.json({ ok: true });
 
     const elapsed = (Date.now() - new Date(s.drawing_started_at).getTime()) / 1000;
-    const totalDrawTime = s.drawn_count * s.draw_delay_seconds;
+    const totalDrawTime = Number(s.drawn_count) * Number(s.draw_delay_seconds);
 
     if (elapsed >= totalDrawTime) {
       const tickets = await getNbTickets(branchId, s.round_number);
@@ -1547,21 +1306,20 @@ app.post('/api/nb/settle', auth, async (req, res) => {
       for (const uid of uniqueUsers) {
         const userTickets = tickets.filter(t => t.user_id === uid);
         let matchCount = 0; const matchedNums = [];
-        for (const t of userTickets) {
-          if (s.winning_numbers.includes(t.number)) { matchCount++; matchedNums.push(t.number); }
-        }
+        for (const t of userTickets) { if (s.winning_numbers.includes(t.number)) { matchCount++; matchedNums.push(t.number); } }
         if (matchCount > 0) userMatches[uid] = { count: matchCount, nums: matchedNums, user: userTickets[0] };
       }
 
       const sorted = Object.values(userMatches).sort((a, b) => b.count - a.count);
       const totalSold = tickets.length;
-      const totalRevenue = totalSold * s.price_per_purchase;
-      const prizePool = totalRevenue * 0.8;
+      const totalRevenue = totalSold * Number(s.price_per_purchase);
+      const prizePool = Math.round(totalRevenue * 0.8);
 
-      for (let i = 0; i < Math.min(sorted.length, s.winner_count); i++) {
+      for (let i = 0; i < Math.min(sorted.length, Number(s.winner_count)); i++) {
         const w = sorted[i];
-        const percent = (s.prize_percents && s.prize_percents[i]) || 0;
-        const prize = (prizePool * percent) / 100;
+        const percent = (s.prize_percents && Number(s.prize_percents[i])) || 0;
+        const prize = Math.round((prizePool * percent) / 100) || 0;
+        
         winnersList.push({
           user_id: w.user.user_id, name: w.user.user_name,
           phone_masked: w.user.phone ? w.user.phone.slice(0, 3) + '***' + w.user.phone.slice(-3) : '—',
@@ -1570,22 +1328,16 @@ app.post('/api/nb/settle', auth, async (req, res) => {
         });
         if (prize > 0) {
           const { data: user } = await sb.from('users').select('balance').eq('id', w.user.user_id).maybeSingle();
-          if (user) await sb.from('users').update({ balance: Number(user.balance) + prize }).eq('id', w.user.user_id);
+          if (user) {
+            const newBal = Number(user.balance) + prize;
+            if (!isNaN(newBal)) await sb.from('users').update({ balance: newBal }).eq('id', w.user.user_id);
+          }
         }
       }
       await updateSettings(branchId, { round_state: 'finished', winners: winnersList }, 'nb_settings');
       
-      const historyTickets = tickets.map(t => ({
-        number: t.number,
-        batch_id: t.batch_id,
-        user_name: t.user_name,
-        phone: t.phone
-      }));
-
-      await sb.from('round_history').insert({
-        game_type: 'nb', round_number: s.round_number, branch_id: branchId,
-        winners: winnersList, winning_numbers: s.winning_numbers, tickets: historyTickets
-      });
+      const historyTickets = tickets.map(t => ({ number: t.number, batch_id: t.batch_id, user_name: t.user_name, phone: t.phone }));
+      await sb.from('round_history').insert({ game_type: 'nb', round_number: s.round_number, branch_id: branchId, winners: winnersList, winning_numbers: s.winning_numbers, tickets: historyTickets });
     }
     res.json({ ok: true });
   } catch (e) { res.status(500).json({ error: e.message }); }
@@ -1597,11 +1349,10 @@ app.post('/api/admin/auto-check', auth, async (req, res) => {
     const s = await getNbSettings(branchId);
     if (s.round_state === 'drawing') {
       const elapsed = (Date.now() - new Date(s.drawing_started_at).getTime()) / 1000;
-      if (elapsed >= (s.drawn_count * s.draw_delay_seconds)) {
-        await fetch(`http://localhost:${process.env.PORT || 3000}/api/nb/settle`, {
-          method: 'POST',
-          headers: { 'Authorization': req.headers.authorization, 'Content-Type': 'application/json' }
-        });
+      if (elapsed >= (Number(s.drawn_count) * Number(s.draw_delay_seconds))) {
+        const host = req.get('host');
+        const url = `${req.protocol}://${host}/api/nb/settle`;
+        await fetch(url, { method: 'POST', headers: { 'Authorization': req.headers.authorization, 'Content-Type': 'application/json' } });
       }
     }
     res.json({ ok: true });
@@ -1631,18 +1382,11 @@ app.post('/api/admin/settings', auth, adminOnly, async (req, res) => {
 app.post('/api/admin/nb/settings', auth, adminOnly, async (req, res) => {
   try {
     const branchId = adminBranchScope(req);
-    const { total_numbers, drawn_count, tickets_per_purchase, price_per_purchase,
-            draw_delay_seconds, round_duration_minutes, duration_minutes,
-            winner_count, prize_percents, use_percent_prizes } = req.body;
+    const { total_numbers, drawn_count, tickets_per_purchase, price_per_purchase, draw_delay_seconds, round_duration_minutes, duration_minutes, winner_count, prize_percents, use_percent_prizes } = req.body;
     const patch = {
-      total_numbers: Number(total_numbers),
-      drawn_count: Number(drawn_count),
-      tickets_per_purchase: Number(tickets_per_purchase),
-      price_per_purchase: Number(price_per_purchase),
-      draw_delay_seconds: Number(draw_delay_seconds),
-      round_duration_minutes: Number(round_duration_minutes ?? duration_minutes),
-      winner_count: Number(winner_count),
-      prize_percents
+      total_numbers: Number(total_numbers), drawn_count: Number(drawn_count), tickets_per_purchase: Number(tickets_per_purchase),
+      price_per_purchase: Number(price_per_purchase), draw_delay_seconds: Number(draw_delay_seconds),
+      round_duration_minutes: Number(round_duration_minutes ?? duration_minutes), winner_count: Number(winner_count), prize_percents
     };
     await updateSettings(branchId, patch, 'nb_settings');
     res.json({ ok: true });
@@ -1653,9 +1397,7 @@ app.post('/api/admin/tickets/count', auth, adminOnly, async (req, res) => {
   try {
     const branchId = adminBranchScope(req);
     const count = Number(req.body.count);
-    if (!Number.isFinite(count) || count < 2 || count > 60) {
-      return res.status(400).json({ error: 'Count must be 2-60' });
-    }
+    if (!Number.isFinite(count) || count < 2 || count > 60) { return res.status(400).json({ error: 'Count must be 2-60' }); }
     await updateSettings(branchId, { ticket_count: count });
     res.json({ ok: true });
   } catch (e) { res.status(500).json({ error: e.message }); }
@@ -1667,15 +1409,9 @@ app.post('/api/admin/tickets/count', auth, adminOnly, async (req, res) => {
 app.post('/api/admin/change-password', auth, adminOnly, async (req, res) => {
   try {
     const { newPassword, code } = req.body;
-    if (!newPassword || newPassword.length < 4) {
-      return res.status(400).json({ error: 'Password must be at least 4 characters' });
-    }
-    if (!code) {
-      return res.status(400).json({ error: 'Secret Reset Code is required' });
-    }
-
+    if (!newPassword || newPassword.length < 4) { return res.status(400).json({ error: 'Password must be at least 4 characters' }); }
+    if (!code) { return res.status(400).json({ error: 'Secret Reset Code is required' }); }
     const hash = await bcrypt.hash(newPassword, 10);
-
     if (req.user.role === 'branch') {
       const { error } = await sb.from('branches').update({ password_hash: hash }).eq('id', req.user.id);
       if (error) throw error;
@@ -1685,9 +1421,7 @@ app.post('/api/admin/change-password', auth, adminOnly, async (req, res) => {
       if (error) throw error;
       res.json({ ok: true });
     }
-  } catch (e) {
-    res.status(500).json({ error: e.message });
-  }
+  } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 /* ============================================================
@@ -1702,11 +1436,7 @@ app.post('/api/ai/chat', auth, async (req, res) => {
     const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${GROQ_API_KEY}` },
-      body: JSON.stringify({
-        model: 'openai/gpt-oss-20b',
-        messages: [{ role: 'system', content: systemPrompt }, { role: 'user', content: message }],
-        temperature: 0.5
-      })
+      body: JSON.stringify({ model: 'openai/gpt-oss-20b', messages: [{ role: 'system', content: systemPrompt }, { role: 'user', content: message }], temperature: 0.5 })
     });
     const data = await response.json();
     if (!response.ok) throw new Error(data.error?.message || 'AI failed to respond');
@@ -1717,5 +1447,5 @@ app.post('/api/ai/chat', auth, async (req, res) => {
 /* ============================================================
    START
    ============================================================ */
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => console.log('🚀 Server running on port ' + PORT));

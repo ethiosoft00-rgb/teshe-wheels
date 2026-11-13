@@ -291,10 +291,12 @@ body.wheel-public .winners .winner .gold { font-size: 26px; color: #fbbf24; text
 .scope-banner.global { background: #3a2a0c; border: 1px solid #fbbf24; color: #fcd34d; }
 .scope-banner b { color: #fff; }
 .nav-badge { background: #dc2626; color: white; border-radius: 50%; padding: 2px 6px; font-size: 10px; font-weight: bold; margin-left: 5px; display: inline-block; vertical-align: middle; }
+.fatal-error-banner { display: none; position: fixed; top: 70px; left: 50%; transform: translateX(-50%); background: #dc2626; color: white; padding: 15px 30px; border-radius: 8px; font-weight: bold; z-index: 999999; box-shadow: 0 10px 30px rgba(0,0,0,0.5); border: 2px solid #fca5a5; text-align: center; }
 </style>
 </head>
 <body>
 <div id="toast" class="toast hidden"></div>
+<div id="fatalErrorBox" class="fatal-error-banner"></div>
 <button id="exitPublicBtn" onclick="exitPublicView()">✕ Exit Public View</button>
 <div id="receiptArea"></div>
 <div id="modalArea"></div>
@@ -526,6 +528,15 @@ const translations = {
     }
 };
 
+function showFatalError(msg) {
+    const box = document.getElementById('fatalErrorBox');
+    if (box) {
+        box.style.display = 'block';
+        box.innerHTML = '🚨 ERROR: ' + msg;
+        setTimeout(() => { box.style.display = 'none'; }, 8000);
+    }
+}
+
 function changeLanguage(lang) {
     CURRENT_LANG = lang;
     localStorage.setItem('lw_lang', lang);
@@ -733,9 +744,14 @@ async function api(path, options = {}) {
             body: options.body ? JSON.stringify(options.body) : undefined
         });
     } catch (err) { throw new Error('Network error. Is the backend server running?'); }
+    
     let data = {};
     try { data = await res.json(); } catch (e) {}
-    if (!res.ok) throw new Error(data.error || 'Something went wrong.');
+    
+    if (!res.ok) {
+        const errMsg = data.error || (res.status === 500 ? 'Internal Server Error (Check backend terminal)' : 'Something went wrong.');
+        throw new Error(errMsg);
+    }
     return data;
 }
 
@@ -1070,13 +1086,45 @@ async function finishAssign() {
     }
 }
 function viewImg(src) { const el = document.getElementById('receiptArea'); el.innerHTML = '<div class="receipt-modal" onclick="if(event.target===this)closeReceipt()"><div style="max-width:90vw;max-height:90vh"><img src="' + src + '" style="max-width:90vw;max-height:88vh;border-radius:10px"></div></div>'; }
+
 function downloadTicketImage() {
     const box = document.getElementById('ticketBox');
     if (!box) return;
-    html2canvas(box, { scale: 2, backgroundColor: '#ffffff', useCORS: true }).then(canvas => {
-        const link = document.createElement('a'); link.download = 'Ticket.png'; link.href = canvas.toDataURL('image/png'); link.click();
-    }).catch(err => toast('Error downloading ticket: ' + err, true));
+    
+    toast('⏳ Generating image...');
+
+    const clone = box.cloneNode(true);
+    clone.style.maxHeight = 'none';
+    clone.style.height = 'auto';
+    clone.style.overflow = 'visible';
+    clone.style.position = 'absolute';
+    clone.style.left = '-9999px';
+    clone.style.top = '0';
+    clone.style.width = '480px';
+    clone.style.background = '#ffffff';
+
+    document.body.appendChild(clone);
+
+    html2canvas(clone, { 
+        scale: 1, 
+        backgroundColor: '#ffffff', 
+        useCORS: true,
+        allowTaint: true,
+        logging: false,
+        imageTimeout: 0
+    }).then(canvas => {
+        document.body.removeChild(clone);
+        const link = document.createElement('a'); 
+        link.download = 'Ticket.png'; 
+        link.href = canvas.toDataURL('image/png'); 
+        link.click();
+        toast('✅ Downloaded!');
+    }).catch(err => {
+        if (document.body.contains(clone)) document.body.removeChild(clone);
+        toast('Error downloading ticket: ' + err, true);
+    });
 }
+
 function printTicket() {
     const box = document.getElementById('ticketBox');
     if (!box) return;
@@ -1640,10 +1688,9 @@ function buyRenderWheel() {
     list.sort((a, b) => a.ticket_number - b.ticket_number); 
     let grid = '';
     for (const t of list) {
-        // CORRECT LOGIC: Check if user_id is present to mark as sold
         const owners = TICKETS.filter(x => 
             Number(x.ticket_number) === Number(t.ticket_number) && 
-            x.user_id // Only consider it owned if user_id exists
+            x.user_id 
         );
         const mine = owners.some(x => String(x.user_id) === String(ME.id));
         let cls = 'ticket-select'; 
@@ -1719,7 +1766,7 @@ function assignRenderWheel() {
     for (let num = 1; num <= SETTINGS.ticket_count; num++) { 
         const owners = TICKETS.filter(x => 
             Number(x.ticket_number) === num && 
-            x.user_id // Only consider it owned if user_id exists
+            x.user_id 
         ); 
         const label = owners.length ? ('SOLD (' + owners.length + ')') : 'AVAILABLE'; 
         grid += '<button type="button" class="ticket-select ' + (owners.length ? 'sold' : '') + '" onclick="selectAssignWheel(' + num + ', this)">#' + num + '<br><small>' + label + '</small></button>'; 
@@ -1830,18 +1877,39 @@ function renderNbWinnersOverlay(s) {
     el.innerHTML = html + '</div>';
 }
 function nbStatusText(s) { if (s.round_state === 'drawing') return '🎬 DRAWING'; if (s.round_state === 'finished') return '✅ FINISHED'; if (s.sales_state === 'open') return '🟢 OPEN'; if (s.sales_state === 'closed') return '🔴 CLOSED'; return '⚪ IDLE'; }
-function nbDrawnSoFar(s) { if (!s.winning_numbers || !s.winning_numbers.length) return 0; if (s.round_state === 'finished') return s.winning_numbers.length; if (s.round_state !== 'drawing') return 0; const start = _drawStartClient ? Math.max(new Date(s.drawing_started_at).getTime(), _drawStartClient - 500) : new Date(s.drawing_started_at).getTime(); const elapsed = (Date.now() - start) / 1000; return Math.min(s.winning_numbers.length, Math.max(0, Math.floor(elapsed / Math.max(1, s.draw_delay_seconds)) + 1)); }
+function nbDrawnSoFar(s) { if (!s.winning_numbers || !s.winning_numbers.length) return 0; if (s.round_state === 'finished') return s.winning_numbers.length; if (s.round_state !== 'drawing') return 0; const start = _drawStartClient ? Math.max(new Date(s.drawing_started_at || Date.now()).getTime(), _drawStartClient - 500) : new Date(s.drawing_started_at || Date.now()).getTime(); const elapsed = (Date.now() - start) / 1000; return Math.min(s.winning_numbers.length, Math.max(0, Math.floor(elapsed / Math.max(1, s.draw_delay_seconds)) + 1)); }
 
 function nbStartPolls(s) {
     if (nbPollId) clearInterval(nbPollId); if (nbSettleId) clearInterval(nbSettleId);
-    if (s) { if (s.round_duration_minutes == null && s.duration_minutes != null) s.round_duration_minutes = s.duration_minutes; if (s.round_duration_minutes == null) s.round_duration_minutes = 120; if (s.sales_state === 'open' && !s.sales_started_at) s.sales_started_at = new Date().toISOString(); }
-    if (s.round_state === 'drawing' && s.drawing_started_at) { const key = s.round_number + ':' + s.drawing_started_at; if (_drawRoundKey !== key) { _drawRoundKey = key; _drawStartClient = Date.now(); _lastShown = -1; } } else { _drawStartClient = null; _drawRoundKey = null; _lastShown = -1; }
+    if (s) { 
+        if (s.round_duration_minutes == null && s.duration_minutes != null) s.round_duration_minutes = s.duration_minutes; 
+        if (s.round_duration_minutes == null) s.round_duration_minutes = 120; 
+        if (s.sales_state === 'open' && !s.sales_started_at) s.sales_started_at = new Date().toISOString(); 
+        if (s.round_state === 'drawing' && !s.drawing_started_at) s.drawing_started_at = new Date().toISOString();
+    }
+    if (s.round_state === 'drawing' && s.drawing_started_at) { 
+        const key = s.round_number + ':' + s.drawing_started_at; 
+        if (_drawRoundKey !== key) { _drawRoundKey = key; _drawStartClient = Date.now(); _lastShown = -1; } 
+    } else { 
+        _drawStartClient = null; _drawRoundKey = null; _lastShown = -1; 
+    }
+    
     nbTickTimer();
     nbPollId = setInterval(() => { nbTickTimer(); nbRevealTick(); }, 200);
 
     nbSettleId = setInterval(async () => {
         if (nbState && nbState.settings.round_state === 'drawing') {
-            try { await api('/nb/settle', { method: 'POST' }); const s2 = await api('/nb/state'); nbState = s2; if (s2.settings.round_state === 'finished') nbPage(); } catch (e) {}
+            try { 
+                await api('/nb/settle', { method: 'POST' }); 
+                const s2 = await api('/nb/state'); 
+                nbState = s2; 
+                if (s2.settings.round_state === 'finished') nbPage(); 
+            } catch (e) {}
+
+            const elapsed = (Date.now() - new Date(nbState.settings.drawing_started_at).getTime()) / 1000;
+            if (elapsed > (nbState.settings.drawn_count * nbState.settings.draw_delay_seconds) + 5) {
+                try { await api('/admin/nb/new-round', { method: 'POST' }); nbPage(); } catch(e){}
+            }
         } else if (nbState && nbState.settings.round_state === 'finished') {
             if (!window._nbFinishedAt) window._nbFinishedAt = Date.now();
             if (Date.now() - window._nbFinishedAt > 10000) {
@@ -1869,10 +1937,21 @@ function nbTickTimer() {
     else if (s.sales_state === 'open') { let started; if (s.sales_started_at) started = new Date(s.sales_started_at).getTime(); else started = Date.now(); if (!Number.isFinite(started)) started = Date.now(); const elapsed = (Date.now() - started) / 1000; const remaining = Math.max(0, (roundMin * 60) - elapsed); el.textContent = 'SALES ' + formatTime(Math.ceil(remaining)); }
     else { el.textContent = '--:--'; }
 }
-async function nbStartSales() { try { await api('/admin/nb/start-sales', { method: 'POST' }); toast('🟢 Sales opened'); await nbPage(); } catch (e) { toast('❌ ' + e.message, true); } }
-async function nbCloseSales() { try { await api('/admin/nb/close-sales', { method: 'POST' }); toast('🔴 Sales closed'); await nbPage(); } catch (e) { toast('❌ ' + e.message, true); } }
-async function nbDraw() { if (!(await confirmToast('Start the draw now?', { title: 'Draw', okText: 'Draw' }))) return; try { await api('/admin/nb/draw', { method: 'POST' }); _drawStartClient = Date.now(); _drawRoundKey = null; toast('🎬 Draw started'); await nbPage(); } catch (e) { toast('❌ ' + e.message, true); } }
-async function nbNewRound() { try { await api('/admin/nb/new-round', { method: 'POST' }); toast('🔄 New round started'); await nbPage(); } catch (e) { toast('❌ ' + e.message, true); } }
+async function nbStartSales() { try { await api('/admin/nb/start-sales', { method: 'POST' }); toast('🟢 Sales opened'); await nbPage(); } catch (e) { toast('❌ ' + e.message, true); showFatalError("START SALES ERROR: " + e.message); } }
+async function nbCloseSales() { try { await api('/admin/nb/close-sales', { method: 'POST' }); toast('🔴 Sales closed'); await nbPage(); } catch (e) { toast('❌ ' + e.message, true); showFatalError("CLOSE SALES ERROR: " + e.message); } }
+async function nbDraw() { 
+    if (!(await confirmToast('Start the draw now?', { title: 'Draw', okText: 'Draw' }))) return; 
+    try { 
+        await api('/admin/nb/draw', { method: 'POST' }); 
+        _drawStartClient = Date.now(); _drawRoundKey = null; 
+        toast('🎬 Draw started'); 
+        await nbPage(); 
+    } catch (e) { 
+        toast('❌ ' + e.message, true); 
+        showFatalError("DRAW ERROR: " + e.message);
+    } 
+}
+async function nbNewRound() { try { await api('/admin/nb/new-round', { method: 'POST' }); toast('🔄 New round started'); await nbPage(); } catch (e) { toast('❌ ' + e.message, true); showFatalError("NEW ROUND ERROR: " + e.message); } }
 
 async function wheelPage() {
     const isAdmin = ME.role === 'admin' || ME.role === 'main_admin' || ME.role === 'branch'; const spinning = SETTINGS.round_state === 'spinning'; const open = SETTINGS.sales_state === 'open';
@@ -1904,14 +1983,16 @@ function applyWheelState() {
     if (!spinDuration || spinDuration < 10) spinDuration = 30; 
 
     if (s.round_state === 'spinning') {
-        let startedAt = new Date(s.spin_started_at).getTime();
+        let startedAt = new Date(s.spin_started_at || Date.now()).getTime();
+        if (isNaN(startedAt)) startedAt = Date.now();
         
-        if (isNaN(startedAt)) {
+        const elapsed = (Date.now() - startedAt) / 1000;
+        if (elapsed > spinDuration + 5) {
              api('/spin/settle', { method: 'POST' }).then(() => refreshState().then(() => renderPage())).catch(() => {});
              return;
         }
 
-        const spinKey = s.round_number + ':' + s.spin_started_at;
+        const spinKey = s.round_number + ':' + (s.spin_started_at || 'fallback');
 
         if (!wheel._hasSpunForRound || wheel._spinKey !== spinKey) {
             wheel._spinKey = spinKey;
@@ -1923,7 +2004,7 @@ function applyWheelState() {
 
             setTimeout(() => {
                 wheel.style.transition = `transform ${spinDuration}s cubic-bezier(0.1, 0.8, 0.2, 1)`;
-                wheel.style.transform = `rotate(${360 * 15 + target + 180}deg)`;
+                wheel.style.transform = `rotate(${360 * 15 + target}deg)`; // FIXED: Removed + 180
 
                 setTimeout(() => {
                     api('/spin/settle', { method: 'POST' }).then(() => {
@@ -1943,7 +2024,7 @@ function applyWheelState() {
 
     if (s.round_state === 'idle' && s.sales_state === 'open') {
         timerEl.classList.remove('spinning'); timerEl.classList.add('sales');
-        startSalesCountdown(new Date(s.sales_started_at).getTime(), s.sales_duration || 120);
+        startSalesCountdown(new Date(s.sales_started_at || Date.now()).getTime(), s.sales_duration || 120);
         const center = document.getElementById('wheelCenter'); if (center) center.textContent = 'READY';
         return;
     }
@@ -1968,7 +2049,7 @@ function applyWheelState() {
         timerEl.classList.remove('spinning', 'sales');
         wheel._spinKey = null;
         wheel.style.transition = 'none';
-        wheel.style.transform = `rotate(${target + 180}deg)`;
+        wheel.style.transform = `rotate(${target}deg)`; // FIXED: Removed + 180
         const pointer = document.getElementById('topPointer'); if (pointer) pointer.classList.add('winner');
         const winners = s.winner_numbers || [];
         const center = document.getElementById('wheelCenter');
@@ -2052,8 +2133,9 @@ async function startSales(e) {
         await api('/admin/start-sales', { method: 'POST' }); 
         toast('🟢 Sales opened'); 
         await refreshState(); renderPage(); 
-    } catch (e) { 
-        toast('❌ ' + e.message, true); 
+    } catch (error) { 
+        toast('❌ ' + error.message, true); 
+        showFatalError("START SALES ERROR: " + error.message);
     } finally { 
         if(btn && document.body.contains(btn)) { btn.innerHTML = orig; btn.disabled = false; } 
     } 
@@ -2066,8 +2148,9 @@ async function closeSales(e) {
         await api('/admin/close-sales', { method: 'POST' }); 
         toast('🔴 Sales closed'); 
         await refreshState(); renderPage(); 
-    } catch (e) { 
-        toast('❌ ' + e.message, true); 
+    } catch (error) { 
+        toast('❌ ' + error.message, true); 
+        showFatalError("CLOSE SALES ERROR: " + error.message);
     } finally { 
         if(btn && document.body.contains(btn)) { btn.innerHTML = orig; btn.disabled = false; } 
     } 
@@ -2079,8 +2162,9 @@ async function startSpin(e) {
         if(btn) { btn.innerHTML = '⏳ Spinning...'; btn.disabled = true; }
         await api('/admin/spin/start', { method: 'POST' }); 
         await refreshState(); renderPage(); 
-    } catch (e) { 
-        toast('❌ ' + e.message, true); 
+    } catch (error) { 
+        toast('❌ ' + error.message, true); 
+        showFatalError("SPIN ERROR: " + error.message);
     } finally { 
         if(btn && document.body.contains(btn)) { btn.innerHTML = orig; btn.disabled = false; } 
     } 
@@ -2092,8 +2176,9 @@ async function newRound(e) {
         if(btn) { btn.innerHTML = '⏳ Resetting...'; btn.disabled = true; }
         await api('/admin/round/reset', { method: 'POST' }); 
         await refreshState(); renderPage(); 
-    } catch (e) { 
-        toast('❌ ' + e.message, true); 
+    } catch (error) { 
+        toast('❌ ' + error.message, true); 
+        showFatalError("NEW ROUND ERROR: " + error.message);
     } finally { 
         if(btn && document.body.contains(btn)) { btn.innerHTML = orig; btn.disabled = false; } 
     } 
@@ -2642,7 +2727,7 @@ function renderWheelSettings() {
 function reloadPrizeInputs() { const wc = Math.max(1, Math.min(60, Number(document.getElementById('winnerCount').value) || 1)); let h = ''; for (let i = 0; i < wc; i++) { const d = i === 0 ? 50 : i === 1 ? 30 : i === 2 ? 10 : 5; h += '<label>Winner #' + (i + 1) + ' — %</label><input class="pct-input" type="number" min="0" max="100" value="' + d + '">'; } document.getElementById('prizeList').innerHTML = h; }
 async function saveWheelSettings() {
     const ticketCount = Number(document.getElementById('ticketCount').value); const salesDuration = Number(document.getElementById('salesDuration').value); const duration = Number(document.getElementById('duration').value); const winners = Number(document.getElementById('winnerCount').value); const price = Number(document.getElementById('ticketPrice').value); const referralGoal = Number(document.getElementById('referralGoal').value); const referralReward = Number(document.getElementById('referralReward').value); const prizePercents = Array.from(document.querySelectorAll('.pct-input')).map(i => Number(i.value) || 0);
-    try { if (ticketCount !== SETTINGS.ticket_count) await api('/admin/tickets/count', { method: 'POST', body: { count: ticketCount } }); await api('/admin/settings', { method: 'POST', body: { duration, winners, ticketPrice: price, referralGoal, referralReward, prizePercents, usePercentPrizes: true, salesDuration } }); await refreshState(); toast('✅ Saved.'); settingsPage(); } catch (e) { toast('❌ ' + e.message, true); }
+    try { if (ticketCount !== SETTINGS.ticket_count) await api('/admin/tickets/count', { method: 'POST', body: { count: ticketCount } }); await api('/admin/settings', { method: 'POST', body: { duration, winners, ticketPrice: price, referralGoal, referralReward, prizePercents, usePercentPrizes: true, salesDuration } }); await refreshState(); toast('✅ Saved.'); settingsPage(); } catch (e) { toast('❌ ' + e.message, true); showFatalError("SAVE SETTINGS ERROR: " + e.message); }
 }
 function renderNBSettings(s) {
     if (!s) { document.getElementById('settingsContent').innerHTML = '<div class="card"><p class="muted">Not available</p></div>'; return; }
@@ -2683,7 +2768,7 @@ function nbSettingsReloadPrizes() { const c = Math.max(1, Math.min(20, Number(do
 async function saveNBSettings() {
     const total_numbers = Number(document.getElementById('nbTotal').value); const drawn_count = Number(document.getElementById('nbDrawn').value); const tickets_per_purchase = Number(document.getElementById('nbTpp').value); const price_per_purchase = Number(document.getElementById('nbPrice').value); const draw_delay_seconds = Number(document.getElementById('nbDelay').value); const round_duration_minutes = Number(document.getElementById('nbDuration').value); const winner_count = Number(document.getElementById('nbWinners').value); const prize_percents = Array.from(document.querySelectorAll('.nb-pct-input')).map(i => Number(i.value) || 0);
     if (!round_duration_minutes || round_duration_minutes < 1) { toast('Duration must be ≥ 1 minute', true); return; }
-    try { await api('/admin/nb/settings', { method: 'POST', body: { total_numbers, drawn_count, tickets_per_purchase, price_per_purchase, draw_delay_seconds, round_duration_minutes, duration_minutes: round_duration_minutes, winner_count, prize_percents, use_percent_prizes: true }}); toast('✅ Saved'); try { nbState = await api('/nb/state'); } catch (e) {} await settingsPage(); } catch (e) { toast('❌ ' + e.message, true); }
+    try { await api('/admin/nb/settings', { method: 'POST', body: { total_numbers, drawn_count, tickets_per_purchase, price_per_purchase, draw_delay_seconds, round_duration_minutes, duration_minutes: round_duration_minutes, winner_count, prize_percents, use_percent_prizes: true }}); toast('✅ Saved'); try { nbState = await api('/nb/state'); } catch (e) {} await settingsPage(); } catch (e) { toast('❌ ' + e.message, true); showFatalError("SAVE SETTINGS ERROR: " + e.message); }
 }
 
 async function changeAdminPassword(suffix = '') {
